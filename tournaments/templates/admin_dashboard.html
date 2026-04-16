@@ -1,0 +1,35 @@
+{% extends "base_admin.html" %}
+
+{% block content %}
+
+<div class="row">
+  <div class="col-md-3">
+    <div class="card p-3 text-center">
+      <h6>Tournaments</h6>
+      <h3>{{ total_tournaments }}</h3>
+    </div>
+  </div>
+
+  <div class="col-md-3">
+    <div class="card p-3 text-center">
+      <h6>Teams</h6>
+      <h3>{{ total_teams }}</h3>
+    </div>
+  </div>
+
+  <div class="col-md-3">
+    <div class="card p-3 text-center">
+      <h6>Fixtures</h6>
+      <h3>{{ total_fixtures }}</h3>
+    </div>
+  </div>
+
+  <div class="col-md-3">
+    <div class="card p-3 text-center">
+      <h6>Results</h6>
+      <h3>{{ total_results }}</h3>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

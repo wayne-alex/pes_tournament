@@ -1,0 +1,165 @@
+{% extends "base_admin.html" %}
+
+{% block content %}
+
+<div class="container-fluid py-3">
+
+  <!-- HEADER -->
+  <div class="d-flex justify-content-between align-items-center mb-3">
+
+    <h5 class="m-0">
+      <i class="bi bi-clipboard-data"></i> Results
+    </h5>
+
+  </div>
+
+  <!-- ================= DESKTOP TABLE ================= -->
+  <div class="d-none d-md-block">
+
+    <div class="card shadow-sm border-0">
+
+      <div class="card-body p-2 p-md-3">
+
+        <div class="table-responsive">
+
+          <table class="table table-hover align-middle mb-0">
+
+            <thead class="table-dark">
+              <tr>
+                <th>#</th>
+                <th>Match</th>
+                <th>Tournament</th>
+                <th>Score</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+
+            <tbody>
+
+              {% for f in fixtures %}
+              <tr>
+
+                <td>{{ forloop.counter }}</td>
+
+                <td class="text-nowrap">
+                  <strong>{{ f.home_team.name }}</strong>
+                  vs
+                  <strong>{{ f.away_team.name }}</strong>
+                </td>
+
+                <td class="text-nowrap">
+                  {{ f.tournament.name }}
+                </td>
+
+                <td class="text-nowrap">
+                  {% if f.is_played %}
+                    <strong>{{ f.home_score }} - {{ f.away_score }}</strong>
+                  {% else %}
+                    <span class="text-muted">Not played</span>
+                  {% endif %}
+                </td>
+
+                <td class="text-nowrap">
+                  {% if f.is_played %}
+                    <span class="badge bg-success">Completed</span>
+                  {% else %}
+                    <span class="badge bg-warning text-dark">Pending</span>
+                  {% endif %}
+                </td>
+
+                <td class="text-nowrap sticky-actions">
+
+                  <a href="{% url 'fixture_update' f.id %}" class="btn btn-sm btn-primary">
+                    <i class="bi bi-pencil"></i>
+                  </a>
+
+                </td>
+
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="6" class="text-center text-muted py-4">
+                  No results available
+                </td>
+              </tr>
+              {% endfor %}
+
+            </tbody>
+
+          </table>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- ================= MOBILE CARDS ================= -->
+  <div class="d-md-none">
+
+    {% for f in fixtures %}
+    <div class="card shadow-sm border-0 mb-3">
+
+      <div class="card-body">
+
+        <!-- HEADER -->
+        <div class="d-flex justify-content-between align-items-center mb-2">
+
+          <h6 class="m-0">
+            {{ f.home_team.name }} vs {{ f.away_team.name }}
+          </h6>
+
+          {% if f.is_played %}
+            <span class="badge bg-success">Done</span>
+          {% else %}
+            <span class="badge bg-warning text-dark">Pending</span>
+          {% endif %}
+
+        </div>
+
+        <!-- TOURNAMENT -->
+        <p class="text-muted mb-2">
+          {{ f.tournament.name }}
+        </p>
+
+        <!-- SCORE -->
+        <h5 class="mb-3">
+          {% if f.is_played %}
+            {{ f.home_score }} - {{ f.away_score }}
+          {% else %}
+            VS
+          {% endif %}
+        </h5>
+
+        <!-- ACTION -->
+        <div class="sticky-actions">
+
+          <a href="{% url 'fixture_update' f.id %}" class="btn btn-sm btn-primary w-100">
+            <i class="bi bi-pencil"></i> Update Result
+          </a>
+
+        </div>
+
+      </div>
+
+    </div>
+    {% endfor %}
+
+  </div>
+
+</div>
+
+<!-- ================= STICKY ACTION STYLE ================= -->
+<style>
+.sticky-actions {
+  position: sticky;
+  bottom: 0;
+  background: white;
+  padding-top: 8px;
+}
+</style>
+
+{% endblock %}
