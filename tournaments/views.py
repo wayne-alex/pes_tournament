@@ -1,16 +1,16 @@
 from django.contrib import messages
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
-from django.db.models import F
+from django.db.models import F, Sum
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 
-from .models import Tournament, Team, Fixture, Group, Result
 from .fixture_generator import FixtureGenerator
+from .models import Tournament, Team, Fixture, Group, Result
+from .standings import StandingsService
 
 
-# Create your views here.
 def dashboard(request, tournament_id):
     tournament = Tournament.objects.get(id=tournament_id)
 
@@ -51,6 +51,11 @@ def dashboard(request, tournament_id):
         grouped.setdefault(f.round, []).append(f)
 
     rounds = [grouped[r] for r in sorted(grouped)]
+    top_scorers = (
+        Team.objects.filter(tournament=tournament)
+        .annotate(total_goals=Sum("goals_for"))
+        .order_by("-total_goals")[:10]
+    )
 
     return render(request, "dashboard.html", {
         "tournament": tournament,
@@ -58,6 +63,7 @@ def dashboard(request, tournament_id):
         "fixtures": fixtures,
         "results": results,
         "rounds": rounds,
+        "top_scorers": top_scorers,
     })
 
 
@@ -77,15 +83,19 @@ def admin_login(request):
 
     return render(request, "admin_login.html")
 
+
 @login_required
 def admin_dashboard(request):
     total_tournaments = Tournament.objects.all().count()
     total_teams = Team.objects.all().count()
     total_fixtures = Fixture.objects.all().count()
     total_results = Result.objects.all().count()
-    return render(request, 'admin_dashboard.html', {'total_tournaments': total_tournaments,'total_teams': total_teams, 'total_fixtures': total_fixtures, 'total_results': total_results})
+    return render(request, 'admin_dashboard.html',
+                  {'total_tournaments': total_tournaments, 'total_teams': total_teams, 'total_fixtures': total_fixtures,
+                   'total_results': total_results})
 
 
+@login_required
 def admin_tournament(request):
     if request.method == "POST":
         Tournament.objects.create(
@@ -102,6 +112,7 @@ def admin_tournament(request):
     })
 
 
+@login_required
 def tournament_edit(request, id):
     tournament = get_object_or_404(Tournament, id=id)
 
@@ -118,17 +129,18 @@ def tournament_edit(request, id):
     })
 
 
+@login_required
 def tournament_delete(request, id):
     tournament = get_object_or_404(Tournament, id=id)
     tournament.delete()
     return redirect("tournament_create")
 
 
+@login_required
 def admin_teams(request):
     if request.method == "POST":
         name = request.POST.get("name")
         tournament_id = request.POST.get("tournament_id")
-
 
         if name and tournament_id:
             tournament = Tournament.objects.get(id=tournament_id)
@@ -139,6 +151,9 @@ def admin_teams(request):
     tournaments = Tournament.objects.all().order_by("-id")
 
     return render(request, "teams.html", {"teams": teams, "tournaments": tournaments})
+
+
+@login_required
 def team_edit(request, id):
     team = get_object_or_404(Team, id=id)
     tournaments = Tournament.objects.all().order_by("-id")
@@ -148,48 +163,82 @@ def team_edit(request, id):
         team.save()
         return redirect("teams")
 
-    return render(request, "edit_team.html", {"team": team , "tournaments": tournaments})
+    return render(request, "edit_team.html", {"team": team, "tournaments": tournaments})
+
+
+@login_required
 def team_delete(request, id):
     team = get_object_or_404(Team, id=id)
     team.delete()
     return redirect("teams")
 
 
+@login_required
 def admin_fixtures(request, tournament_id):
     tournament = get_object_or_404(Tournament, id=tournament_id)
 
     if request.method == "POST":
+        action = request.POST.get("action")
+
+        if action == "update_score":
+            fixture_id = request.POST.get("fixture_id")
+            home_score = int(request.POST.get("home_score", 0))
+            away_score = int(request.POST.get("away_score", 0))
+
+            fixture = get_object_or_404(Fixture, id=fixture_id, tournament=tournament)
+
+            # Create or update the Result
+            result, created = Result.objects.update_or_create(
+                fixture=fixture,
+                defaults={
+                    "home_score": home_score,
+                    "away_score": away_score,
+                }
+            )
+            fixture.is_played = True
+            fixture.save()
+            StandingsService.calculate(tournament)
+
+            messages.success(request, "Score updated successfully.")
+            return redirect("fixtures", tournament_id=tournament_id)
         config = {
             "start_date": request.POST.get("start_date"),
             "end_date": request.POST.get("end_date"),
             "games_per_day": request.POST.get("games_per_day", 2),
-            # Group-knockout specific
             "groups": request.POST.get("groups", 2),
             "teams_per_group": request.POST.get("teams_per_group"),
             "qualify_per_group": request.POST.get("qualify_per_group", 2),
         }
-        for k, v in config.items():
-            print(k, "=", v)
 
         try:
             generator = FixtureGenerator(tournament, config)
             generator.generate()
-            print("Fixtures generated successfully.")
             messages.success(request, "Fixtures generated successfully.")
         except ValueError as e:
-            print('error')
             messages.error(request, str(e))
 
         return redirect("fixtures", tournament_id=tournament_id)
 
-    # GET — render the form
-    return render(request, "fixtures.html", {"tournament": tournament})
+    fixtures = Fixture.objects.filter(
+        tournament=tournament
+    ).select_related(
+        "home_team", "away_team", "tournament", "result"
+    ).order_by("match_date")
+
+    return render(request, "fixtures.html", {
+        "tournament": tournament,
+        "fixtures": fixtures
+    })
 
 
+@login_required
 def fixture_delete(request, id):
     fixture = get_object_or_404(Fixture, id=id)
     fixture.delete()
     return redirect("fixtures")
+
+
+@login_required
 def fixture_update(request, id):
     fixture = get_object_or_404(Fixture, id=id)
 
@@ -204,10 +253,22 @@ def fixture_update(request, id):
 
     return render(request, "fixtures_edit.html", {"fixture": fixture})
 
+
+@login_required
 def admin_results(request):
-    return render(request, "results.html")
+    fixtures = Fixture.objects.select_related(
+        "home_team",
+        "away_team",
+        "tournament",
+        "result"
+    ).order_by("-is_played", "match_date")
+
+    return render(request, "results.html", {
+        "fixtures": fixtures
+    })
 
 
+@login_required
 def generate_fixtures(request, tournament_id):
     tournament = Tournament.objects.get(id=tournament_id)
 
@@ -225,3 +286,77 @@ def generate_fixtures(request, tournament_id):
     generator.generate()
 
     return redirect("fixtures")
+
+
+def dashboard_home(request):
+    tournaments = Tournament.objects.filter(is_open=True).order_by("-id")
+
+    return render(request, "dashboard_home.html", {
+        "tournaments": tournaments
+    })
+
+
+def tournament_live_data(request, tournament_id):
+    tournament = get_object_or_404(Tournament, id=tournament_id)
+
+    # ── FIXTURES (all, including played, with group name) ─────────────────────
+    fixtures_qs = (
+        Fixture.objects.filter(tournament=tournament)
+        .select_related("home_team", "away_team", "result", "group")
+        .order_by("match_date")
+    )
+
+    fixtures = []
+    for f in fixtures_qs:
+        fixtures.append({
+            "id": f.id,
+            "home_team__name": f.home_team.name,
+            "away_team__name": f.away_team.name,
+            "match_date": f.match_date.isoformat() if f.match_date else None,
+            "is_played": f.is_played,
+            "group_name": f.group.name if f.group else None,
+            "result__home_score": f.result.home_score if hasattr(f, "result") and f.result else None,
+            "result__away_score": f.result.away_score if hasattr(f, "result") and f.result else None,
+        })
+
+    # ── STANDINGS ordered by points ───────────────────────────────────────────
+    standings = list(
+        Team.objects.filter(tournament=tournament)
+        .values("id", "name", "points", "played", "wins", "draws", "losses",
+                "goals_for", "goals_against")
+        .order_by("-points", "-goals_for")
+    )
+
+    # ── RESULTS ───────────────────────────────────────────────────────────────
+    results_qs = (
+        Result.objects.filter(fixture__tournament=tournament)
+        .select_related("fixture", "fixture__home_team", "fixture__away_team", "fixture__group")
+        .order_by("-fixture__match_date")
+    )
+
+    results = []
+    for r in results_qs:
+        results.append({
+            "id": r.id,
+            "home_team": r.fixture.home_team.name,
+            "away_team": r.fixture.away_team.name,
+            "home_score": r.home_score,
+            "away_score": r.away_score,
+            "match_date": r.fixture.match_date.isoformat() if r.fixture.match_date else None,
+            "group_name": r.fixture.group.name if r.fixture.group else None,
+        })
+
+    # ── TOP SCORERS (teams by goals_for) ──────────────────────────────────────
+    top_scorers = list(
+        Team.objects.filter(tournament=tournament)
+        .annotate(total_goals=Sum("goals_for"))
+        .order_by("-total_goals")
+        .values("id", "name", "total_goals")[:10]
+    )
+
+    return JsonResponse({
+        "fixtures": fixtures,
+        "standings": standings,
+        "results": results,
+        "top_scorers": top_scorers,
+    })

@@ -29,6 +29,7 @@ class Tournament(models.Model):
         default="single"
     )
     qualify_per_group = models.IntegerField(default=2)
+    is_open =models.BooleanField(default=False)
 
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -47,6 +48,7 @@ class Team(models.Model):
     losses = models.IntegerField(default=0)
     goals_for = models.IntegerField(default=0)
     goals_against = models.IntegerField(default=0)
+    previous_position = models.IntegerField(default=0)
 
     class Meta:
         unique_together = ("tournament", "name")

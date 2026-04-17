@@ -1,269 +1,219 @@
 {% extends "base_admin.html" %}
 
 {% block content %}
-
 <div class="container-fluid py-3">
 
     <!-- HEADER -->
     <div class="d-flex justify-content-between align-items-center mb-3">
-
-        <h5 class="m-0">
-            <i class="bi bi-calendar"></i> Fixtures
-        </h5>
-
+        <h5 class="m-0"><i class="bi bi-calendar"></i> Fixtures</h5>
         <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#generateFixtureModal">
             Generate Fixtures
         </button>
     </div>
 
-    <!-- ================= DESKTOP TABLE ================= -->
+    <!-- DESKTOP TABLE -->
     <div class="d-none d-md-block">
-
         <div class="card shadow-sm border-0">
-
             <div class="card-body p-2 p-md-3">
-
                 <div class="table-responsive">
-
                     <table class="table table-hover align-middle mb-0">
-
                         <thead class="table-dark">
-                        <tr>
-                            <th>#</th>
-                            <th>Match</th>
-                            <th>Tournament</th>
-                            <th>Score</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
+                            <tr>
+                                <th>#</th>
+                                <th>Match</th>
+                                <th>Tournament</th>
+                                <th>Round</th>
+                                <th>Date</th>
+                                <th>Score</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
                         </thead>
-
                         <tbody>
-
                         {% for f in fixtures %}
-                        <tr>
-
-                            <td>{{ forloop.counter }}</td>
-
-                            <td class="text-nowrap">
-                                <strong>{{ f.home_team.name }}</strong>
-                                vs
-                                <strong>{{ f.away_team.name }}</strong>
-                            </td>
-
-                            <td class="text-nowrap">
-                                {{ f.tournament.name }}
-                            </td>
-
-                            <td class="text-nowrap">
-                                {% if f.is_played %}
-                                {{ f.home_score }} - {{ f.away_score }}
-                                {% else %}
-                                <span class="text-muted">VS</span>
-                                {% endif %}
-                            </td>
-
-                            <td class="text-nowrap">
-                                {% if f.is_played %}
-                                <span class="badge bg-success">Played</span>
-                                {% else %}
-                                <span class="badge bg-secondary">Pending</span>
-                                {% endif %}
-                            </td>
-
-                            <td class="text-nowrap sticky-actions">
-
-                                <a href="" class="btn btn-sm btn-primary">
-                                    <i class="bi bi-pencil"></i>
-                                </a>
-
-                                <a href=""
-                                   class="btn btn-sm btn-danger"
-                                   onclick="return confirm('Delete this fixture?')">
-                                    <i class="bi bi-trash"></i>
-                                </a>
-
-                            </td>
-
-                        </tr>
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td class="text-nowrap">
+                                    <strong>{{ f.home_team.name }}</strong> vs <strong>{{ f.away_team.name }}</strong>
+                                </td>
+                                <td class="text-nowrap">{{ f.tournament.name }}</td>
+                                <td>Round {{ f.round }}</td>
+                                <td class="text-nowrap">
+                                    {% if f.match_date %}
+                                        {{ f.match_date|date:"d M Y" }}
+                                    {% else %}
+                                        <span class="text-muted">TBD</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-nowrap fw-bold">
+                                    {% if f.is_played %}
+                                        {% if f.result %}
+                                            {{ f.result.home_score }} - {{ f.result.away_score }}
+                                        {% else %}
+                                            <span class="text-muted">—</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-muted">VS</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-nowrap">
+                                    {% if f.is_played %}
+                                        <span class="badge bg-success">Played</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Pending</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-nowrap">
+                                    <!-- Edit Score Button -->
+                                    <button class="btn btn-sm btn-primary edit-score-btn"
+                                            data-fixture-id="{{ f.id }}"
+                                            data-home="{{ f.home_team.name }}"
+                                            data-away="{{ f.away_team.name }}"
+                                            data-home-score="{% if f.result %}{{ f.result.home_score }}{% else %}0{% endif %}"
+                                            data-away-score="{% if f.result %}{{ f.result.away_score }}{% else %}0{% endif %}"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#editScoreModal">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <!-- Delete Button -->
+                                    <a href=""
+                                       class="btn btn-sm btn-danger"
+                                       onclick="return confirm('Delete this fixture?')">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                </td>
+                            </tr>
                         {% empty %}
-                        <tr>
-                            <td colspan="6" class="text-center text-muted py-4">
-                                No fixtures generated yet
-                            </td>
-                        </tr>
+                            <tr>
+                                <td colspan="8" class="text-center text-muted py-4">No fixtures generated yet</td>
+                            </tr>
                         {% endfor %}
-
                         </tbody>
-
                     </table>
-
                 </div>
-
             </div>
-
         </div>
-
     </div>
 
-    <!-- ================= MOBILE CARDS ================= -->
+    <!-- MOBILE CARDS -->
     <div class="d-md-none">
-
         {% for f in fixtures %}
-        <div class="card shadow-sm border-0 mb-3 position-relative">
-
+        <div class="card shadow-sm border-0 mb-3">
             <div class="card-body">
-
                 <div class="d-flex justify-content-between align-items-center mb-2">
-
-                    <h6 class="m-0">
-                        {{ f.home_team.name }} vs {{ f.away_team.name }}
-                    </h6>
-
+                    <h6 class="m-0">{{ f.home_team.name }} vs {{ f.away_team.name }}</h6>
                     {% if f.is_played %}
-                    <span class="badge bg-success">Played</span>
+                        <span class="badge bg-success">Played</span>
                     {% else %}
-                    <span class="badge bg-secondary">Pending</span>
+                        <span class="badge bg-secondary">Pending</span>
                     {% endif %}
-
                 </div>
-
-                <p class="mb-1 text-muted">
-                    Tournament: {{ f.tournament.name }}
+                <p class="mb-1 text-muted small">{{ f.tournament.name }} &bull; Round {{ f.round }}</p>
+                <p class="mb-1 text-muted small">
+                    {% if f.match_date %}{{ f.match_date|date:"d M Y" }}{% else %}Date TBD{% endif %}
                 </p>
-
-                <h5 class="mb-3">
+                <h4 class="mb-3 fw-bold">
                     {% if f.is_played %}
-                    {{ f.home_score }} - {{ f.away_score }}
+                        {% if f.result %}
+                            {{ f.result.home_score }} - {{ f.result.away_score }}
+                        {% else %}—{% endif %}
                     {% else %}
-                    VS
+                        VS
                     {% endif %}
-                </h5>
-
-                <!-- STICKY ACTIONS -->
-                <div class="sticky-actions d-flex gap-2">
-
-                    <a href="" class="btn btn-sm btn-primary w-50">
-                        <i class="bi bi-pencil"></i> Edit
-                    </a>
-
+                </h4>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-sm btn-primary w-50 edit-score-btn"
+                            data-fixture-id="{{ f.id }}"
+                            data-home="{{ f.home_team.name }}"
+                            data-away="{{ f.away_team.name }}"
+                            data-home-score="{% if f.result %}{{ f.result.home_score }}{% else %}0{% endif %}"
+                            data-away-score="{% if f.result %}{{ f.result.away_score }}{% else %}0{% endif %}"
+                            data-bs-toggle="modal"
+                            data-bs-target="#editScoreModal">
+                        <i class="bi bi-pencil"></i> Edit Score
+                    </button>
                     <a href=""
                        class="btn btn-sm btn-danger w-50"
                        onclick="return confirm('Delete this fixture?')">
                         <i class="bi bi-trash"></i> Delete
                     </a>
-
                 </div>
-
             </div>
-
         </div>
+        {% empty %}
+        <p class="text-center text-muted py-4">No fixtures generated yet</p>
         {% endfor %}
-
     </div>
-
 </div>
 
-<!-- ================= STICKY ACTION STYLE ================= -->
-<style>
-    .sticky-actions {
-        position: sticky;
-        bottom: 0;
-        background: white;
-        padding-top: 8px;
-    }
-</style>
-<!-- GENERATE FIXTURES MODAL -->
-<div class="modal fade" id="generateFixtureModal" tabindex="-1">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content"
-             style="border-radius:16px; border:none; overflow:hidden; box-shadow:0 10px 30px rgba(0,0,0,0.15);">
-
-            <form method="POST">
+<div class="modal fade" id="editScoreModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius:16px; border:none; overflow:hidden; box-shadow:0 10px 30px rgba(0,0,0,0.15);">
+            <form method="POST" id="editScoreForm">
                 {% csrf_token %}
+                <input type="hidden" name="action" value="update_score">
+                <input type="hidden" name="fixture_id" id="modal_fixture_id">
 
-                <!-- HEADER -->
-                <div class="modal-header"
-                     style="background:linear-gradient(135deg,#1e3c72,#2a5298); color:#fff; padding:18px;">
-                    <h5 class="modal-title" style="font-weight:600;">⚽ Generate Fixtures</h5>
+                <div class="modal-header" style="background:linear-gradient(135deg,#1e3c72,#2a5298); color:#fff; padding:18px;">
+                    <h5 class="modal-title" style="font-weight:600;">✏️ Edit Score</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
 
-                <!-- BODY -->
                 <div class="modal-body" style="padding:25px; background:#f8f9fc;">
+                    <h6 class="text-center text-muted mb-4" id="modal_match_title">Team A vs Team B</h6>
 
-                    <!-- FORMAT -->
-                    <div style="background:#fff; padding:15px; border-radius:12px; margin-bottom:15px; box-shadow:0 2px 8px rgba(0,0,0,0.05);">
-                        <span style="font-size:13px; color:#666;">Tournament Format</span>
-                        <div style="font-size:18px; font-weight:600; color:#2a5298;">
-                            {{ tournament.tournament_format }}
-                        </div>
-                    </div>
-
-                    <!-- MODE (always visible since backend decides it) -->
-                    <div style="background:#fff; padding:15px; border-radius:12px; margin-bottom:15px; box-shadow:0 2px 8px rgba(0,0,0,0.05);">
-                        <span style="font-size:13px; color:#666;">Tournament Mode</span>
-                        <div style="font-size:18px; font-weight:600; color:#1e3c72;">
-                            {{ tournament.mode }}
-                        </div>
-                    </div>
-
-                    <!-- DATES (ONLY FOR LEAGUE / KNOCKOUT / GROUP_KNOCKOUT) -->
-                    {% if tournament.tournament_format == "league" or tournament.tournament_format == "knockout" or tournament.tournament_format == "group_knockout" %}
-                    <div class="row">
-
-                        <div class="col-md-6 mb-3">
-                            <div style="background:#fff; padding:15px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.05);">
-                                <label style="font-weight:600; font-size:13px;">Start Date</label>
-                                <input type="date" name="start_date" class="form-control" style="margin-top:8px;">
+                    <div class="row g-3 align-items-center">
+                        <div class="col-5">
+                            <div style="background:#fff; padding:15px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.05); text-align:center;">
+                                <label class="form-label fw-bold small" id="modal_home_label">Home</label>
+                                <input type="number" name="home_score" id="modal_home_score"
+                                       class="form-control form-control-lg text-center fw-bold"
+                                       min="0" value="0" style="font-size:2rem; border:none; background:transparent;">
                             </div>
                         </div>
-
-                        <div class="col-md-6 mb-3">
-                            <div style="background:#fff; padding:15px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.05);">
-                                <label style="font-weight:600; font-size:13px;">End Date</label>
-                                <input type="date" name="end_date" class="form-control" style="margin-top:8px;">
-                            </div>
+                        <div class="col-2 text-center">
+                            <span class="fw-bold text-muted" style="font-size:1.5rem;">—</span>
                         </div>
-
-                    </div>
-                    {% endif %}
-
-                    <!-- GROUP SETTINGS ONLY FOR GROUP_KNOCKOUT -->
-                    {% if tournament.tournament_format == "group_knockout" %}
-                    <hr>
-                    <h6 style="font-weight:700; color:#2a5298;">Group Settings</h6>
-
-                    <div class="row mt-2">
-                        <div class="col-md-6 mb-3">
-                            <div style="background:#fff; padding:15px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.05);">
-                                <label style="font-weight:600; font-size:13px;">Number of Groups</label>
-                                <input type="number" name="groups" class="form-control" style="margin-top:8px;">
-                            </div>
-                        </div>
-
-                        <div class="col-md-6 mb-3">
-                            <div style="background:#fff; padding:15px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.05);">
-                                <label style="font-weight:600; font-size:13px;">Teams per Group</label>
-                                <input type="number" name="teams_per_group" class="form-control" style="margin-top:8px;">
+                        <div class="col-5">
+                            <div style="background:#fff; padding:15px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.05); text-align:center;">
+                                <label class="form-label fw-bold small" id="modal_away_label">Away</label>
+                                <input type="number" name="away_score" id="modal_away_score"
+                                       class="form-control form-control-lg text-center fw-bold"
+                                       min="0" value="0" style="font-size:2rem; border:none; background:transparent;">
                             </div>
                         </div>
                     </div>
-                    {% endif %}
-
                 </div>
 
-                <!-- FOOTER -->
                 <div class="modal-footer" style="background:#fff; border-top:1px solid #eee;">
-                    <button type="submit"
-                            class="btn btn-success w-100"
+                    <button type="submit" class="btn btn-success w-100"
                             style="padding:12px; font-weight:600; border-radius:10px;">
-                        🚀 Generate Fixtures
+                        💾 Save Score
                     </button>
                 </div>
-
             </form>
         </div>
     </div>
 </div>
+
+<script>
+    // Populate edit score modal with fixture data
+    document.querySelectorAll('.edit-score-btn').forEach(btn => {
+        btn.addEventListener('click', function () {
+            const fixtureId = this.dataset.fixtureId;
+            const home = this.dataset.home;
+            const away = this.dataset.away;
+            const homeScore = this.dataset.homeScore;
+            const awayScore = this.dataset.awayScore;
+
+            document.getElementById('modal_fixture_id').value = fixtureId;
+            document.getElementById('modal_match_title').textContent = home + ' vs ' + away;
+            document.getElementById('modal_home_label').textContent = home;
+            document.getElementById('modal_away_label').textContent = away;
+            document.getElementById('modal_home_score').value = homeScore;
+            document.getElementById('modal_away_score').value = awayScore;
+        });
+    });
+</script>
+
 {% endblock %}

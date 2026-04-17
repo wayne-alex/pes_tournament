@@ -5,31 +5,33 @@
 <div class="container-fluid py-3">
 
     <!-- HEADER ROW -->
-    <div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
 
         <h5 class="m-0">
-            <i class="bi bi-trophy"></i> Tournaments
+            <i class="bi bi-trophy-fill text-warning"></i> Tournaments
         </h5>
 
         <!-- CREATE BUTTON -->
-        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createTournamentModal">
-            + Create Tournament
+        <button class="btn btn-success rounded-pill px-4"
+                data-bs-toggle="modal"
+                data-bs-target="#createTournamentModal">
+            <i class="bi bi-plus-circle"></i> Create Tournament
         </button>
 
     </div>
 
     <div class="row">
-        <div class="col-md-12">
+        <div class="col-12">
 
             <!-- CARD -->
-            <div class="card shadow-sm border-0">
+            <div class="card border-0 shadow-sm rounded-4">
 
-                <div class="card-body">
+                <div class="card-body p-0">
 
-                    <!-- RESPONSIVE TABLE WRAPPER -->
+                    <!-- TABLE -->
                     <div class="table-responsive">
 
-                        <table class="table table-hover align-middle">
+                        <table class="table table-hover align-middle mb-0">
 
                             <thead class="table-dark">
                             <tr>
@@ -37,30 +39,62 @@
                                 <th>Name</th>
                                 <th>Format</th>
                                 <th>Mode</th>
-                                <th>Actions</th>
+                                <th width="220">Actions</th>
                             </tr>
                             </thead>
 
                             <tbody>
+
                             {% for t in tournaments %}
                             <tr>
+
                                 <td>{{ forloop.counter }}</td>
-                                <td>{{ t.name }}</td>
-                                <td>{{ t.get_tournament_format_display }}</td>
-                                <td>{{ t.get_mode_display }}</td>
+
+                                <td class="fw-semibold">
+                                    {{ t.name }}
+                                </td>
+
+                                <td>
+                                    <span class="badge bg-primary">
+                                        {{ t.get_tournament_format_display }}
+                                    </span>
+                                </td>
+
+                                <td>
+                                    <span class="badge bg-secondary">
+                                        {{ t.get_mode_display }}
+                                    </span>
+                                </td>
 
                                 <td class="text-nowrap">
 
+                                    <!-- VIEW -->
+                                    <a href="{% url 'fixtures' t.id %}"
+                                       class="btn btn-sm btn-dark rounded-pill"
+                                       title="View Tournament">
+                                        <i class="bi bi-eye-fill"></i>
+                                    </a>
+
+                                    <!-- TEAMS -->
+                                    <a href="{% url 'teams' %}?tournament={{ t.id }}"
+                                       class="btn btn-sm btn-info text-white rounded-pill"
+                                       title="View Teams">
+                                        <i class="bi bi-people-fill"></i>
+                                    </a>
+
                                     <!-- EDIT -->
-                                    <a href="{% url 'tournament_edit' t.id %}" class="btn btn-sm btn-primary">
-                                        <i class="bi bi-pencil"></i>
+                                    <a href="{% url 'tournament_edit' t.id %}"
+                                       class="btn btn-sm btn-primary rounded-pill"
+                                       title="Edit Tournament">
+                                        <i class="bi bi-pencil-fill"></i>
                                     </a>
 
                                     <!-- DELETE -->
                                     <a href="{% url 'tournament_delete' t.id %}"
-                                       class="btn btn-sm btn-danger"
+                                       class="btn btn-sm btn-danger rounded-pill"
+                                       title="Delete Tournament"
                                        onclick="return confirm('Are you sure you want to delete this tournament?')">
-                                        <i class="bi bi-trash"></i>
+                                        <i class="bi bi-trash-fill"></i>
                                     </a>
 
                                 </td>
@@ -68,11 +102,13 @@
                             </tr>
                             {% empty %}
                             <tr>
-                                <td colspan="6" class="text-center text-muted py-4">
+                                <td colspan="5" class="text-center text-muted py-5">
+                                    <i class="bi bi-inboxes fs-2 d-block mb-2"></i>
                                     No tournaments created yet
                                 </td>
                             </tr>
                             {% endfor %}
+
                             </tbody>
 
                         </table>
@@ -85,39 +121,49 @@
 
         </div>
     </div>
+
 </div>
 
 
-<!-- ================= MODAL ================= -->
+<!-- ================= CREATE MODAL ================= -->
 <div class="modal fade" id="createTournamentModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
 
-    <div class="modal-dialog">
-
-        <div class="modal-content">
+        <div class="modal-content border-0 rounded-4 shadow">
 
             <form method="POST">
                 {% csrf_token %}
 
-                <div class="modal-header">
+                <!-- HEADER -->
+                <div class="modal-header bg-success text-white">
                     <h5 class="modal-title">
                         <i class="bi bi-plus-circle"></i> Create Tournament
                     </h5>
 
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button"
+                            class="btn-close btn-close-white"
+                            data-bs-dismiss="modal"></button>
                 </div>
 
+                <!-- BODY -->
                 <div class="modal-body">
 
-                    <!-- Name -->
+                    <!-- NAME -->
                     <div class="mb-3">
-                        <label class="form-label">Tournament Name</label>
-                        <input type="text" name="name" class="form-control" required>
+                        <label class="form-label fw-semibold">Tournament Name</label>
+                        <input type="text"
+                               name="name"
+                               class="form-control"
+                               placeholder="Enter tournament name"
+                               required>
                     </div>
 
-                    <!-- Format -->
+                    <!-- FORMAT -->
                     <div class="mb-3">
-                        <label class="form-label">Format</label>
-                        <select name="tournament_format" class="form-control" required>
+                        <label class="form-label fw-semibold">Format</label>
+                        <select name="tournament_format"
+                                class="form-select"
+                                required>
                             <option value="">-- Select Format --</option>
                             <option value="league">League</option>
                             <option value="knockout">Knockout</option>
@@ -125,10 +171,12 @@
                         </select>
                     </div>
 
-                    <!-- Mode -->
+                    <!-- MODE -->
                     <div class="mb-3">
-                        <label class="form-label">Match Mode</label>
-                        <select name="mode" class="form-control" required>
+                        <label class="form-label fw-semibold">Match Mode</label>
+                        <select name="mode"
+                                class="form-select"
+                                required>
                             <option value="single">Single Leg</option>
                             <option value="home_away">Home & Away</option>
                         </select>
@@ -136,9 +184,10 @@
 
                 </div>
 
-                <div class="modal-footer">
-                    <button class="btn btn-success w-100">
-                        Create Tournament
+                <!-- FOOTER -->
+                <div class="modal-footer border-0">
+                    <button class="btn btn-success w-100 rounded-pill py-2">
+                        <i class="bi bi-check-circle"></i> Create Tournament
                     </button>
                 </div>
 
@@ -147,7 +196,6 @@
         </div>
 
     </div>
-
 </div>
 
 {% endblock %}

@@ -1,0 +1,283 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="{% static 'manifest.json' %}">
+<meta name="theme-color" content="#0a2e1a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Tournament">
+<link rel="apple-touch-icon" href="{% static  'logo.png' %}">
+<title>Select Tournament</title>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+    font-family:Arial, sans-serif;
+    background:linear-gradient(135deg,#07130c,#0b2d18,#103b20);
+    color:white;
+    min-height:100vh;
+}
+
+/* HEADER */
+.topbar{
+    padding:18px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    border-bottom:1px solid rgba(255,255,255,.08);
+    backdrop-filter:blur(8px);
+}
+
+.brand{
+    display:flex;
+    align-items:center;
+    gap:10px;
+}
+
+.logo{
+    width:42px;
+    height:42px;
+    border-radius:12px;
+    background:linear-gradient(135deg,#d4af37,#f5d66b);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    color:#0a1d11;
+    font-size:20px;
+    font-weight:bold;
+}
+
+.title{
+    font-size:20px;
+    font-weight:700;
+}
+
+.sub{
+    font-size:12px;
+    color:#9bd7ac;
+}
+
+.live{
+    background:#14532d;
+    color:#bbf7d0;
+    padding:6px 12px;
+    border-radius:50px;
+    font-size:12px;
+    font-weight:700;
+}
+
+/* BODY */
+.wrapper{
+    padding:18px;
+}
+
+.section-title{
+    font-size:13px;
+    letter-spacing:1px;
+    text-transform:uppercase;
+    color:#9bd7ac;
+    margin-bottom:14px;
+    font-weight:bold;
+}
+
+.grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+    gap:16px;
+}
+
+/* CARD */
+.card{
+    background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:18px;
+    padding:18px;
+    backdrop-filter:blur(12px);
+    transition:.2s ease;
+    box-shadow:0 10px 25px rgba(0,0,0,.18);
+}
+
+.card:hover{
+    transform:translateY(-5px);
+    border-color:#d4af37;
+}
+
+.row-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:12px;
+}
+
+.name{
+    font-size:20px;
+    font-weight:700;
+}
+
+.badge-live{
+    background:#22c55e;
+    color:white;
+    font-size:11px;
+    padding:5px 10px;
+    border-radius:20px;
+    font-weight:bold;
+}
+
+.meta{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+    margin:14px 0;
+}
+
+.meta-box{
+    background:rgba(255,255,255,.04);
+    border-radius:12px;
+    padding:10px;
+}
+
+.meta-label{
+    font-size:11px;
+    color:#94a3b8;
+    margin-bottom:4px;
+}
+
+.meta-value{
+    font-size:14px;
+    font-weight:700;
+}
+
+.enter-btn{
+    display:block;
+    width:100%;
+    text-align:center;
+    padding:12px;
+    border-radius:12px;
+    text-decoration:none;
+    font-weight:700;
+    margin-top:8px;
+    background:linear-gradient(135deg,#d4af37,#f5d66b);
+    color:#0b1e12;
+    transition:.2s;
+}
+
+.enter-btn:hover{
+    transform:scale(1.02);
+}
+
+.empty{
+    text-align:center;
+    padding:80px 20px;
+    color:#94a3b8;
+}
+
+.empty i{
+    font-size:48px;
+    color:#d4af37;
+    margin-bottom:10px;
+}
+
+@media(max-width:700px){
+    .grid{
+        grid-template-columns:1fr;
+    }
+}
+</style>
+</head>
+
+<script>
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/static/sw.js')
+    .then(() => console.log("PWA Ready"))
+    .catch(err => console.log(err));
+}
+</script>
+<body>
+
+<!-- HEADER -->
+<div class="topbar">
+
+    <div class="brand">
+        <div class="logo">
+            <i class="bi bi-trophy-fill"></i>
+        </div>
+
+        <div>
+            <div class="title">Tournament Hub</div>
+            <div class="sub">Choose competition</div>
+        </div>
+    </div>
+
+    <div class="live">
+        LIVE
+    </div>
+
+</div>
+
+<!-- BODY -->
+<div class="wrapper">
+
+<div class="section-title">
+    Available Tournaments
+</div>
+
+{% if tournaments %}
+
+<div class="grid">
+
+{% for t in tournaments %}
+<div class="card">
+
+    <div class="row-top">
+        <div class="name">{{ t.name }}</div>
+        <div class="badge-live">OPEN</div>
+    </div>
+
+    <div class="meta">
+
+        <div class="meta-box">
+            <div class="meta-label">Format</div>
+            <div class="meta-value">{{ t.get_tournament_format_display }}</div>
+        </div>
+
+        <div class="meta-box">
+            <div class="meta-label">Mode</div>
+            <div class="meta-value">{{ t.get_mode_display }}</div>
+        </div>
+
+    </div>
+
+    <a href="{% url 'dashboard' t.id %}" class="enter-btn">
+        <i class="bi bi-box-arrow-in-right"></i>
+        Enter Dashboard
+    </a>
+
+</div>
+{% endfor %}
+
+</div>
+
+{% else %}
+
+<div class="empty">
+    <i class="bi bi-trophy"></i>
+    <h3>No open tournaments found</h3>
+    <p>Create one from admin panel.</p>
+</div>
+
+{% endif %}
+
+</div>
+
+</body>
+</html>

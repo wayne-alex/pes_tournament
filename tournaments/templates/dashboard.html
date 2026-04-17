@@ -4,38 +4,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tournament Dashboard</title>
-
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-
+    <title>{{ tournament.name }} · Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="manifest" href="{% static 'manifest.json' %}">
+<meta name="theme-color" content="#0a2e1a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Tournament">
+<link rel="apple-touch-icon" href="{% static  'logo.png' %}">
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         :root {
-            --green-900: #0a2e1a;
-            --green-800: #10411f;
-            --green-600: #1a6b31;
-            --green-400: #2da84d;
-            --green-200: #a8e6b8;
-            --green-100: #d4f2de;
-            --green-50:  #f0faf4;
-            --gold:      #c9a84c;
-            --gold-light:#f5e8c0;
-            --text:      #1a1e1c;
-            --text-2:    #4a5450;
-            --text-3:    #8a9490;
-            --surface:   #ffffff;
-            --surface-2: #f6f8f7;
-            --border:    rgba(0,0,0,0.08);
-            --radius:    14px;
-            --radius-sm: 8px;
+            --g9: #082316; --g8: #0d3320; --g7: #12492d; --g6: #176139;
+            --g5: #1d7a47; --g4: #2da84d; --g3: #5cc97a; --g2: #96dfa9;
+            --g1: #cbf0d6; --g0: #f0faf4;
+            --gold: #c9a84c; --goldb: #f7e9c3; --goldd: #7a5f1e;
+            --live: #e03030; --livel: #ffe8e8;
+            --ink: #0f1c14; --ink2: #3a4f42; --ink3: #7a8f82;
+            --bg: #ffffff; --bg2: #f5f8f6; --bg3: #ebf0ed;
+            --bd: rgba(0,0,0,0.07); --bd2: rgba(0,0,0,0.12);
+            --r: 16px; --rs: 10px;
+            --sh: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
         }
 
         body {
-            background: var(--surface-2);
-            font-family: 'DM Sans', system-ui, sans-serif;
-            color: var(--text);
+            background: var(--bg3);
+            font-family: 'Inter', system-ui, sans-serif;
+            color: var(--ink);
             height: 100dvh;
             display: flex;
             flex-direction: column;
@@ -43,413 +39,421 @@
         }
 
         /* ── HEADER ── */
-        .header {
-            background: var(--green-900);
-            padding: 0 20px;
+        .hdr {
+            background: linear-gradient(135deg, var(--g9) 0%, var(--g8) 100%);
+            padding: 0 18px;
             height: 60px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             flex-shrink: 0;
+            position: relative;
+            overflow: hidden;
         }
+        .hdr::after {
+            content: '';
+            position: absolute;
+            top: -30px; right: -20px;
+            width: 120px; height: 120px;
+            background: radial-gradient(circle, rgba(45,168,77,0.15) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        .hbrand { display: flex; align-items: center; gap: 12px; z-index: 1; }
+        .hlogo {
+            width: 34px; height: 34px;
+            background: linear-gradient(135deg, var(--gold) 0%, #e8c86a 100%);
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 2px 8px rgba(201,168,76,0.4);
+        }
+        .hlogo svg { width: 18px; height: 18px; fill: var(--g9); }
+        .htitle { font-size: 1rem; font-weight: 700; color: #fff; letter-spacing: -0.01em; }
+        .hsub { font-size: 0.58rem; color: var(--g2); letter-spacing: 0.08em; text-transform: uppercase; font-weight: 500; margin-top: 1px; }
+        .hright { display: flex; align-items: center; gap: 8px; z-index: 1; }
+        .hbadge {
+            background: var(--live);
+            color: #fff; font-size: 0.58rem; font-weight: 700;
+            padding: 3px 10px; border-radius: 20px;
+            letter-spacing: 0.08em; text-transform: uppercase;
+            display: flex; align-items: center; gap: 5px;
+        }
+        .hbadge::before {
+            content: ''; width: 5px; height: 5px;
+            background: #fff; border-radius: 50%;
+            animation: liveDot 1.4s ease-in-out infinite;
+        }
+        @keyframes liveDot { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:0.4; transform:scale(0.7); } }
 
-        .header-brand {
-            display: flex;
-            align-items: center;
-            gap: 10px;
+        .hrefresh {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 10px; width: 34px; height: 34px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; color: #fff; transition: background 0.15s;
         }
-
-        .header-logo {
-            width: 28px;
-            height: 28px;
-            background: var(--gold);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .header-logo svg {
-            width: 16px;
-            height: 16px;
-            fill: var(--green-900);
-        }
-
-        .header-title {
-            font-family: 'DM Serif Display', serif;
-            font-size: 1.15rem;
-            color: #ffffff;
-            letter-spacing: 0.01em;
-        }
-
-        .header-subtitle {
-            font-size: 0.7rem;
-            color: var(--green-200);
-            letter-spacing: 0.06em;
-            text-transform: uppercase;
-        }
-
-        .header-badge {
-            background: var(--green-600);
-            color: var(--green-100);
-            font-size: 0.65rem;
-            font-weight: 600;
-            padding: 3px 10px;
-            border-radius: 20px;
-            letter-spacing: 0.05em;
-            text-transform: uppercase;
-        }
+        .hrefresh:hover { background: rgba(255,255,255,0.2); }
+        .hrefresh svg { width: 15px; height: 15px; }
+        .hrefresh.spin svg { animation: spin 0.6s ease; }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
         /* ── CONTENT ── */
-        .content {
-            flex: 1;
-            overflow-y: auto;
-            padding: 16px;
-            scroll-behavior: smooth;
-        }
-
-        /* ── SECTION ── */
-        .section { display: none; }
-        .section.active { display: block; animation: fadeUp 0.2s ease; }
-
-        @keyframes fadeUp {
-            from { opacity: 0; transform: translateY(6px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
+        .content { flex: 1; overflow: hidden; position: relative; }
+        .sections { display: flex; width: 500%; height: 100%; transition: transform 0.3s cubic-bezier(0.4,0,0.2,1); }
+        .section { width: 20%; overflow-y: auto; padding: 16px 14px; }
 
         /* ── SECTION HEADER ── */
-        .section-label {
-            font-size: 0.65rem;
-            font-weight: 600;
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-            color: var(--text-3);
-            margin-bottom: 10px;
+        .sec-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+        .slabel { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink3); }
+        .scount { font-size: 0.62rem; font-weight: 600; color: var(--g5); background: var(--g0); padding: 2px 8px; border-radius: 20px; border: 1px solid var(--g1); }
+
+        /* ── STAT STRIP ── */
+        .stat-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+        .stat-card {
+            background: var(--bg); border-radius: var(--rs);
+            border: 1px solid var(--bd); padding: 12px;
+            text-align: center;
         }
+        .stat-val { font-size: 1.4rem; font-weight: 700; color: var(--g6); line-height: 1; }
+        .stat-lbl { font-size: 0.58rem; color: var(--ink3); text-transform: uppercase; letter-spacing: 0.07em; margin-top: 4px; font-weight: 500; }
 
         /* ── CARD ── */
         .card {
-            background: var(--surface);
-            border-radius: var(--radius);
-            border: 1px solid var(--border);
-            overflow: hidden;
-            margin-bottom: 14px;
-        }
-
-        .card-head {
-            padding: 14px 16px 10px;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .card-title {
-            font-size: 0.8rem;
-            font-weight: 600;
-            letter-spacing: 0.03em;
-            color: var(--text);
+            background: var(--bg); border-radius: var(--r);
+            border: 1px solid var(--bd);
+            overflow: hidden; margin-bottom: 14px;
+            box-shadow: var(--sh);
         }
 
         /* ── TABLE ── */
         table { width: 100%; border-collapse: collapse; }
-
-        thead tr {
-            background: var(--surface-2);
-        }
-
+        thead tr { background: var(--bg2); }
         th {
-            font-size: 0.65rem;
-            font-weight: 600;
-            letter-spacing: 0.07em;
-            text-transform: uppercase;
-            color: var(--text-3);
-            padding: 8px 16px;
-            text-align: left;
+            font-size: 0.58rem; font-weight: 700;
+            letter-spacing: 0.08em; text-transform: uppercase;
+            color: var(--ink3); padding: 9px 12px; text-align: left;
+        }
+        th:not(:first-child):not(:nth-child(2)) { text-align: center; }
+        td { font-size: 0.8rem; padding: 11px 12px; border-top: 1px solid var(--bd); color: var(--ink); vertical-align: middle; }
+        td:not(:first-child):not(:nth-child(2)) { text-align: center; }
+        .rk { color: var(--ink3); font-size: 0.7rem; font-weight: 600; width: 28px; }
+        .tnm { font-weight: 600; font-size: 0.82rem; }
+        .pts { font-size: 0.85rem; font-weight: 700; color: var(--g6); }
+        tr.qrow td { background: linear-gradient(90deg, var(--g0) 0%, transparent 100%); }
+        tr.qrow .rk { color: var(--g5); }
+
+        /* ── QUALIFY BANNER ── */
+        .qualify-banner {
+            display: flex; align-items: center; gap: 8px;
+            padding: 9px 14px;
+            background: linear-gradient(90deg, var(--g0), var(--bg));
+            border-bottom: 1px solid var(--g1);
+            font-size: 0.68rem; color: var(--g6); font-weight: 600;
+        }
+        .qualify-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--g4); flex-shrink: 0; }
+
+        /* ── RANK ARROWS ── */
+        .arrow-up { color: var(--g4); font-size: 0.65rem; font-weight: 700; }
+        .arrow-down { color: var(--live); font-size: 0.65rem; font-weight: 700; }
+        .arrow-same { color: var(--bd2); font-size: 0.6rem; }
+
+        /* ── TEAM AVATAR ── */
+        .team-cell { display: flex; align-items: center; gap: 8px; }
+        .tavatar {
+            width: 22px; height: 22px; border-radius: 6px;
+            background: var(--g0); border: 1px solid var(--g1);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.58rem; font-weight: 700; color: var(--g6);
+            flex-shrink: 0;
         }
 
-        th:not(:first-child) { text-align: center; }
+        /* ── FLASH ANIMATIONS ── */
+        @keyframes rowFlash { 0% { background: var(--g1); } 100% { background: transparent; } }
+        .row-flash td { animation: rowFlash 1.4s ease-out; }
+        @keyframes scoreFlash { 0% { background: var(--g1); transform: scale(1.03); } 100% { background: transparent; transform: scale(1); } }
+        .score-flash { animation: scoreFlash 0.9s ease-out; }
 
-        td {
-            font-size: 0.82rem;
-            padding: 10px 16px;
-            border-top: 1px solid var(--border);
-            color: var(--text);
-        }
-
-        td:not(:first-child) { text-align: center; }
-
-        .rank-cell {
-            color: var(--text-3);
-            font-size: 0.75rem;
-            font-weight: 500;
-        }
-
-        .team-cell {
-            font-weight: 500;
-        }
-
-        .pts-cell {
-            font-size: 0.85rem;
-            font-weight: 700;
-            color: var(--green-600);
-        }
-
-        tr.qualify-row td { background: var(--green-50); }
-        tr.qualify-row .pts-cell { color: var(--green-600); }
-
-        /* top rank medal */
-        tr:nth-child(1) .rank-cell::before { content: "🥇 "; }
-        tr:nth-child(2) .rank-cell::before { content: "🥈 "; }
-        tr:nth-child(3) .rank-cell::before { content: "🥉 "; }
-
-        /* ── FIXTURE / RESULT ITEMS ── */
+        /* ── MATCH ITEMS ── */
         .match-list { list-style: none; }
+        .date-group-hdr {
+            padding: 7px 14px 5px;
+            font-size: 0.6rem; font-weight: 700;
+            letter-spacing: 0.09em; text-transform: uppercase;
+            color: var(--ink3); background: var(--bg2);
+            border-top: 1px solid var(--bd);
+            display: flex; align-items: center; gap: 6px;
+        }
+        .date-group-hdr:first-child { border-top: none; }
 
         .match-item {
-            padding: 12px 16px;
-            border-top: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            gap: 10px;
+            padding: 12px 14px; border-top: 1px solid var(--bd);
+            display: flex; align-items: center; gap: 10px;
+            transition: background 0.12s;
+        }
+        .match-item:hover { background: var(--bg2); }
+        .match-item.today-live { background: #fff8f8; border-left: 3px solid var(--live); }
+
+        .gtag {
+            font-size: 0.56rem; font-weight: 700; letter-spacing: 0.06em;
+            text-transform: uppercase; color: var(--g6);
+            background: var(--g0); padding: 2px 7px; border-radius: 5px;
+            flex-shrink: 0; border: 1px solid var(--g1); white-space: nowrap;
+        }
+        .mteams { flex: 1; min-width: 0; }
+        .matchup { font-size: 0.82rem; display: flex; align-items: center; gap: 0; }
+        .mhome, .maway { font-weight: 600; }
+        .mvs { font-size: 0.6rem; color: var(--ink3); margin: 0 6px; font-weight: 500; }
+        .mtime { font-size: 0.62rem; color: var(--ink3); margin-top: 3px; }
+        .mbadge {
+            font-size: 0.58rem; background: var(--bg2);
+            border: 1px solid var(--bd); color: var(--ink3);
+            padding: 3px 9px; border-radius: 6px; flex-shrink: 0; white-space: nowrap; font-weight: 600;
+        }
+        .badge-live { background: var(--live); color: #fff; border: none; animation: badgeBlink 1s step-start infinite; }
+        .badge-ft { background: var(--g0); color: var(--g6); border-color: var(--g1); }
+        @keyframes badgeBlink { 0%,100% { opacity:1; } 50% { opacity:0; } }
+
+        /* ── SCORE PILL ── */
+        .score-pill {
+            background: var(--g6); color: #fff;
+            font-size: 0.85rem; font-weight: 700;
+            padding: 4px 10px; border-radius: 8px;
+            letter-spacing: 0.03em;
         }
 
-        .match-item:first-child { border-top: none; }
-
-        .match-group-tag {
-            font-size: 0.6rem;
-            font-weight: 600;
-            letter-spacing: 0.07em;
-            text-transform: uppercase;
-            color: var(--green-600);
-            background: var(--green-50);
-            padding: 2px 7px;
-            border-radius: 4px;
-            flex-shrink: 0;
+        /* ── RESULT ITEM ── */
+        .result-item {
+            padding: 12px 14px; border-top: 1px solid var(--bd);
+            display: flex; align-items: center; gap: 10px;
         }
-
-        .match-teams {
-            flex: 1;
-            font-size: 0.8rem;
-        }
-
-        .match-teams .home,
-        .match-teams .away {
-            font-weight: 500;
-        }
-
-        .match-vs {
-            font-size: 0.65rem;
-            color: var(--text-3);
-            margin: 0 4px;
-        }
-
-        .match-score {
-            font-size: 0.82rem;
-            font-weight: 700;
-            color: var(--text);
-            background: var(--surface-2);
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            padding: 4px 10px;
-            letter-spacing: 0.05em;
-            flex-shrink: 0;
-            white-space: nowrap;
-        }
+        .result-item:first-child { border-top: none; }
+        .rteams { flex: 1; min-width: 0; }
+        .rrow { display: flex; align-items: center; justify-content: space-between; padding: 3px 0; }
+        .rrow .tnm { font-size: 0.82rem; font-weight: 500; color: var(--ink2); }
+        .rrow .rscore { font-size: 0.9rem; font-weight: 700; color: var(--ink2); min-width: 18px; text-align: right; }
+        .rrow.winner .tnm { color: var(--g6); font-weight: 700; }
+        .rrow.winner .rscore { color: var(--g6); }
+        .rdivider { height: 1px; background: var(--bd); margin: 2px 0; }
 
         /* ── BRACKET ── */
-        .bracket-scroll {
-            overflow-x: auto;
-            padding: 16px;
-            padding-bottom: 8px;
+        .bracket-scroll { overflow-x: auto; padding: 16px; }
+        .bracket { display: flex; gap: 16px; min-width: max-content; }
+        .bround { display: flex; flex-direction: column; gap: 12px; min-width: 140px; }
+        .brlabel {
+            font-size: 0.58rem; font-weight: 700; letter-spacing: 0.1em;
+            text-transform: uppercase; color: var(--ink3); text-align: center; margin-bottom: 4px;
         }
+        .bmatch {
+            background: var(--bg2); border: 1px solid var(--bd);
+            border-radius: 12px; overflow: hidden;
+        }
+        .bmatch.played { border-color: var(--g3); }
+        .bteam {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 9px 12px; font-size: 0.75rem; font-weight: 500; color: var(--ink);
+        }
+        .bteam + .bteam { border-top: 1px solid var(--bd); }
+        .bteam.winner { background: var(--g0); color: var(--g6); font-weight: 700; }
+        .bteam .bsc { font-weight: 700; font-size: 0.88rem; }
+        .bteam.winner .bsc { color: var(--g6); }
+        .btbd { padding: 9px 12px; font-size: 0.72rem; color: var(--ink3); }
 
-        .bracket {
-            display: flex;
-            gap: 14px;
-            min-width: max-content;
-        }
+        /* ── SCORER ITEM ── */
+        .scorer-row { display: flex; align-items: center; gap: 10px; padding: 11px 14px; border-top: 1px solid var(--bd); }
+        .scorer-row:first-child { border-top: none; }
+        .scorer-rank { font-size: 0.7rem; font-weight: 700; color: var(--ink3); width: 22px; text-align: center; }
+        .scorer-rank.gold { color: var(--goldd); background: var(--goldb); border-radius: 6px; }
+        .scorer-rank.silver { color: #6b7280; background: #f1f2f4; border-radius: 6px; }
+        .scorer-rank.bronze { color: #92400e; background: #fef3c7; border-radius: 6px; }
+        .scorer-bar-wrap { flex: 1; }
+        .scorer-name { font-size: 0.82rem; font-weight: 600; margin-bottom: 5px; }
+        .scorer-bar-bg { height: 5px; background: var(--bg3); border-radius: 4px; overflow: hidden; }
+        .scorer-bar { height: 5px; background: linear-gradient(90deg, var(--g5), var(--g3)); border-radius: 4px; transition: width 0.8s cubic-bezier(0.4,0,0.2,1); }
+        .scorer-goals { font-size: 0.85rem; font-weight: 700; color: var(--g6); min-width: 30px; text-align: right; }
 
-        .round {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            min-width: 136px;
-        }
+        /* ── PROGRESS INDICATOR ── */
+        .progress-ring { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-bottom: 1px solid var(--bd); }
+        .ring-wrap { position: relative; width: 44px; height: 44px; flex-shrink: 0; }
+        .ring-svg { width: 44px; height: 44px; transform: rotate(-90deg); }
+        .ring-track { fill: none; stroke: var(--bg3); stroke-width: 4; }
+        .ring-fill { fill: none; stroke: var(--g4); stroke-width: 4; stroke-linecap: round; transition: stroke-dashoffset 0.8s ease; }
+        .ring-pct { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 0.62rem; font-weight: 700; color: var(--g6); }
+        .progress-info { flex: 1; }
+        .progress-title { font-size: 0.78rem; font-weight: 600; margin-bottom: 2px; }
+        .progress-sub { font-size: 0.64rem; color: var(--ink3); }
 
-        .round-label {
-            font-size: 0.6rem;
-            font-weight: 600;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            color: var(--text-3);
-            text-align: center;
-            margin-bottom: 2px;
-        }
+        /* ── EMPTY STATE ── */
+        .empty { padding: 40px 16px; text-align: center; color: var(--ink3); }
+        .empty-ico { font-size: 2rem; margin-bottom: 10px; }
+        .empty strong { display: block; font-size: 0.88rem; color: var(--ink2); margin-bottom: 4px; font-weight: 600; }
+        .empty p { font-size: 0.74rem; color: var(--ink3); }
 
-        .match-card {
-            background: var(--surface-2);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 10px 12px;
-            text-align: center;
-            font-size: 0.75rem;
+        /* ── FORM GUIDE PILLS ── */
+        .form-guide { display: flex; gap: 2px; }
+        .fg-pill {
+            width: 14px; height: 14px; border-radius: 3px;
+            font-size: 0.5rem; font-weight: 700; display: flex;
+            align-items: center; justify-content: center; color: #fff;
         }
-
-        .match-card.winner {
-            background: var(--green-50);
-            border-color: var(--green-400);
-        }
-
-        .match-card .t1,
-        .match-card .t2 {
-            font-weight: 500;
-            color: var(--text);
-            padding: 2px 0;
-        }
-
-        .match-card .vs-line {
-            font-size: 0.6rem;
-            color: var(--text-3);
-            margin: 3px 0;
-        }
-
-        .match-card .score-line {
-            font-weight: 700;
-            color: var(--green-600);
-            font-size: 0.8rem;
-            margin-top: 6px;
-            letter-spacing: 0.06em;
-        }
-
-        /* ── COMING SOON ── */
-        .coming-soon {
-            padding: 48px 20px;
-            text-align: center;
-        }
-
-        .coming-soon-icon {
-            width: 48px;
-            height: 48px;
-            background: var(--gold-light);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 12px;
-            font-size: 1.3rem;
-        }
-
-        .coming-soon p {
-            font-size: 0.82rem;
-            color: var(--text-3);
-        }
-
-        .coming-soon strong {
-            display: block;
-            font-size: 0.9rem;
-            color: var(--text-2);
-            margin-bottom: 4px;
-        }
+        .fg-W { background: var(--g5); }
+        .fg-D { background: #f59e0b; }
+        .fg-L { background: var(--live); }
 
         /* ── BOTTOM NAV ── */
-        .bottom-nav {
-            height: 64px;
-            display: flex;
-            background: var(--surface);
-            border-top: 1px solid var(--border);
-            flex-shrink: 0;
+        .bnav {
+            height: 64px; display: flex;
+            background: var(--bg); border-top: 1px solid var(--bd);
+            flex-shrink: 0; padding: 0 4px;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.05);
         }
-
-        .nav-item {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 3px;
-            cursor: pointer;
-            border: none;
-            background: none;
-            color: var(--text-3);
-            font-family: inherit;
-            font-size: 0.6rem;
-            font-weight: 500;
-            letter-spacing: 0.04em;
-            padding: 0;
-            transition: color 0.15s;
-            -webkit-tap-highlight-color: transparent;
+        .nitem {
+            flex: 1; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            gap: 4px; cursor: pointer; border: none; background: none;
+            color: var(--ink3); font-family: inherit;
+            font-size: 0.56rem; font-weight: 600; letter-spacing: 0.04em;
+            padding: 0; transition: color 0.15s; -webkit-tap-highlight-color: transparent;
+            text-transform: uppercase;
         }
-
-        .nav-item i {
-            font-size: 1.15rem;
-            line-height: 1;
-            transition: transform 0.15s;
+        .nitem svg { width: 20px; height: 20px; transition: transform 0.15s; }
+        .nitem.active { color: var(--g5); }
+        .nitem.active svg { transform: scale(1.1); }
+        .nitem:active svg { transform: scale(0.88); }
+        .nav-dot {
+            width: 4px; height: 4px; background: var(--g4);
+            border-radius: 50%; margin-top: -2px; opacity: 0;
+            transition: opacity 0.15s;
         }
+        .nitem.active .nav-dot { opacity: 1; }
 
-        .nav-item.active {
-            color: var(--green-600);
+        /* ── TOAST ── */
+        #toast {
+            position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(20px);
+            background: var(--g9); color: #fff; font-size: 0.72rem; font-weight: 500;
+            padding: 8px 16px; border-radius: 20px; pointer-events: none;
+            opacity: 0; transition: all 0.25s; z-index: 9999; white-space: nowrap;
         }
+        #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-        .nav-item.active i {
-            transform: scale(1.1);
+        /* ── SEARCH ── */
+        .search-wrap { padding: 0 0 12px 0; }
+        .search-input {
+            width: 100%; background: var(--bg);
+            border: 1px solid var(--bd); border-radius: var(--rs);
+            padding: 9px 14px 9px 36px; font-size: 0.78rem;
+            color: var(--ink); font-family: inherit; outline: none;
+            transition: border-color 0.15s;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='15' height='15' viewBox='0 0 24 24' fill='none' stroke='%237a8f82' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='M21 21l-4.35-4.35'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: 12px center;
         }
+        .search-input:focus { border-color: var(--g4); }
+        .search-input::placeholder { color: var(--ink3); }
 
-        .nav-item:active i { transform: scale(0.92); }
-
-        /* ── KNOCKOUT NOTICE ── */
-        .knockout-notice {
-            padding: 40px 20px;
-            text-align: center;
-            color: var(--text-3);
-            font-size: 0.82rem;
+        /* ── FILTER PILLS ── */
+        .filter-pills { display: flex; gap: 6px; margin-bottom: 12px; overflow-x: auto; padding-bottom: 2px; }
+        .filter-pills::-webkit-scrollbar { display: none; }
+        .fpill {
+            flex-shrink: 0; padding: 5px 12px; border-radius: 20px;
+            font-size: 0.65rem; font-weight: 600; cursor: pointer;
+            border: 1px solid var(--bd); background: var(--bg);
+            color: var(--ink3); transition: all 0.15s; white-space: nowrap;
         }
+        .fpill.active { background: var(--g6); color: #fff; border-color: var(--g6); }
     </style>
 </head>
-
+<script>
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/static/sw.js')
+    .then(() => console.log("PWA Ready"))
+    .catch(err => console.log(err));
+}
+</script>
 <body>
 
-    <!-- HEADER -->
-    <div class="header">
-        <div class="header-brand">
-            <div class="header-logo">
-                <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M10 1l2.5 5.5H18l-4.5 3.5 1.75 5.5L10 12.5 4.75 15.5l1.75-5.5L2 6.5h5.5z"/>
-                </svg>
-            </div>
-            <div>
-                <div class="header-title">Tournament</div>
-                <div class="header-subtitle">Dashboard</div>
-            </div>
+<!-- HEADER -->
+<div class="hdr">
+    <div class="hbrand">
+        <div class="hlogo">
+            <svg viewBox="0 0 20 20"><path d="M10 1l2.5 5.5H18l-4.5 3.5 1.75 5.5L10 12.5 4.75 15.5l1.75-5.5L2 6.5h5.5z"/></svg>
         </div>
-        <div class="header-badge">Live</div>
+        <div>
+            <div class="htitle">{{ tournament.name }}</div>
+            <div class="hsub">Live Dashboard</div>
+        </div>
     </div>
+    <div class="hright">
+        <div class="hbadge">Live</div>
+        <button class="hrefresh" id="refreshBtn" onclick="doRefresh()" title="Refresh">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M23 4v6h-6M1 20v-6h6"/>
+                <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+            </svg>
+        </button>
+    </div>
+</div>
 
-    <!-- CONTENT -->
-    <div class="content">
+<!-- TOAST -->
+<div id="toast"></div>
 
-        <!-- STANDINGS -->
-        <div id="standings" class="section active">
+<!-- CONTENT -->
+<div class="content" id="content">
+    <div class="sections" id="sections">
+
+        <!-- ===== STANDINGS ===== -->
+        <div class="section" id="sec-standings">
+
+            <!-- Tournament progress ring -->
+            <div class="card" style="margin-bottom:14px;">
+                <div class="progress-ring" id="progress-ring">
+                    <div class="ring-wrap">
+                        <svg class="ring-svg" viewBox="0 0 44 44">
+                            <circle class="ring-track" cx="22" cy="22" r="18"/>
+                            <circle class="ring-fill" cx="22" cy="22" r="18" id="ring-fill" stroke-dasharray="113" stroke-dashoffset="113"/>
+                        </svg>
+                        <div class="ring-pct" id="ring-pct">0%</div>
+                    </div>
+                    <div class="progress-info">
+                        <div class="progress-title" id="progress-title">Tournament Progress</div>
+                        <div class="progress-sub" id="progress-sub">Loading match data…</div>
+                    </div>
+                </div>
+            </div>
 
             {% if tournament.tournament_format == "league" %}
-            <div class="section-label">League Table</div>
+            <div class="sec-hdr">
+                <div class="slabel">League table</div>
+            </div>
             <div class="card">
-                <table>
+                <div class="qualify-banner">
+                    <div class="qualify-dot"></div>
+                    Top {{ tournament.qualify_per_group }} teams qualify for knockout
+                </div>
+                <table id="standings-table">
                     <thead>
                         <tr>
                             <th>#</th>
                             <th>Team</th>
                             <th>P</th>
+                            <th>W</th>
+                            <th>D</th>
+                            <th>L</th>
+                            <th>GD</th>
                             <th>Pts</th>
+                            <th></th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="league-tbody">
                         {% for t in teams %}
-                        <tr>
-                            <td class="rank-cell">{{ forloop.counter }}</td>
-                            <td class="team-cell">{{ t.name }}</td>
+                        <tr data-team-id="{{ t.id }}" {% if forloop.counter <= tournament.qualify_per_group %}class="qrow"{% endif %}>
+                            <td class="rk">{{ forloop.counter }}</td>
+                            <td><div class="team-cell"><div class="tavatar">{{ t.name|slice:":2"|upper }}</div><span class="tnm">{{ t.name }}</span></div></td>
                             <td>{{ t.played }}</td>
-                            <td class="pts-cell">{{ t.points }}</td>
+                            <td>{{ t.wins }}</td>
+                            <td>{{ t.draws }}</td>
+                            <td>{{ t.losses }}</td>
+                            <td>{{ t.goals_for|add:"-"|add:t.goals_against }}</td>
+                            <td class="pts">{{ t.points }}</td>
+                            <td class="arrow-cell"></td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -459,24 +463,38 @@
 
             {% if tournament.tournament_format == "group_knockout" %}
             {% for g in group_tables %}
-            <div class="section-label">{{ g.group.name }}</div>
-            <div class="card" style="margin-bottom: 16px;">
+            <div class="sec-hdr">
+                <div class="slabel">{{ g.group.name }}</div>
+            </div>
+            <div class="card">
+                <div class="qualify-banner">
+                    <div class="qualify-dot"></div>
+                    Top {{ tournament.qualify_per_group }} qualify
+                </div>
                 <table>
                     <thead>
                         <tr>
                             <th>#</th>
                             <th>Team</th>
                             <th>P</th>
+                            <th>W</th>
+                            <th>D</th>
+                            <th>L</th>
                             <th>Pts</th>
+                            <th></th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="group-tbody-{{ g.group.id }}">
                         {% for t in g.teams %}
-                        <tr {% if forloop.counter <= tournament.qualify_per_group %}class="qualify-row"{% endif %}>
-                            <td class="rank-cell">{{ forloop.counter }}</td>
-                            <td class="team-cell">{{ t.name }}</td>
+                        <tr data-team-id="{{ t.id }}" {% if forloop.counter <= tournament.qualify_per_group %}class="qrow"{% endif %}>
+                            <td class="rk">{{ forloop.counter }}</td>
+                            <td><div class="team-cell"><div class="tavatar">{{ t.name|slice:":2"|upper }}</div><span class="tnm">{{ t.name }}</span></div></td>
                             <td>{{ t.played }}</td>
-                            <td class="pts-cell">{{ t.points }}</td>
+                            <td>{{ t.wins }}</td>
+                            <td>{{ t.draws }}</td>
+                            <td>{{ t.losses }}</td>
+                            <td class="pts">{{ t.points }}</td>
+                            <td class="arrow-cell"></td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -487,90 +505,76 @@
 
             {% if tournament.tournament_format == "knockout" %}
             <div class="card">
-                <div class="knockout-notice">No standings for knockout format</div>
+                <div class="empty">
+                    <div class="empty-ico">🏆</div>
+                    <strong>Knockout format</strong>
+                    <p>No standings — check the Bracket tab.</p>
+                </div>
             </div>
             {% endif %}
 
         </div>
 
-        <!-- FIXTURES -->
-        <div id="fixtures" class="section">
-            <div class="section-label">Upcoming Fixtures</div>
+        <!-- ===== FIXTURES ===== -->
+        <div class="section" id="sec-fixtures">
+            <div class="filter-pills" id="fixture-filters">
+                <div class="fpill active" data-filter="all" onclick="filterFixtures('all',this)">All</div>
+                <div class="fpill" data-filter="upcoming" onclick="filterFixtures('upcoming',this)">Upcoming</div>
+                <div class="fpill" data-filter="today" onclick="filterFixtures('today',this)">Today</div>
+                <div class="fpill" data-filter="played" onclick="filterFixtures('played',this)">Played</div>
+            </div>
             <div class="card">
-                <ul class="match-list">
-                    {% for f in fixtures %}
-                    <li class="match-item">
-    {% if f.group %}
-    <span class="match-group-tag">{{ f.group.name }}</span>
-    {% endif %}
-
-    <div class="match-teams">
-        <span class="home">{{ f.home_team.name }}</span>
-        <span class="match-vs">vs</span>
-        <span class="away">{{ f.away_team.name }}</span>
-    </div>
-
-    {% if f.match_date %}
-    <div style="
-        font-size: 0.65rem;
-        color: var(--text-3);
-        margin-top: 4px;
-        letter-spacing: 0.04em;
-    ">
-        {{ f.match_date|date:"D, d M Y" }}
-    </div>
-    {% else %}
-    <div style="font-size:0.65rem;color:red;">
-        No date assigned
-    </div>
-    {% endif %}
-</li>
-                    {% endfor %}
+                <ul class="match-list" id="fixtures-list">
+                    <li><div class="empty"><div class="empty-ico">📅</div><strong>Loading…</strong></div></li>
                 </ul>
             </div>
         </div>
 
-        <!-- RESULTS -->
-        <div id="results" class="section">
-            <div class="section-label">Results</div>
+        <!-- ===== RESULTS ===== -->
+        <div class="section" id="sec-results">
+            <div class="search-wrap">
+                <input class="search-input" type="text" placeholder="Search team…" id="results-search" oninput="filterResults(this.value)">
+            </div>
             <div class="card">
-                <ul class="match-list">
-                    {% for r in results %}
-                    <li class="match-item">
-                        {% if r.fixture.group %}
-                        <span class="match-group-tag">{{ r.fixture.group.name }}</span>
-                        {% endif %}
-                        <div class="match-teams">
-                            <span class="home">{{ r.fixture.home_team }}</span>
-                            <span class="match-vs">vs</span>
-                            <span class="away">{{ r.fixture.away_team }}</span>
-                        </div>
-                        <div class="match-score">{{ r.home_score }} – {{ r.away_score }}</div>
-                    </li>
-                    {% endfor %}
+                <ul class="match-list" id="results-list">
+                    <li><div class="empty"><div class="empty-ico">🏅</div><strong>Loading…</strong></div></li>
                 </ul>
             </div>
         </div>
 
-        <!-- BRACKET -->
-        <div id="brackets" class="section">
-            <div class="section-label">Bracket</div>
+        <!-- ===== BRACKET ===== -->
+        <div class="section" id="sec-brackets">
+            <div class="sec-hdr" style="margin-bottom:12px;">
+                <div class="slabel">Knockout bracket</div>
+            </div>
             <div class="card" style="padding: 0;">
                 <div class="bracket-scroll">
                     <div class="bracket">
                         {% for round in rounds %}
-                        <div class="round">
-                            <div class="round-label">Round {{ forloop.counter }}</div>
+                        <div class="bround">
+                            <div class="brlabel">Round {{ forloop.counter }}</div>
                             {% for match in round %}
-                            <div class="match-card {% if match.result %}winner{% endif %}">
-                                <div class="t1">{{ match.home_team|default:"TBD" }}</div>
-                                <div class="vs-line">— vs —</div>
-                                <div class="t2">{{ match.away_team|default:"TBD" }}</div>
-                                {% if match.result %}
-                                <div class="score-line">{{ match.result.home_score }} – {{ match.result.away_score }}</div>
+                            <div class="bmatch {% if match.result %}played{% endif %}">
+                                {% if match.home_team and match.away_team %}
+                                <div class="bteam {% if match.result and match.result.home_score > match.result.away_score %}winner{% endif %}">
+                                    <span>{{ match.home_team.name }}</span>
+                                    {% if match.result %}<span class="bsc">{{ match.result.home_score }}</span>{% endif %}
+                                </div>
+                                <div class="bteam {% if match.result and match.result.away_score > match.result.home_score %}winner{% endif %}">
+                                    <span>{{ match.away_team.name }}</span>
+                                    {% if match.result %}<span class="bsc">{{ match.result.away_score }}</span>{% endif %}
+                                </div>
+                                {% else %}
+                                <div class="btbd">TBD</div>
                                 {% endif %}
                             </div>
                             {% endfor %}
+                        </div>
+                        {% empty %}
+                        <div class="empty" style="width:100%">
+                            <div class="empty-ico">🏆</div>
+                            <strong>No bracket yet</strong>
+                            <p>Bracket appears after group stage.</p>
                         </div>
                         {% endfor %}
                     </div>
@@ -578,47 +582,455 @@
             </div>
         </div>
 
-        <!-- SCORERS -->
-        <div id="scorers" class="section">
-            <div class="section-label">Top Scorers</div>
-            <div class="card">
-                <div class="coming-soon">
-                    <div class="coming-soon-icon">⚽</div>
-                    <strong>Coming Soon</strong>
-                    <p>Top scorer stats will appear here once matches are played.</p>
+        <!-- ===== TOP SCORERS ===== -->
+        <div class="section" id="sec-scorers">
+            <div class="sec-hdr">
+                <div class="slabel">Top scorers</div>
+            </div>
+            <div class="card" id="scorers-card">
+                <div id="scorers-body">
+                    <div class="empty"><div class="empty-ico">⚽</div><strong>Loading…</strong></div>
                 </div>
             </div>
         </div>
 
     </div>
+</div>
 
-    <!-- BOTTOM NAV -->
-    <nav class="bottom-nav">
-        <button class="nav-item active" onclick="showSection('standings', this)">
-            <i class="bi bi-bar-chart-fill"></i>Standings
-        </button>
-        <button class="nav-item" onclick="showSection('fixtures', this)">
-            <i class="bi bi-calendar3"></i>Fixtures
-        </button>
-        <button class="nav-item" onclick="showSection('results', this)">
-            <i class="bi bi-trophy-fill"></i>Results
-        </button>
-        <button class="nav-item" onclick="showSection('brackets', this)">
-            <i class="bi bi-diagram-3-fill"></i>Bracket
-        </button>
-        <button class="nav-item" onclick="showSection('scorers', this)">
-            <i class="bi bi-star-fill"></i>Scorers
-        </button>
-    </nav>
+<!-- BOTTOM NAV -->
+<nav class="bnav">
+    <button class="nitem active" onclick="goTo(0,this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+        </svg>
+        Standings
+        <div class="nav-dot"></div>
+    </button>
+    <button class="nitem" onclick="goTo(1,this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/>
+            <line x1="9" y1="4" x2="9" y2="9"/><line x1="15" y1="4" x2="15" y2="9"/>
+        </svg>
+        Fixtures
+        <div class="nav-dot"></div>
+    </button>
+    <button class="nitem" onclick="goTo(2,this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/>
+        </svg>
+        Results
+        <div class="nav-dot"></div>
+    </button>
+    <button class="nitem" onclick="goTo(3,this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+            <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+        </svg>
+        Bracket
+        <div class="nav-dot"></div>
+    </button>
+    <button class="nitem" onclick="goTo(4,this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+        </svg>
+        Scorers
+        <div class="nav-dot"></div>
+    </button>
+</nav>
 
-    <script>
-        function showSection(id, el) {
-            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
-            document.querySelectorAll('.nav-item').forEach(a => a.classList.remove('active'));
-            el.classList.add('active');
+<script>
+const TOURNAMENT_ID  = "{{ tournament.id }}";
+const QUALIFY_PER_GROUP = {{ tournament.qualify_per_group|default:2 }};
+const FORMAT = "{{ tournament.tournament_format }}";
+
+/* ─── NAV ─── */
+let cur = 0;
+const secs    = document.getElementById('sections');
+const navBtns = document.querySelectorAll('.nitem');
+
+function goTo(i, el) {
+    cur = i;
+    secs.style.transform = 'translateX(-' + (i * 20) + '%)';
+    navBtns.forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+}
+
+/* ─── SWIPE ─── */
+let startX = 0, startY = 0;
+document.getElementById('content').addEventListener('touchstart', e => {
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+}, { passive: true });
+document.getElementById('content').addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - startX;
+    const dy = e.changedTouches[0].clientY - startY;
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
+        if (dx < 0 && cur < 4) goTo(cur + 1, navBtns[cur + 1]);
+        if (dx > 0 && cur > 0) goTo(cur - 1, navBtns[cur - 1]);
+    }
+}, { passive: true });
+
+/* ─── REFRESH ─── */
+function doRefresh() {
+    const btn = document.getElementById('refreshBtn');
+    btn.classList.add('spin');
+    setTimeout(() => location.reload(), 400);
+}
+
+/* ─── TOAST ─── */
+function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+/* ─── STATE ─── */
+let prevStandingsOrder = [];
+let prevFixtureScores  = {};
+let prevResultsSet     = new Set();
+let allFixtures        = [];
+let allResults         = [];
+let fixtureFilter      = 'all';
+
+/* ─── HELPERS ─── */
+function isToday(dateStr) {
+    if (!dateStr) return false;
+    const d = new Date(dateStr), n = new Date();
+    return d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth() && d.getDate() === n.getDate();
+}
+function fmtDate(dateStr) {
+    if (!dateStr) return 'Date TBD';
+    return new Date(dateStr).toLocaleDateString('en-GB', { weekday:'short', day:'2-digit', month:'short' });
+}
+function fmtTime(dateStr) {
+    if (!dateStr) return 'TBD';
+    return new Date(dateStr).toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
+}
+function initials(name) {
+    return name.split(' ').slice(0,2).map(w => w[0]||'').join('').toUpperCase();
+}
+
+/* ─── PROGRESS RING ─── */
+function updateProgress(fixtures) {
+    const total  = fixtures.length;
+    const played = fixtures.filter(f => f.is_played).length;
+    const pct    = total > 0 ? Math.round((played / total) * 100) : 0;
+    const circ   = 2 * Math.PI * 18;
+    const offset = circ - (pct / 100) * circ;
+
+    const fill = document.getElementById('ring-fill');
+    const pctEl = document.getElementById('ring-pct');
+    const titleEl = document.getElementById('progress-title');
+    const subEl = document.getElementById('progress-sub');
+
+    if (fill) fill.style.strokeDashoffset = offset;
+    if (pctEl) pctEl.textContent = pct + '%';
+    if (titleEl) titleEl.textContent = 'Tournament Progress';
+    if (subEl) subEl.textContent = `${played} of ${total} matches played`;
+}
+
+/* ─── STANDINGS ─── (FIX: full tbody re-render so S/N always matches position) ─── */
+function updateStandings(standings) {
+    // Handle league format
+    const leagueTbody = document.getElementById('league-tbody');
+    if (leagueTbody && FORMAT === 'league') {
+        renderStandingsTbody(leagueTbody, standings, true);
+        return;
+    }
+
+    // Handle group format — group standings come in standings array
+    // For now, rebuild any group tbody we can match by scanning for changed teams
+    if (FORMAT === 'group_knockout') {
+        // Group them by checking which tbody contains those team ids
+        const allTbodies = document.querySelectorAll('[id^="group-tbody-"]');
+        allTbodies.forEach(tbody => {
+            const rowTeamIds = Array.from(tbody.querySelectorAll('tr')).map(r => r.dataset.teamId);
+            const groupTeams = standings.filter(t => rowTeamIds.includes(String(t.id)));
+            if (groupTeams.length > 0) {
+                renderStandingsTbody(tbody, groupTeams, false);
+            }
+        });
+    }
+}
+
+function renderStandingsTbody(tbody, teams, hasGD) {
+    const oldOrder = Array.from(tbody.querySelectorAll('tr')).map(r => r.dataset.teamId);
+    const newOrder = teams.map(t => String(t.id));
+
+    const rankChanged = JSON.stringify(oldOrder) !== JSON.stringify(newOrder);
+
+    tbody.innerHTML = teams.map((t, idx) => {
+        const isQ = idx < QUALIFY_PER_GROUP;
+        const oldIdx = oldOrder.indexOf(String(t.id));
+        let arrowHTML = '<span class="arrow-same">—</span>';
+        if (oldIdx !== -1 && oldIdx !== idx) {
+            arrowHTML = idx < oldIdx
+                ? '<span class="arrow-up">▲</span>'
+                : '<span class="arrow-down">▼</span>';
         }
-    </script>
 
+        const gd = (t.goals_for || 0) - (t.goals_against || 0);
+        const gdCell = hasGD ? `<td>${gd >= 0 ? '+' + gd : gd}</td>` : '';
+
+        return `<tr data-team-id="${t.id}" ${isQ ? 'class="qrow"' : ''}>
+            <td class="rk">${idx + 1}</td>
+            <td><div class="team-cell"><div class="tavatar">${initials(t.name)}</div><span class="tnm">${t.name}</span></div></td>
+            <td>${t.played || 0}</td>
+            <td>${t.wins || 0}</td>
+            <td>${t.draws || 0}</td>
+            <td>${t.losses || 0}</td>
+            ${gdCell}
+            <td class="pts">${t.points || 0}</td>
+            <td class="arrow-cell">${arrowHTML}</td>
+        </tr>`;
+    }).join('');
+
+    if (rankChanged && oldOrder.length > 0) {
+        showToast('📊 Standings updated');
+    }
+}
+
+/* ─── FILTER FIXTURES ─── */
+function filterFixtures(filter, el) {
+    fixtureFilter = filter;
+    document.querySelectorAll('#fixture-filters .fpill').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+    renderFixtures(allFixtures);
+}
+
+/* ─── FIXTURES ─── */
+function updateFixtures(fixtures) {
+    allFixtures = fixtures;
+    renderFixtures(fixtures);
+    updateProgress(fixtures);
+}
+
+function renderFixtures(fixtures) {
+    const container = document.getElementById('fixtures-list');
+    if (!container) return;
+
+    let filtered = fixtures;
+    if (fixtureFilter === 'upcoming') filtered = fixtures.filter(f => !f.is_played && !isToday(f.match_date));
+    else if (fixtureFilter === 'today')    filtered = fixtures.filter(f => isToday(f.match_date));
+    else if (fixtureFilter === 'played')   filtered = fixtures.filter(f => f.is_played);
+
+    const grouped = {};
+    filtered.forEach(f => {
+        const key = f.match_date ? f.match_date.substring(0, 10) : 'TBD';
+        if (!grouped[key]) grouped[key] = [];
+        grouped[key].push(f);
+    });
+
+    const sortedDates = Object.keys(grouped).sort();
+    const items = [];
+
+    sortedDates.forEach(dateKey => {
+        const hdr = document.createElement('li');
+        hdr.className = 'date-group-hdr';
+        hdr.textContent = dateKey === 'TBD' ? 'Date TBD' : fmtDate(grouped[dateKey][0].match_date);
+        items.push(hdr);
+
+        grouped[dateKey].forEach(f => {
+            const today = isToday(f.match_date);
+            const homeScore = f.result__home_score ?? '';
+            const awayScore = f.result__away_score ?? '';
+            const old = prevFixtureScores[f.id];
+            let scoreChanged = false;
+            if (old && f.is_played && (old.home !== homeScore || old.away !== awayScore)) scoreChanged = true;
+
+            const li = document.createElement('li');
+            li.className = 'match-item' + (today && !f.is_played ? ' today-live' : '');
+            li.id = 'fixture-li-' + f.id;
+
+            const groupTag = f.group_name ? `<span class="gtag">${f.group_name}</span>` : '';
+
+            let scoreOrTime = '';
+            if (f.is_played) {
+                scoreOrTime = `<span class="score-pill">${homeScore} – ${awayScore}</span>`;
+            } else if (today) {
+                scoreOrTime = `<span style="color:var(--live);font-weight:600;font-size:0.72rem">⏱ Today · ${fmtTime(f.match_date)}</span>`;
+            } else {
+                scoreOrTime = `<span class="mtime">${fmtTime(f.match_date)}</span>`;
+            }
+
+            const badgeCls = f.is_played ? 'mbadge badge-ft' : (today ? 'mbadge badge-live' : 'mbadge');
+            const badgeTxt = f.is_played ? 'FT' : (today ? 'LIVE' : 'Pending');
+
+            li.innerHTML = `
+                ${groupTag}
+                <div class="mteams">
+                    <div class="matchup">
+                        <span class="mhome">${f.home_team__name}</span>
+                        <span class="mvs">vs</span>
+                        <span class="maway">${f.away_team__name}</span>
+                    </div>
+                    <div class="mtime" style="margin-top:4px;">${f.is_played ? scoreOrTime : (today ? scoreOrTime : '<span style="color:var(--ink3);font-size:0.62rem">'+fmtTime(f.match_date)+'</span>')}</div>
+                </div>
+                ${f.is_played ? scoreOrTime.replace('<span class="mtime">', '').replace('</span>','') : ''}
+                <span class="${badgeCls}">${badgeTxt}</span>
+            `;
+
+            // Fix: cleaner layout
+            li.innerHTML = `
+                ${groupTag}
+                <div class="mteams">
+                    <div class="matchup">
+                        <span class="mhome">${f.home_team__name}</span>
+                        <span class="mvs">vs</span>
+                        <span class="maway">${f.away_team__name}</span>
+                    </div>
+                    <div style="margin-top:4px;">
+                        ${f.is_played
+                            ? scoreOrTime
+                            : today
+                                ? `<span style="color:var(--live);font-weight:600;font-size:0.7rem">⏱ Today · ${fmtTime(f.match_date)}</span>`
+                                : `<span style="color:var(--ink3);font-size:0.65rem">${fmtTime(f.match_date)}</span>`
+                        }
+                    </div>
+                </div>
+                <span class="${badgeCls}">${badgeTxt}</span>
+            `;
+
+            if (scoreChanged) {
+                setTimeout(() => {
+                    const el = document.getElementById('fixture-li-' + f.id);
+                    if (el) { el.classList.add('score-flash'); setTimeout(() => el.classList.remove('score-flash'), 950); }
+                }, 50);
+            }
+
+            prevFixtureScores[f.id] = { home: homeScore, away: awayScore };
+            items.push(li);
+        });
+    });
+
+    if (items.length === 0) {
+        container.innerHTML = `<li><div class="empty"><div class="empty-ico">📅</div><strong>No fixtures</strong><p>Nothing matches this filter.</p></div></li>`;
+        return;
+    }
+
+    container.innerHTML = '';
+    items.forEach(el => container.appendChild(el));
+}
+
+/* ─── RESULTS ─── */
+function updateResults(results) {
+    allResults = results;
+    renderResults(results, '');
+}
+
+function filterResults(query) {
+    renderResults(allResults, query.toLowerCase());
+}
+
+function renderResults(results, query) {
+    const container = document.getElementById('results-list');
+    if (!container) return;
+
+    const filtered = query
+        ? results.filter(r => r.home_team.toLowerCase().includes(query) || r.away_team.toLowerCase().includes(query))
+        : results;
+
+    if (!filtered || filtered.length === 0) {
+        container.innerHTML = `<li><div class="empty"><div class="empty-ico">🏅</div><strong>No results yet</strong><p>Results appear here after matches are played.</p></div></li>`;
+        return;
+    }
+
+    const grouped = {};
+    filtered.forEach(r => {
+        const key = r.match_date ? r.match_date.substring(0, 10) : 'TBD';
+        if (!grouped[key]) grouped[key] = [];
+        grouped[key].push(r);
+    });
+
+    const sortedDates = Object.keys(grouped).sort().reverse();
+    const items = [];
+
+    sortedDates.forEach(dateKey => {
+        const hdr = document.createElement('li');
+        hdr.className = 'date-group-hdr';
+        hdr.textContent = dateKey === 'TBD' ? 'Date TBD' : fmtDate(grouped[dateKey][0].match_date);
+        items.push(hdr);
+
+        grouped[dateKey].forEach(r => {
+            const isNew = !prevResultsSet.has(r.id);
+            if (isNew) prevResultsSet.add(r.id);
+
+            const homeWin = r.home_score > r.away_score;
+            const awayWin = r.away_score > r.home_score;
+            const groupTag = r.group_name ? `<span class="gtag">${r.group_name}</span>` : '';
+
+            const li = document.createElement('li');
+            li.className = 'result-item' + (isNew && prevResultsSet.size > 0 ? ' score-flash' : '');
+            li.innerHTML = `
+                ${groupTag}
+                <div class="rteams">
+                    <div class="rrow ${homeWin ? 'winner' : ''}">
+                        <span class="tnm">${r.home_team}</span>
+                        <span class="rscore">${r.home_score}</span>
+                    </div>
+                    <div class="rdivider"></div>
+                    <div class="rrow ${awayWin ? 'winner' : ''}">
+                        <span class="tnm">${r.away_team}</span>
+                        <span class="rscore">${r.away_score}</span>
+                    </div>
+                </div>
+            `;
+            items.push(li);
+        });
+    });
+
+    container.innerHTML = '';
+    items.forEach(el => container.appendChild(el));
+}
+
+/* ─── TOP SCORERS ─── */
+function updateTopScorers(scorers) {
+    const container = document.getElementById('scorers-body');
+    if (!container) return;
+
+    if (!scorers || scorers.length === 0) {
+        container.innerHTML = `<div class="empty"><div class="empty-ico">⚽</div><strong>No data yet</strong><p>Scorer stats appear once matches are played.</p></div>`;
+        return;
+    }
+
+    const maxGoals = Math.max(...scorers.map(s => s.total_goals || 0)) || 1;
+    const medals = ['gold', 'silver', 'bronze'];
+
+    container.innerHTML = scorers.map((t, i) => {
+        const pct = Math.round(((t.total_goals || 0) / maxGoals) * 100);
+        const medalClass = i < 3 ? medals[i] : '';
+        return `
+            <div class="scorer-row">
+                <div class="scorer-rank ${medalClass}">${i + 1}</div>
+                <div class="scorer-bar-wrap">
+                    <div class="scorer-name">${t.name}</div>
+                    <div class="scorer-bar-bg">
+                        <div class="scorer-bar" style="width:${pct}%"></div>
+                    </div>
+                </div>
+                <div class="scorer-goals">${t.total_goals || 0}</div>
+            </div>
+        `;
+    }).join('');
+}
+
+/* ─── MAIN FETCH ─── */
+async function fetchLiveData() {
+    try {
+        const res  = await fetch(`/tournament-live/${TOURNAMENT_ID}/`);
+        const data = await res.json();
+        if (data.standings)   updateStandings(data.standings);
+        if (data.fixtures)    updateFixtures(data.fixtures);
+        if (data.results)     updateResults(data.results);
+        if (data.top_scorers) updateTopScorers(data.top_scorers);
+    } catch (err) {
+        console.warn('Live update error', err);
+    }
+}
+
+fetchLiveData();
+setInterval(fetchLiveData, 5000);
+</script>
 </body>
 </html>

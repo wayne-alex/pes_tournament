@@ -7,5 +7,6 @@ from .standings import StandingsService
 
 @receiver(post_save, sender=Result)
 def update_standings(sender, instance, **kwargs):
+    print("SIGNAL FIRED")
     tournament = instance.fixture.tournament
     StandingsService.calculate(tournament)
