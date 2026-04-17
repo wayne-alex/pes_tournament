@@ -1,7 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
-from django.db.models import F, Sum
+from django.db.models import F, Sum, ExpressionWrapper, IntegerField
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
@@ -322,9 +322,15 @@ def tournament_live_data(request, tournament_id):
     # ── STANDINGS ordered by points ───────────────────────────────────────────
     standings = list(
         Team.objects.filter(tournament=tournament)
+        .annotate(
+            goal_difference=ExpressionWrapper(
+                F('goals_for') - F('goals_against'),
+                output_field=IntegerField()
+            )
+        )
         .values("id", "name", "points", "played", "wins", "draws", "losses",
-                "goals_for", "goals_against")
-        .order_by("-points", "-goals_for")
+                "goals_for", "goals_against", "goal_difference")
+        .order_by("-points", "-goal_difference", "-goals_for")
     )
 
     # ── RESULTS ───────────────────────────────────────────────────────────────

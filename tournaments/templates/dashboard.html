@@ -32,11 +32,17 @@
             background: var(--bg3);
             font-family: 'Inter', system-ui, sans-serif;
             color: var(--ink);
-            height: 100dvh;
+            height: 100%;
+            min-height: 100dvh;
+             min-height: -webkit-fill-available; /* iOS PWA fix */
             display: flex;
             flex-direction: column;
-            overflow: hidden;
+             overflow: hidden;
         }
+
+html {
+    height: -webkit-fill-available;
+}
 
 
         /* ── HEADER ── */
@@ -301,9 +307,9 @@
 
         /* ── BOTTOM NAV ── */
         .bnav {
-            height: 64px; display: flex;
+            height: calc(64px + env(safe-area-inset-bottom));
+            padding-bottom: env(safe-area-inset-bottom);
             background: var(--bg); border-top: 1px solid var(--bd);
-            flex-shrink: 0; padding: 0 4px;
             box-shadow: 0 -4px 20px rgba(0,0,0,0.05);
         }
         .nitem {
