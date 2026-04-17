@@ -3,15 +3,15 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>{{ tournament.name }} · Dashboard</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="manifest" href="{% static 'manifest.json' %}">
-<meta name="theme-color" content="#0a2e1a">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Tournament">
-<link rel="apple-touch-icon" href="{% static  'logo.png' %}">
+    <meta name="theme-color" content="#0a2e1a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Tournament">
+    <link rel="apple-touch-icon" href="{% static 'logo.png' %}">
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -26,32 +26,41 @@
             --bd: rgba(0,0,0,0.07); --bd2: rgba(0,0,0,0.12);
             --r: 16px; --rs: 10px;
             --sh: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
+            --nav-h: 64px;
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+        }
+
+        /* ── KEY FIX: use dvh with fallback, force full height stack ── */
+        html {
+            height: 100%;
+            /* iOS PWA fill fix */
+            height: -webkit-fill-available;
         }
 
         body {
             background: var(--bg3);
             font-family: 'Inter', system-ui, sans-serif;
             color: var(--ink);
-            height: 100%;
-            min-height: 100dvh;
-             min-height: -webkit-fill-available; /* iOS PWA fix */
+            /* Stack approach: avoids dvh bugs in standalone PWA */
             display: flex;
             flex-direction: column;
-             overflow: hidden;
+            height: 100%;
+            height: -webkit-fill-available;
+            /* Prevent overscroll bleeding */
+            overflow: hidden;
+            /* Respect notch/home bar */
+            padding-bottom: env(safe-area-inset-bottom, 0px);
         }
-
-html {
-    height: -webkit-fill-available;
-}
-
 
         /* ── HEADER ── */
         .hdr {
             background: linear-gradient(135deg, var(--g9) 0%, var(--g8) 100%);
             padding: 0 18px;
-            height: 60px;
+            padding-top: env(safe-area-inset-top, 0px);
+            height: calc(60px + env(safe-area-inset-top, 0px));
             display: flex;
-            align-items: center;
+            align-items: flex-end;
+            padding-bottom: 10px;
             justify-content: space-between;
             flex-shrink: 0;
             position: relative;
@@ -72,6 +81,7 @@ html {
             border-radius: 10px;
             display: flex; align-items: center; justify-content: center;
             box-shadow: 0 2px 8px rgba(201,168,76,0.4);
+            flex-shrink: 0;
         }
         .hlogo svg { width: 18px; height: 18px; fill: var(--g9); }
         .htitle { font-size: 1rem; font-weight: 700; color: #fff; letter-spacing: -0.01em; }
@@ -97,6 +107,7 @@ html {
             border-radius: 10px; width: 34px; height: 34px;
             display: flex; align-items: center; justify-content: center;
             cursor: pointer; color: #fff; transition: background 0.15s;
+            flex-shrink: 0;
         }
         .hrefresh:hover { background: rgba(255,255,255,0.2); }
         .hrefresh svg { width: 15px; height: 15px; }
@@ -104,24 +115,14 @@ html {
         @keyframes spin { to { transform: rotate(360deg); } }
 
         /* ── CONTENT ── */
-        .content { flex: 1; overflow: hidden; position: relative; }
+        .content { flex: 1; overflow: hidden; position: relative; min-height: 0; }
         .sections { display: flex; width: 500%; height: 100%; transition: transform 0.3s cubic-bezier(0.4,0,0.2,1); }
-        .section { width: 20%; overflow-y: auto; padding: 16px 14px; }
+        .section { width: 20%; overflow-y: auto; overflow-x: hidden; padding: 16px 14px; -webkit-overflow-scrolling: touch; }
 
         /* ── SECTION HEADER ── */
         .sec-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
         .slabel { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink3); }
         .scount { font-size: 0.62rem; font-weight: 600; color: var(--g5); background: var(--g0); padding: 2px 8px; border-radius: 20px; border: 1px solid var(--g1); }
-
-        /* ── STAT STRIP ── */
-        .stat-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
-        .stat-card {
-            background: var(--bg); border-radius: var(--rs);
-            border: 1px solid var(--bd); padding: 12px;
-            text-align: center;
-        }
-        .stat-val { font-size: 1.4rem; font-weight: 700; color: var(--g6); line-height: 1; }
-        .stat-lbl { font-size: 0.58rem; color: var(--ink3); text-transform: uppercase; letter-spacing: 0.07em; margin-top: 4px; font-weight: 500; }
 
         /* ── CARD ── */
         .card {
@@ -206,7 +207,7 @@ html {
             flex-shrink: 0; border: 1px solid var(--g1); white-space: nowrap;
         }
         .mteams { flex: 1; min-width: 0; }
-        .matchup { font-size: 0.82rem; display: flex; align-items: center; gap: 0; }
+        .matchup { font-size: 0.82rem; display: flex; align-items: center; gap: 0; flex-wrap: wrap; }
         .mhome, .maway { font-weight: 600; }
         .mvs { font-size: 0.6rem; color: var(--ink3); margin: 0 6px; font-weight: 500; }
         .mtime { font-size: 0.62rem; color: var(--ink3); margin-top: 3px; }
@@ -224,7 +225,7 @@ html {
             background: var(--g6); color: #fff;
             font-size: 0.85rem; font-weight: 700;
             padding: 4px 10px; border-radius: 8px;
-            letter-spacing: 0.03em;
+            letter-spacing: 0.03em; flex-shrink: 0;
         }
 
         /* ── RESULT ITEM ── */
@@ -294,52 +295,16 @@ html {
         .empty strong { display: block; font-size: 0.88rem; color: var(--ink2); margin-bottom: 4px; font-weight: 600; }
         .empty p { font-size: 0.74rem; color: var(--ink3); }
 
-        /* ── FORM GUIDE PILLS ── */
-        .form-guide { display: flex; gap: 2px; }
-        .fg-pill {
-            width: 14px; height: 14px; border-radius: 3px;
-            font-size: 0.5rem; font-weight: 700; display: flex;
-            align-items: center; justify-content: center; color: #fff;
+        /* ── FILTER PILLS ── */
+        .filter-pills { display: flex; gap: 6px; margin-bottom: 12px; overflow-x: auto; padding-bottom: 2px; }
+        .filter-pills::-webkit-scrollbar { display: none; }
+        .fpill {
+            flex-shrink: 0; padding: 5px 12px; border-radius: 20px;
+            font-size: 0.65rem; font-weight: 600; cursor: pointer;
+            border: 1px solid var(--bd); background: var(--bg);
+            color: var(--ink3); transition: all 0.15s; white-space: nowrap;
         }
-        .fg-W { background: var(--g5); }
-        .fg-D { background: #f59e0b; }
-        .fg-L { background: var(--live); }
-
-        /* ── BOTTOM NAV ── */
-        .bnav {
-            height: calc(64px + env(safe-area-inset-bottom));
-            padding-bottom: env(safe-area-inset-bottom);
-            background: var(--bg); border-top: 1px solid var(--bd);
-            box-shadow: 0 -4px 20px rgba(0,0,0,0.05);
-        }
-        .nitem {
-            flex: 1; display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            gap: 4px; cursor: pointer; border: none; background: none;
-            color: var(--ink3); font-family: inherit;
-            font-size: 0.56rem; font-weight: 600; letter-spacing: 0.04em;
-            padding: 0; transition: color 0.15s; -webkit-tap-highlight-color: transparent;
-            text-transform: uppercase;
-        }
-        .nitem svg { width: 20px; height: 20px; transition: transform 0.15s; }
-        .nitem.active { color: var(--g5); }
-        .nitem.active svg { transform: scale(1.1); }
-        .nitem:active svg { transform: scale(0.88); }
-        .nav-dot {
-            width: 4px; height: 4px; background: var(--g4);
-            border-radius: 50%; margin-top: -2px; opacity: 0;
-            transition: opacity 0.15s;
-        }
-        .nitem.active .nav-dot { opacity: 1; }
-
-        /* ── TOAST ── */
-        #toast {
-            position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(20px);
-            background: var(--g9); color: #fff; font-size: 0.72rem; font-weight: 500;
-            padding: 8px 16px; border-radius: 20px; pointer-events: none;
-            opacity: 0; transition: all 0.25s; z-index: 9999; white-space: nowrap;
-        }
-        #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+        .fpill.active { background: var(--g6); color: #fff; border-color: var(--g6); }
 
         /* ── SEARCH ── */
         .search-wrap { padding: 0 0 12px 0; }
@@ -356,25 +321,83 @@ html {
         .search-input:focus { border-color: var(--g4); }
         .search-input::placeholder { color: var(--ink3); }
 
-        /* ── FILTER PILLS ── */
-        .filter-pills { display: flex; gap: 6px; margin-bottom: 12px; overflow-x: auto; padding-bottom: 2px; }
-        .filter-pills::-webkit-scrollbar { display: none; }
-        .fpill {
-            flex-shrink: 0; padding: 5px 12px; border-radius: 20px;
-            font-size: 0.65rem; font-weight: 600; cursor: pointer;
-            border: 1px solid var(--bd); background: var(--bg);
-            color: var(--ink3); transition: all 0.15s; white-space: nowrap;
+        /* ── TOAST ── */
+        #toast {
+            position: fixed;
+            bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px) + 10px);
+            left: 50%; transform: translateX(-50%) translateY(20px);
+            background: var(--g9); color: #fff; font-size: 0.72rem; font-weight: 500;
+            padding: 8px 16px; border-radius: 20px; pointer-events: none;
+            opacity: 0; transition: all 0.25s; z-index: 9999; white-space: nowrap;
         }
-        .fpill.active { background: var(--g6); color: #fff; border-color: var(--g6); }
+        #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+        /* ════════════════════════════════════════
+           ── BOTTOM NAV — THE CRITICAL FIX ──
+           Must have display:flex on .bnav itself.
+           Height accounts for safe-area (home bar).
+           flex-shrink:0 keeps it from collapsing.
+           ════════════════════════════════════════ */
+        .bnav {
+            display: flex;                          /* ← was missing! */
+            flex-shrink: 0;                         /* never shrink */
+            flex-direction: row;
+            align-items: stretch;
+            width: 100%;
+            background: var(--bg);
+            border-top: 1px solid var(--bd);
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.05);
+            /* Height = icon area + safe-area (iPhone home bar) */
+            height: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px));
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+            /* Prevent rubber-band scroll going under nav */
+            position: relative;
+            z-index: 100;
+        }
+
+        .nitem {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            color: var(--ink3);
+            font-family: inherit;
+            font-size: 0.56rem;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            padding: 0 2px;
+            transition: color 0.15s;
+            -webkit-tap-highlight-color: transparent;
+            text-transform: uppercase;
+            /* Ensure touch target is big enough */
+            min-height: 44px;
+        }
+        .nitem svg { width: 20px; height: 20px; transition: transform 0.15s; flex-shrink: 0; }
+        .nitem.active { color: var(--g5); }
+        .nitem.active svg { transform: scale(1.1); }
+        .nitem:active svg { transform: scale(0.88); }
+        .nav-dot {
+            width: 4px; height: 4px; background: var(--g4);
+            border-radius: 50%; margin-top: -2px; opacity: 0;
+            transition: opacity 0.15s;
+        }
+        .nitem.active .nav-dot { opacity: 1; }
     </style>
 </head>
+
 <script>
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/static/sw.js')
-    .then(() => console.log("PWA Ready"))
-    .catch(err => console.log(err));
+        .then(() => console.log("PWA Ready"))
+        .catch(err => console.warn("SW error:", err));
 }
 </script>
+
 <body>
 
 <!-- HEADER -->
@@ -487,6 +510,7 @@ if ('serviceWorker' in navigator) {
                             <th>W</th>
                             <th>D</th>
                             <th>L</th>
+                            <th>GD</th>
                             <th>Pts</th>
                             <th></th>
                         </tr>
@@ -500,6 +524,7 @@ if ('serviceWorker' in navigator) {
                             <td>{{ t.wins }}</td>
                             <td>{{ t.draws }}</td>
                             <td>{{ t.losses }}</td>
+                            <td>{{ t.goals_for|add:"-"|add:t.goals_against }}</td>
                             <td class="pts">{{ t.points }}</td>
                             <td class="arrow-cell"></td>
                         </tr>
@@ -604,16 +629,16 @@ if ('serviceWorker' in navigator) {
     </div>
 </div>
 
-<!-- BOTTOM NAV -->
-<nav class="bnav">
-    <button class="nitem active" onclick="goTo(0,this)">
+<!-- BOTTOM NAV — display:flex is on .bnav in CSS, items fill via flex:1 -->
+<nav class="bnav" role="navigation" aria-label="Main navigation">
+    <button class="nitem active" onclick="goTo(0,this)" aria-label="Standings">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
             <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
         </svg>
         Standings
         <div class="nav-dot"></div>
     </button>
-    <button class="nitem" onclick="goTo(1,this)">
+    <button class="nitem" onclick="goTo(1,this)" aria-label="Fixtures">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
             <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/>
             <line x1="9" y1="4" x2="9" y2="9"/><line x1="15" y1="4" x2="15" y2="9"/>
@@ -621,14 +646,14 @@ if ('serviceWorker' in navigator) {
         Fixtures
         <div class="nav-dot"></div>
     </button>
-    <button class="nitem" onclick="goTo(2,this)">
+    <button class="nitem" onclick="goTo(2,this)" aria-label="Results">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
             <circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/>
         </svg>
         Results
         <div class="nav-dot"></div>
     </button>
-    <button class="nitem" onclick="goTo(3,this)">
+    <button class="nitem" onclick="goTo(3,this)" aria-label="Bracket">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
             <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
             <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
@@ -636,7 +661,7 @@ if ('serviceWorker' in navigator) {
         Bracket
         <div class="nav-dot"></div>
     </button>
-    <button class="nitem" onclick="goTo(4,this)">
+    <button class="nitem" onclick="goTo(4,this)" aria-label="Scorers">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
             <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
         </svg>
@@ -646,9 +671,9 @@ if ('serviceWorker' in navigator) {
 </nav>
 
 <script>
-const TOURNAMENT_ID  = "{{ tournament.id }}";
+const TOURNAMENT_ID     = "{{ tournament.id }}";
 const QUALIFY_PER_GROUP = {{ tournament.qualify_per_group|default:2 }};
-const FORMAT = "{{ tournament.tournament_format }}";
+const FORMAT            = "{{ tournament.tournament_format }}";
 
 /* ─── NAV ─── */
 let cur = 0;
@@ -693,12 +718,12 @@ function showToast(msg) {
 }
 
 /* ─── STATE ─── */
-let prevStandingsOrder = [];
-let prevFixtureScores  = {};
-let prevResultsSet     = new Set();
-let allFixtures        = [];
-let allResults         = [];
-let fixtureFilter      = 'all';
+let prevFixtureScores = {};
+let prevResultsSet    = new Set();
+let allFixtures       = [];
+let allResults        = [];
+let fixtureFilter     = 'all';
+let isFirstLoad       = true;
 
 /* ─── HELPERS ─── */
 function isToday(dateStr) {
@@ -725,46 +750,33 @@ function updateProgress(fixtures) {
     const pct    = total > 0 ? Math.round((played / total) * 100) : 0;
     const circ   = 2 * Math.PI * 18;
     const offset = circ - (pct / 100) * circ;
-
-    const fill = document.getElementById('ring-fill');
-    const pctEl = document.getElementById('ring-pct');
-    const titleEl = document.getElementById('progress-title');
-    const subEl = document.getElementById('progress-sub');
-
-    if (fill) fill.style.strokeDashoffset = offset;
+    const fill   = document.getElementById('ring-fill');
+    const pctEl  = document.getElementById('ring-pct');
+    const subEl  = document.getElementById('progress-sub');
+    if (fill)  fill.style.strokeDashoffset = offset;
     if (pctEl) pctEl.textContent = pct + '%';
-    if (titleEl) titleEl.textContent = 'Tournament Progress';
     if (subEl) subEl.textContent = `${played} of ${total} matches played`;
 }
 
-/* ─── STANDINGS ─── (FIX: full tbody re-render so S/N always matches position) ─── */
+/* ─── STANDINGS ─── */
 function updateStandings(standings) {
-    // Handle league format
-    const leagueTbody = document.getElementById('league-tbody');
-    if (leagueTbody && FORMAT === 'league') {
-        renderStandingsTbody(leagueTbody, standings, true);
+    if (FORMAT === 'league') {
+        const tbody = document.getElementById('league-tbody');
+        if (tbody) renderStandingsTbody(tbody, standings, true);
         return;
     }
-
-    // Handle group format — group standings come in standings array
-    // For now, rebuild any group tbody we can match by scanning for changed teams
     if (FORMAT === 'group_knockout') {
-        // Group them by checking which tbody contains those team ids
-        const allTbodies = document.querySelectorAll('[id^="group-tbody-"]');
-        allTbodies.forEach(tbody => {
-            const rowTeamIds = Array.from(tbody.querySelectorAll('tr')).map(r => r.dataset.teamId);
-            const groupTeams = standings.filter(t => rowTeamIds.includes(String(t.id)));
-            if (groupTeams.length > 0) {
-                renderStandingsTbody(tbody, groupTeams, false);
-            }
+        document.querySelectorAll('[id^="group-tbody-"]').forEach(tbody => {
+            const rowTeamIds  = Array.from(tbody.querySelectorAll('tr')).map(r => r.dataset.teamId);
+            const groupTeams  = standings.filter(t => rowTeamIds.includes(String(t.id)));
+            if (groupTeams.length > 0) renderStandingsTbody(tbody, groupTeams, true);
         });
     }
 }
 
 function renderStandingsTbody(tbody, teams, hasGD) {
-    const oldOrder = Array.from(tbody.querySelectorAll('tr')).map(r => r.dataset.teamId);
-    const newOrder = teams.map(t => String(t.id));
-
+    const oldOrder   = Array.from(tbody.querySelectorAll('tr')).map(r => r.dataset.teamId);
+    const newOrder   = teams.map(t => String(t.id));
     const rankChanged = JSON.stringify(oldOrder) !== JSON.stringify(newOrder);
 
     tbody.innerHTML = teams.map((t, idx) => {
@@ -776,24 +788,25 @@ function renderStandingsTbody(tbody, teams, hasGD) {
                 ? '<span class="arrow-up">▲</span>'
                 : '<span class="arrow-down">▼</span>';
         }
-
-        const gd = (t.goals_for || 0) - (t.goals_against || 0);
-        const gdCell = hasGD ? `<td>${gd >= 0 ? '+' + gd : gd}</td>` : '';
+        // ── FIX: compute GD correctly (can be negative) ──
+        const gd    = (t.goals_for || 0) - (t.goals_against || 0);
+        const gdStr = gd > 0 ? '+' + gd : String(gd);
+        const gdCell = hasGD ? `<td>${gdStr}</td>` : '';
 
         return `<tr data-team-id="${t.id}" ${isQ ? 'class="qrow"' : ''}>
             <td class="rk">${idx + 1}</td>
             <td><div class="team-cell"><div class="tavatar">${initials(t.name)}</div><span class="tnm">${t.name}</span></div></td>
-            <td>${t.played || 0}</td>
-            <td>${t.wins || 0}</td>
-            <td>${t.draws || 0}</td>
-            <td>${t.losses || 0}</td>
+            <td>${t.played  || 0}</td>
+            <td>${t.wins    || 0}</td>
+            <td>${t.draws   || 0}</td>
+            <td>${t.losses  || 0}</td>
             ${gdCell}
             <td class="pts">${t.points || 0}</td>
             <td class="arrow-cell">${arrowHTML}</td>
         </tr>`;
     }).join('');
 
-    if (rankChanged && oldOrder.length > 0) {
+    if (rankChanged && oldOrder.length > 0 && !isFirstLoad) {
         showToast('📊 Standings updated');
     }
 }
@@ -818,7 +831,7 @@ function renderFixtures(fixtures) {
     if (!container) return;
 
     let filtered = fixtures;
-    if (fixtureFilter === 'upcoming') filtered = fixtures.filter(f => !f.is_played && !isToday(f.match_date));
+    if      (fixtureFilter === 'upcoming') filtered = fixtures.filter(f => !f.is_played && !isToday(f.match_date));
     else if (fixtureFilter === 'today')    filtered = fixtures.filter(f => isToday(f.match_date));
     else if (fixtureFilter === 'played')   filtered = fixtures.filter(f => f.is_played);
 
@@ -839,26 +852,25 @@ function renderFixtures(fixtures) {
         items.push(hdr);
 
         grouped[dateKey].forEach(f => {
-            const today = isToday(f.match_date);
+            const today     = isToday(f.match_date);
             const homeScore = f.result__home_score ?? '';
             const awayScore = f.result__away_score ?? '';
-            const old = prevFixtureScores[f.id];
+            const old       = prevFixtureScores[f.id];
             let scoreChanged = false;
             if (old && f.is_played && (old.home !== homeScore || old.away !== awayScore)) scoreChanged = true;
 
-            const li = document.createElement('li');
-            li.className = 'match-item' + (today && !f.is_played ? ' today-live' : '');
-            li.id = 'fixture-li-' + f.id;
-
+            const li       = document.createElement('li');
+            li.className   = 'match-item' + (today && !f.is_played ? ' today-live' : '');
+            li.id          = 'fixture-li-' + f.id;
             const groupTag = f.group_name ? `<span class="gtag">${f.group_name}</span>` : '';
 
             let scoreOrTime = '';
             if (f.is_played) {
                 scoreOrTime = `<span class="score-pill">${homeScore} – ${awayScore}</span>`;
             } else if (today) {
-                scoreOrTime = `<span style="color:var(--live);font-weight:600;font-size:0.72rem">⏱ Today · ${fmtTime(f.match_date)}</span>`;
+                scoreOrTime = `<span style="color:var(--live);font-weight:600;font-size:0.7rem">⏱ Today · ${fmtTime(f.match_date)}</span>`;
             } else {
-                scoreOrTime = `<span class="mtime">${fmtTime(f.match_date)}</span>`;
+                scoreOrTime = `<span style="color:var(--ink3);font-size:0.65rem">${fmtTime(f.match_date)}</span>`;
             }
 
             const badgeCls = f.is_played ? 'mbadge badge-ft' : (today ? 'mbadge badge-live' : 'mbadge');
@@ -872,29 +884,7 @@ function renderFixtures(fixtures) {
                         <span class="mvs">vs</span>
                         <span class="maway">${f.away_team__name}</span>
                     </div>
-                    <div class="mtime" style="margin-top:4px;">${f.is_played ? scoreOrTime : (today ? scoreOrTime : '<span style="color:var(--ink3);font-size:0.62rem">'+fmtTime(f.match_date)+'</span>')}</div>
-                </div>
-                ${f.is_played ? scoreOrTime.replace('<span class="mtime">', '').replace('</span>','') : ''}
-                <span class="${badgeCls}">${badgeTxt}</span>
-            `;
-
-            // Fix: cleaner layout
-            li.innerHTML = `
-                ${groupTag}
-                <div class="mteams">
-                    <div class="matchup">
-                        <span class="mhome">${f.home_team__name}</span>
-                        <span class="mvs">vs</span>
-                        <span class="maway">${f.away_team__name}</span>
-                    </div>
-                    <div style="margin-top:4px;">
-                        ${f.is_played
-                            ? scoreOrTime
-                            : today
-                                ? `<span style="color:var(--live);font-weight:600;font-size:0.7rem">⏱ Today · ${fmtTime(f.match_date)}</span>`
-                                : `<span style="color:var(--ink3);font-size:0.65rem">${fmtTime(f.match_date)}</span>`
-                        }
-                    </div>
+                    <div style="margin-top:4px;">${scoreOrTime}</div>
                 </div>
                 <span class="${badgeCls}">${badgeTxt}</span>
             `;
@@ -905,7 +895,6 @@ function renderFixtures(fixtures) {
                     if (el) { el.classList.add('score-flash'); setTimeout(() => el.classList.remove('score-flash'), 950); }
                 }, 50);
             }
-
             prevFixtureScores[f.id] = { home: homeScore, away: awayScore };
             items.push(li);
         });
@@ -915,7 +904,6 @@ function renderFixtures(fixtures) {
         container.innerHTML = `<li><div class="empty"><div class="empty-ico">📅</div><strong>No fixtures</strong><p>Nothing matches this filter.</p></div></li>`;
         return;
     }
-
     container.innerHTML = '';
     items.forEach(el => container.appendChild(el));
 }
@@ -925,11 +913,9 @@ function updateResults(results) {
     allResults = results;
     renderResults(results, '');
 }
-
 function filterResults(query) {
     renderResults(allResults, query.toLowerCase());
 }
-
 function renderResults(results, query) {
     const container = document.getElementById('results-list');
     if (!container) return;
@@ -960,15 +946,13 @@ function renderResults(results, query) {
         items.push(hdr);
 
         grouped[dateKey].forEach(r => {
-            const isNew = !prevResultsSet.has(r.id);
+            const isNew  = !prevResultsSet.has(r.id);
             if (isNew) prevResultsSet.add(r.id);
-
-            const homeWin = r.home_score > r.away_score;
-            const awayWin = r.away_score > r.home_score;
+            const homeWin  = r.home_score > r.away_score;
+            const awayWin  = r.away_score > r.home_score;
             const groupTag = r.group_name ? `<span class="gtag">${r.group_name}</span>` : '';
-
             const li = document.createElement('li');
-            li.className = 'result-item' + (isNew && prevResultsSet.size > 0 ? ' score-flash' : '');
+            li.className = 'result-item' + (isNew && !isFirstLoad ? ' score-flash' : '');
             li.innerHTML = `
                 ${groupTag}
                 <div class="rteams">
@@ -995,17 +979,14 @@ function renderResults(results, query) {
 function updateTopScorers(scorers) {
     const container = document.getElementById('scorers-body');
     if (!container) return;
-
     if (!scorers || scorers.length === 0) {
-        container.innerHTML = `<div class="empty"><div class="empty-ico">⚽</div><strong>No data yet</strong><p>Scorer stats appear once matches are played.</p></div>`;
+        container.innerHTML = `<div class="empty"><div class="empty-ico">⚽</div><strong>No data yet</strong><p>Stats appear once matches are played.</p></div>`;
         return;
     }
-
     const maxGoals = Math.max(...scorers.map(s => s.total_goals || 0)) || 1;
-    const medals = ['gold', 'silver', 'bronze'];
-
+    const medals   = ['gold', 'silver', 'bronze'];
     container.innerHTML = scorers.map((t, i) => {
-        const pct = Math.round(((t.total_goals || 0) / maxGoals) * 100);
+        const pct        = Math.round(((t.total_goals || 0) / maxGoals) * 100);
         const medalClass = i < 3 ? medals[i] : '';
         return `
             <div class="scorer-row">
@@ -1031,6 +1012,7 @@ async function fetchLiveData() {
         if (data.fixtures)    updateFixtures(data.fixtures);
         if (data.results)     updateResults(data.results);
         if (data.top_scorers) updateTopScorers(data.top_scorers);
+        isFirstLoad = false;
     } catch (err) {
         console.warn('Live update error', err);
     }
