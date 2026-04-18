@@ -328,7 +328,7 @@ def tournament_live_data(request, tournament_id):
                 output_field=IntegerField()
             )
         )
-        .values("id", "name", "points", "played", "wins", "draws", "losses",
+        .values("id", "name","player_name","points", "played", "wins", "draws", "losses",
                 "goals_for", "goals_against", "goal_difference")
         .order_by("-points", "-goal_difference", "-goals_for")
     )

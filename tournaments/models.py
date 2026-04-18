@@ -39,6 +39,7 @@ class Tournament(models.Model):
 
 class Team(models.Model):
     name = models.CharField(max_length=255)
+    player_name = models.CharField(max_length=255, default='Player')
     tournament = models.ForeignKey(Tournament, on_delete=models.CASCADE)
 
     points = models.IntegerField(default=0)

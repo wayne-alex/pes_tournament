@@ -30,10 +30,8 @@
             --safe-bottom: env(safe-area-inset-bottom, 0px);
         }
 
-        /* ── KEY FIX: use dvh with fallback, force full height stack ── */
         html {
             height: 100%;
-            /* iOS PWA fill fix */
             height: -webkit-fill-available;
         }
 
@@ -41,14 +39,11 @@
             background: var(--bg3);
             font-family: 'Inter', system-ui, sans-serif;
             color: var(--ink);
-            /* Stack approach: avoids dvh bugs in standalone PWA */
             display: flex;
             flex-direction: column;
             height: 100%;
             height: -webkit-fill-available;
-            /* Prevent overscroll bleeding */
             overflow: hidden;
-            /* Respect notch/home bar */
             padding-bottom: env(safe-area-inset-bottom, 0px);
         }
 
@@ -116,8 +111,8 @@
 
         /* ── CONTENT ── */
         .content { flex: 1; overflow: hidden; position: relative; min-height: 0; }
-        .sections { display: flex; width: 500%; height: 100%; transition: transform 0.3s cubic-bezier(0.4,0,0.2,1); }
-        .section { width: 20%; overflow-y: auto; overflow-x: hidden; padding: 16px 14px; -webkit-overflow-scrolling: touch; }
+        .sections { display: flex; width: 600%; height: 100%; transition: transform 0.3s cubic-bezier(0.4,0,0.2,1); }
+        .section { width: calc(100% / 6); overflow-y: auto; overflow-x: hidden; padding: 16px 14px; -webkit-overflow-scrolling: touch; }
 
         /* ── SECTION HEADER ── */
         .sec-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
@@ -332,25 +327,18 @@
         }
         #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-        /* ════════════════════════════════════════
-           ── BOTTOM NAV — THE CRITICAL FIX ──
-           Must have display:flex on .bnav itself.
-           Height accounts for safe-area (home bar).
-           flex-shrink:0 keeps it from collapsing.
-           ════════════════════════════════════════ */
+        /* ── BOTTOM NAV ── */
         .bnav {
-            display: flex;                          /* ← was missing! */
-            flex-shrink: 0;                         /* never shrink */
+            display: flex;
+            flex-shrink: 0;
             flex-direction: row;
             align-items: stretch;
             width: 100%;
             background: var(--bg);
             border-top: 1px solid var(--bd);
             box-shadow: 0 -4px 20px rgba(0,0,0,0.05);
-            /* Height = icon area + safe-area (iPhone home bar) */
             height: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px));
             padding-bottom: env(safe-area-inset-bottom, 0px);
-            /* Prevent rubber-band scroll going under nav */
             position: relative;
             z-index: 100;
         }
@@ -374,7 +362,6 @@
             transition: color 0.15s;
             -webkit-tap-highlight-color: transparent;
             text-transform: uppercase;
-            /* Ensure touch target is big enough */
             min-height: 44px;
         }
         .nitem svg { width: 20px; height: 20px; transition: transform 0.15s; flex-shrink: 0; }
@@ -387,6 +374,234 @@
             transition: opacity 0.15s;
         }
         .nitem.active .nav-dot { opacity: 1; }
+
+        /* ══════════════════════════════════════
+           ── TEAMS SECTION ──
+        ══════════════════════════════════════ */
+        .teams-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+        .team-card-btn {
+            background: var(--bg);
+            border: 1px solid var(--bd);
+            border-radius: 14px;
+            padding: 14px 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.15s;
+            box-shadow: var(--sh);
+            -webkit-tap-highlight-color: transparent;
+            text-align: center;
+        }
+        .team-card-btn:active { transform: scale(0.96); }
+        .team-card-btn:hover { border-color: var(--g3); background: var(--g0); }
+        .team-avatar-lg {
+            width: 44px; height: 44px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, var(--g5) 0%, var(--g3) 100%);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.88rem; font-weight: 800; color: #fff;
+            letter-spacing: -0.02em;
+        }
+        .team-card-name { font-size: 0.75rem; font-weight: 700; color: var(--ink); line-height: 1.2; }
+        .team-card-pts { font-size: 0.6rem; color: var(--g5); font-weight: 600; background: var(--g0); padding: 2px 8px; border-radius: 10px; border: 1px solid var(--g1); }
+
+        /* ══════════════════════════════════════
+           ── TEAM PROFILE OVERLAY ──
+        ══════════════════════════════════════ */
+        #team-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 500;
+            background: var(--bg3);
+            display: flex;
+            flex-direction: column;
+            transform: translateY(100%);
+            transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        #team-overlay.open { transform: translateY(0); }
+
+        .tov-hdr {
+            background: linear-gradient(135deg, var(--g9) 0%, var(--g7) 100%);
+            padding: 0 16px;
+            padding-top: env(safe-area-inset-top, 0px);
+            height: calc(60px + env(safe-area-inset-top, 0px));
+            display: flex; align-items: flex-end; padding-bottom: 10px;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+        .tov-back {
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.18);
+            border-radius: 10px; width: 34px; height: 34px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; color: #fff;
+        }
+        .tov-back svg { width: 16px; height: 16px; }
+        .tov-brand { display: flex; flex-direction: column; align-items: center; }
+        .tov-name { font-size: 0.95rem; font-weight: 700; color: #fff; }
+        .tov-sub { font-size: 0.58rem; color: var(--g2); letter-spacing: 0.08em; text-transform: uppercase; }
+        .tov-placeholder { width: 34px; }
+
+        /* Team hero */
+        .tov-hero {
+            background: linear-gradient(180deg, var(--g8) 0%, var(--g9) 100%);
+            padding: 20px 16px 24px;
+            display: flex; flex-direction: column; align-items: center; gap: 10px;
+            flex-shrink: 0;
+        }
+        .tov-avatar {
+            width: 64px; height: 64px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, var(--gold) 0%, #e8c86a 100%);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem; font-weight: 900; color: var(--g9);
+            box-shadow: 0 4px 20px rgba(201,168,76,0.4);
+        }
+        .tov-stats-row {
+            display: flex; gap: 0;
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 14px;
+            overflow: hidden;
+            width: 100%;
+        }
+        .tov-stat {
+            flex: 1; text-align: center;
+            padding: 12px 8px;
+            border-right: 1px solid rgba(255,255,255,0.08);
+        }
+        .tov-stat:last-child { border-right: none; }
+        .tov-stat-val { font-size: 1.3rem; font-weight: 800; color: #fff; }
+        .tov-stat-lbl { font-size: 0.52rem; color: var(--g2); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; margin-top: 2px; }
+
+        /* Team profile tabs */
+        .tov-tabs {
+            display: flex; gap: 0;
+            background: var(--bg);
+            border-bottom: 1px solid var(--bd);
+            overflow-x: auto;
+            flex-shrink: 0;
+        }
+        .tov-tabs::-webkit-scrollbar { display: none; }
+        .ttab {
+            flex-shrink: 0;
+            padding: 12px 16px;
+            font-size: 0.62rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.08em;
+            color: var(--ink3); cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.15s;
+            background: none; border-top: none; border-left: none; border-right: none;
+            font-family: inherit;
+        }
+        .ttab.active { color: var(--g5); border-bottom-color: var(--g4); }
+
+        /* Team profile content */
+        .tov-body { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 16px 14px; }
+        .tov-panel { display: none; }
+        .tov-panel.active { display: block; }
+
+        /* Overview stat cards */
+        .ov-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+        .ov-cell {
+            background: var(--bg); border: 1px solid var(--bd);
+            border-radius: 12px; padding: 14px 12px;
+            box-shadow: var(--sh);
+        }
+        .ov-cell-val { font-size: 1.4rem; font-weight: 800; color: var(--g6); line-height: 1; }
+        .ov-cell-lbl { font-size: 0.6rem; color: var(--ink3); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; margin-top: 4px; }
+
+        /* Form dots */
+        .form-dots { display: flex; gap: 5px; flex-wrap: wrap; }
+        .fdot {
+            width: 28px; height: 28px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.6rem; font-weight: 800; color: #fff;
+        }
+        .fdot.W { background: var(--g4); }
+        .fdot.D { background: #f59e0b; }
+        .fdot.L { background: var(--live); }
+        .fdot.none { background: var(--bg3); color: var(--ink3); }
+
+        /* Match row in team profile */
+        .tm-match { padding: 12px 14px; border-top: 1px solid var(--bd); display: flex; align-items: center; gap: 10px; }
+        .tm-match:first-child { border-top: none; }
+        .tm-result-badge {
+            width: 24px; height: 24px; border-radius: 6px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.6rem; font-weight: 800; color: #fff; flex-shrink: 0;
+        }
+        .tm-result-badge.W { background: var(--g4); }
+        .tm-result-badge.D { background: #f59e0b; }
+        .tm-result-badge.L { background: var(--live); }
+        .tm-match-info { flex: 1; }
+        .tm-match-teams { font-size: 0.8rem; font-weight: 600; }
+        .tm-match-date { font-size: 0.6rem; color: var(--ink3); margin-top: 2px; }
+        .tm-score { font-size: 0.88rem; font-weight: 700; color: var(--ink2); }
+
+        /* Next match card */
+        .next-match-card {
+            background: linear-gradient(135deg, var(--g7), var(--g6));
+            border-radius: 14px; padding: 16px;
+            color: #fff; margin-bottom: 14px;
+        }
+        .next-match-lbl { font-size: 0.58rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--g2); margin-bottom: 10px; }
+        .next-match-teams { display: flex; align-items: center; justify-content: center; gap: 14px; }
+        .nmt-team { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 1; }
+        .nmt-avatar { width: 40px; height: 40px; border-radius: 12px; background: rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 800; }
+        .nmt-name { font-size: 0.68rem; font-weight: 700; text-align: center; line-height: 1.2; }
+        .nmt-vs { font-size: 0.65rem; font-weight: 700; color: var(--g2); }
+        .next-match-time { text-align: center; font-size: 0.68rem; color: var(--g1); margin-top: 10px; }
+
+        /* H2H rows */
+        .h2h-row {
+            padding: 11px 14px; border-top: 1px solid var(--bd);
+            display: flex; align-items: center; gap: 8px;
+        }
+        .h2h-row:first-child { border-top: none; }
+        .h2h-teams-col { flex: 1; }
+        .h2h-matchup { font-size: 0.78rem; font-weight: 600; }
+        .h2h-date { font-size: 0.58rem; color: var(--ink3); margin-top: 2px; }
+        .h2h-score { font-size: 0.9rem; font-weight: 800; color: var(--ink); padding: 3px 10px; background: var(--bg2); border-radius: 8px; border: 1px solid var(--bd); }
+
+        /* Stats bars */
+        .stat-row { margin-bottom: 14px; }
+        .stat-row-hdr { display: flex; justify-content: space-between; margin-bottom: 6px; }
+        .stat-row-lbl { font-size: 0.65rem; font-weight: 600; color: var(--ink2); }
+        .stat-row-val { font-size: 0.65rem; font-weight: 700; color: var(--g6); }
+        .stat-bar-bg { height: 6px; background: var(--bg3); border-radius: 4px; overflow: hidden; }
+        .stat-bar-fill { height: 6px; background: linear-gradient(90deg, var(--g5), var(--g3)); border-radius: 4px; transition: width 0.8s cubic-bezier(0.4,0,0.2,1); }
+
+        /* Player row */
+        .player-row {
+            padding: 11px 14px; border-top: 1px solid var(--bd);
+            display: flex; align-items: center; gap: 10px;
+        }
+        .player-row:first-child { border-top: none; }
+        .player-avatar {
+            width: 32px; height: 32px; border-radius: 50%;
+            background: var(--g0); border: 1px solid var(--g1);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.65rem; font-weight: 700; color: var(--g6);
+            flex-shrink: 0;
+        }
+        .player-name { font-size: 0.82rem; font-weight: 600; }
+        .player-goals { font-size: 0.75rem; color: var(--g5); font-weight: 600; }
+
+        /* Table mini inside team profile */
+        .mini-table { width: 100%; border-collapse: collapse; }
+        .mini-table th { font-size: 0.54rem; color: var(--ink3); font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; padding: 8px 10px; text-align: center; background: var(--bg2); }
+        .mini-table th:nth-child(2) { text-align: left; }
+        .mini-table td { font-size: 0.75rem; padding: 10px 10px; border-top: 1px solid var(--bd); text-align: center; }
+        .mini-table td:nth-child(2) { text-align: left; font-weight: 600; }
+        .mini-table tr.highlight-team td { background: linear-gradient(90deg, var(--g0), transparent); color: var(--g6); font-weight: 700; }
     </style>
 </head>
 
@@ -425,6 +640,95 @@ if ('serviceWorker' in navigator) {
 <!-- TOAST -->
 <div id="toast"></div>
 
+<!-- TEAM PROFILE OVERLAY -->
+<div id="team-overlay">
+    <div class="tov-hdr">
+        <button class="tov-back" onclick="closeTeamProfile()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+        </button>
+        <div class="tov-brand">
+            <div class="tov-name" id="tov-name">Team</div>
+            <div class="tov-sub" id="tov-sub">Profile</div>
+        </div>
+        <div class="tov-placeholder"></div>
+    </div>
+
+    <div class="tov-hero">
+        <div class="tov-avatar" id="tov-avatar">–</div>
+        <div class="tov-stats-row" id="tov-stats-row">
+            <div class="tov-stat"><div class="tov-stat-val" id="ts-pts">0</div><div class="tov-stat-lbl">Pts</div></div>
+            <div class="tov-stat"><div class="tov-stat-val" id="ts-played">0</div><div class="tov-stat-lbl">P</div></div>
+            <div class="tov-stat"><div class="tov-stat-val" id="ts-wins">0</div><div class="tov-stat-lbl">W</div></div>
+            <div class="tov-stat"><div class="tov-stat-val" id="ts-draws">0</div><div class="tov-stat-lbl">D</div></div>
+            <div class="tov-stat"><div class="tov-stat-val" id="ts-losses">0</div><div class="tov-stat-lbl">L</div></div>
+            <div class="tov-stat"><div class="tov-stat-val" id="ts-gf">0</div><div class="tov-stat-lbl">GF</div></div>
+            <div class="tov-stat"><div class="tov-stat-val" id="ts-ga">0</div><div class="tov-stat-lbl">GA</div></div>
+        </div>
+    </div>
+
+    <div class="tov-tabs">
+        <button class="ttab active" onclick="switchTeamTab('overview', this)">Overview</button>
+        <button class="ttab" onclick="switchTeamTab('matches', this)">Matches</button>
+        <button class="ttab" onclick="switchTeamTab('table', this)">Table</button>
+        <button class="ttab" onclick="switchTeamTab('stats', this)">Stats</button>
+        <button class="ttab" onclick="switchTeamTab('h2h', this)">H2H</button>
+    </div>
+
+    <div class="tov-body">
+        <!-- OVERVIEW -->
+        <div class="tov-panel active" id="tp-overview">
+            <!-- Next match -->
+            <div id="tp-next-match"></div>
+
+            <!-- Form -->
+            <div class="card">
+                <div style="padding:12px 14px 4px;">
+                    <div class="slabel" style="margin-bottom:10px;">Recent Form</div>
+                    <div class="form-dots" id="tp-form"></div>
+                </div>
+                <div style="height:8px;"></div>
+            </div>
+
+            <!-- Quick stats grid -->
+            <div class="ov-grid" id="tp-ov-grid"></div>
+        </div>
+
+        <!-- MATCHES -->
+        <div class="tov-panel" id="tp-matches">
+            <div class="card">
+                <div id="tp-matches-list"></div>
+            </div>
+        </div>
+
+        <!-- TABLE -->
+        <div class="tov-panel" id="tp-table">
+            <div class="card">
+                <table class="mini-table" id="tp-table-content">
+                    <thead><tr><th>#</th><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th></tr></thead>
+                    <tbody id="tp-table-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- STATS -->
+        <div class="tov-panel" id="tp-stats">
+            <div class="card" style="padding:14px;">
+                <div id="tp-stats-content"></div>
+            </div>
+        </div>
+
+        <!-- H2H -->
+        <div class="tov-panel" id="tp-h2h">
+            <div class="sec-hdr" style="margin-bottom:8px;">
+                <div class="slabel">Last 5 Head-to-Head</div>
+            </div>
+            <div class="card">
+                <div id="tp-h2h-list"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- CONTENT -->
 <div class="content" id="content">
     <div class="sections" id="sections">
@@ -432,7 +736,6 @@ if ('serviceWorker' in navigator) {
         <!-- ===== STANDINGS ===== -->
         <div class="section" id="sec-standings">
 
-            <!-- Tournament progress ring -->
             <div class="card" style="margin-bottom:14px;">
                 <div class="progress-ring" id="progress-ring">
                     <div class="ring-wrap">
@@ -461,15 +764,7 @@ if ('serviceWorker' in navigator) {
                 <table id="standings-table">
                     <thead>
                         <tr>
-                            <th>#</th>
-                            <th>Team</th>
-                            <th>P</th>
-                            <th>W</th>
-                            <th>D</th>
-                            <th>L</th>
-                            <th>GD</th>
-                            <th>Pts</th>
-                            <th></th>
+                            <th>#</th><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th><th></th>
                         </tr>
                     </thead>
                     <tbody id="league-tbody">
@@ -477,10 +772,7 @@ if ('serviceWorker' in navigator) {
                         <tr data-team-id="{{ t.id }}" {% if forloop.counter <= tournament.qualify_per_group %}class="qrow"{% endif %}>
                             <td class="rk">{{ forloop.counter }}</td>
                             <td><div class="team-cell"><div class="tavatar">{{ t.name|slice:":2"|upper }}</div><span class="tnm">{{ t.name }}</span></div></td>
-                            <td>{{ t.played }}</td>
-                            <td>{{ t.wins }}</td>
-                            <td>{{ t.draws }}</td>
-                            <td>{{ t.losses }}</td>
+                            <td>{{ t.played }}</td><td>{{ t.wins }}</td><td>{{ t.draws }}</td><td>{{ t.losses }}</td>
                             <td>{{ t.goals_for|add:"-"|add:t.goals_against }}</td>
                             <td class="pts">{{ t.points }}</td>
                             <td class="arrow-cell"></td>
@@ -493,37 +785,17 @@ if ('serviceWorker' in navigator) {
 
             {% if tournament.tournament_format == "group_knockout" %}
             {% for g in group_tables %}
-            <div class="sec-hdr">
-                <div class="slabel">{{ g.group.name }}</div>
-            </div>
+            <div class="sec-hdr"><div class="slabel">{{ g.group.name }}</div></div>
             <div class="card">
-                <div class="qualify-banner">
-                    <div class="qualify-dot"></div>
-                    Top {{ tournament.qualify_per_group }} qualify
-                </div>
+                <div class="qualify-banner"><div class="qualify-dot"></div>Top {{ tournament.qualify_per_group }} qualify</div>
                 <table>
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Team</th>
-                            <th>P</th>
-                            <th>W</th>
-                            <th>D</th>
-                            <th>L</th>
-                            <th>GD</th>
-                            <th>Pts</th>
-                            <th></th>
-                        </tr>
-                    </thead>
+                    <thead><tr><th>#</th><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th><th></th></tr></thead>
                     <tbody id="group-tbody-{{ g.group.id }}">
                         {% for t in g.teams %}
                         <tr data-team-id="{{ t.id }}" {% if forloop.counter <= tournament.qualify_per_group %}class="qrow"{% endif %}>
                             <td class="rk">{{ forloop.counter }}</td>
                             <td><div class="team-cell"><div class="tavatar">{{ t.name|slice:":2"|upper }}</div><span class="tnm">{{ t.name }}</span></div></td>
-                            <td>{{ t.played }}</td>
-                            <td>{{ t.wins }}</td>
-                            <td>{{ t.draws }}</td>
-                            <td>{{ t.losses }}</td>
+                            <td>{{ t.played }}</td><td>{{ t.wins }}</td><td>{{ t.draws }}</td><td>{{ t.losses }}</td>
                             <td>{{ t.goals_for|add:"-"|add:t.goals_against }}</td>
                             <td class="pts">{{ t.points }}</td>
                             <td class="arrow-cell"></td>
@@ -537,22 +809,18 @@ if ('serviceWorker' in navigator) {
 
             {% if tournament.tournament_format == "knockout" %}
             <div class="card">
-                <div class="empty">
-                    <div class="empty-ico">🏆</div>
-                    <strong>Knockout format</strong>
-                    <p>No standings — check the Bracket tab.</p>
-                </div>
+                <div class="empty"><div class="empty-ico">🏆</div><strong>Knockout format</strong><p>No standings — check the Bracket tab.</p></div>
             </div>
             {% endif %}
 
         </div>
 
-        <!-- ===== FIXTURES ===== -->
+        <!-- ===== FIXTURES (default: today) ===== -->
         <div class="section" id="sec-fixtures">
             <div class="filter-pills" id="fixture-filters">
-                <div class="fpill active" data-filter="all" onclick="filterFixtures('all',this)">All</div>
+                <div class="fpill" data-filter="all" onclick="filterFixtures('all',this)">All</div>
                 <div class="fpill" data-filter="upcoming" onclick="filterFixtures('upcoming',this)">Upcoming</div>
-                <div class="fpill" data-filter="today" onclick="filterFixtures('today',this)">Today</div>
+                <div class="fpill active" data-filter="today" onclick="filterFixtures('today',this)">Today</div>
                 <div class="fpill" data-filter="played" onclick="filterFixtures('played',this)">Played</div>
             </div>
             <div class="card">
@@ -576,10 +844,8 @@ if ('serviceWorker' in navigator) {
 
         <!-- ===== BRACKET ===== -->
         <div class="section" id="sec-brackets">
-            <div class="sec-hdr" style="margin-bottom:12px;">
-                <div class="slabel">Knockout bracket</div>
-            </div>
-            <div class="card" style="padding: 0;">
+            <div class="sec-hdr" style="margin-bottom:12px;"><div class="slabel">Knockout bracket</div></div>
+            <div class="card" style="padding:0;">
                 <div class="bracket-scroll">
                     <div class="bracket">
                         {% for round in rounds %}
@@ -604,9 +870,7 @@ if ('serviceWorker' in navigator) {
                         </div>
                         {% empty %}
                         <div class="empty" style="width:100%">
-                            <div class="empty-ico">🏆</div>
-                            <strong>No bracket yet</strong>
-                            <p>Bracket appears after group stage.</p>
+                            <div class="empty-ico">🏆</div><strong>No bracket yet</strong><p>Bracket appears after group stage.</p>
                         </div>
                         {% endfor %}
                     </div>
@@ -616,9 +880,7 @@ if ('serviceWorker' in navigator) {
 
         <!-- ===== TOP SCORERS ===== -->
         <div class="section" id="sec-scorers">
-            <div class="sec-hdr">
-                <div class="slabel">Top scorers</div>
-            </div>
+            <div class="sec-hdr"><div class="slabel">Top scorers</div></div>
             <div class="card" id="scorers-card">
                 <div id="scorers-body">
                     <div class="empty"><div class="empty-ico">⚽</div><strong>Loading…</strong></div>
@@ -626,10 +888,24 @@ if ('serviceWorker' in navigator) {
             </div>
         </div>
 
+        <!-- ===== TEAMS ===== -->
+        <div class="section" id="sec-teams">
+            <div class="sec-hdr">
+                <div class="slabel">All Teams</div>
+                <div class="scount" id="teams-count">0</div>
+            </div>
+            <div class="search-wrap">
+                <input class="search-input" type="text" placeholder="Search team…" id="teams-search" oninput="filterTeamsGrid(this.value)">
+            </div>
+            <div class="teams-grid" id="teams-grid">
+                <div style="grid-column:span 2;"><div class="empty"><div class="empty-ico">👥</div><strong>Loading teams…</strong></div></div>
+            </div>
+        </div>
+
     </div>
 </div>
 
-<!-- BOTTOM NAV — display:flex is on .bnav in CSS, items fill via flex:1 -->
+<!-- BOTTOM NAV -->
 <nav class="bnav" role="navigation" aria-label="Main navigation">
     <button class="nitem active" onclick="goTo(0,this)" aria-label="Standings">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
@@ -668,6 +944,16 @@ if ('serviceWorker' in navigator) {
         Scorers
         <div class="nav-dot"></div>
     </button>
+    <button class="nitem" onclick="goTo(5,this)" aria-label="Teams">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+        Teams
+        <div class="nav-dot"></div>
+    </button>
 </nav>
 
 <script>
@@ -682,7 +968,7 @@ const navBtns = document.querySelectorAll('.nitem');
 
 function goTo(i, el) {
     cur = i;
-    secs.style.transform = 'translateX(-' + (i * 20) + '%)';
+    secs.style.transform = 'translateX(-' + (i * (100/6)) + '%)';
     navBtns.forEach(b => b.classList.remove('active'));
     el.classList.add('active');
 }
@@ -697,7 +983,7 @@ document.getElementById('content').addEventListener('touchend', e => {
     const dx = e.changedTouches[0].clientX - startX;
     const dy = e.changedTouches[0].clientY - startY;
     if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
-        if (dx < 0 && cur < 4) goTo(cur + 1, navBtns[cur + 1]);
+        if (dx < 0 && cur < 5) goTo(cur + 1, navBtns[cur + 1]);
         if (dx > 0 && cur > 0) goTo(cur - 1, navBtns[cur - 1]);
     }
 }, { passive: true });
@@ -722,7 +1008,8 @@ let prevFixtureScores = {};
 let prevResultsSet    = new Set();
 let allFixtures       = [];
 let allResults        = [];
-let fixtureFilter     = 'all';
+let allStandings      = [];
+let fixtureFilter     = 'today';   // ← DEFAULT IS NOW "today"
 let isFirstLoad       = true;
 
 /* ─── HELPERS ─── */
@@ -740,7 +1027,7 @@ function fmtTime(dateStr) {
     return new Date(dateStr).toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
 }
 function initials(name) {
-    return name.split(' ').slice(0,2).map(w => w[0]||'').join('').toUpperCase();
+    return (name || '').split(' ').slice(0,2).map(w => w[0]||'').join('').toUpperCase();
 }
 
 /* ─── PROGRESS RING ─── */
@@ -760,6 +1047,7 @@ function updateProgress(fixtures) {
 
 /* ─── STANDINGS ─── */
 function updateStandings(standings) {
+    allStandings = standings;
     if (FORMAT === 'league') {
         const tbody = document.getElementById('league-tbody');
         if (tbody) renderStandingsTbody(tbody, standings, true);
@@ -767,8 +1055,8 @@ function updateStandings(standings) {
     }
     if (FORMAT === 'group_knockout') {
         document.querySelectorAll('[id^="group-tbody-"]').forEach(tbody => {
-            const rowTeamIds  = Array.from(tbody.querySelectorAll('tr')).map(r => r.dataset.teamId);
-            const groupTeams  = standings.filter(t => rowTeamIds.includes(String(t.id)));
+            const rowTeamIds = Array.from(tbody.querySelectorAll('tr')).map(r => r.dataset.teamId);
+            const groupTeams = standings.filter(t => rowTeamIds.includes(String(t.id)));
             if (groupTeams.length > 0) renderStandingsTbody(tbody, groupTeams, true);
         });
     }
@@ -788,7 +1076,6 @@ function renderStandingsTbody(tbody, teams, hasGD) {
                 ? '<span class="arrow-up">▲</span>'
                 : '<span class="arrow-down">▼</span>';
         }
-        // ── FIX: compute GD correctly (can be negative) ──
         const gd    = (t.goals_for || 0) - (t.goals_against || 0);
         const gdStr = gd > 0 ? '+' + gd : String(gd);
         const gdCell = hasGD ? `<td>${gdStr}</td>` : '';
@@ -796,19 +1083,14 @@ function renderStandingsTbody(tbody, teams, hasGD) {
         return `<tr data-team-id="${t.id}" ${isQ ? 'class="qrow"' : ''}>
             <td class="rk">${idx + 1}</td>
             <td><div class="team-cell"><div class="tavatar">${initials(t.name)}</div><span class="tnm">${t.name}</span></div></td>
-            <td>${t.played  || 0}</td>
-            <td>${t.wins    || 0}</td>
-            <td>${t.draws   || 0}</td>
-            <td>${t.losses  || 0}</td>
+            <td>${t.played||0}</td><td>${t.wins||0}</td><td>${t.draws||0}</td><td>${t.losses||0}</td>
             ${gdCell}
-            <td class="pts">${t.points || 0}</td>
+            <td class="pts">${t.points||0}</td>
             <td class="arrow-cell">${arrowHTML}</td>
         </tr>`;
     }).join('');
 
-    if (rankChanged && oldOrder.length > 0 && !isFirstLoad) {
-        showToast('📊 Standings updated');
-    }
+    if (rankChanged && oldOrder.length > 0 && !isFirstLoad) showToast('📊 Standings updated');
 }
 
 /* ─── FILTER FIXTURES ─── */
@@ -859,9 +1141,9 @@ function renderFixtures(fixtures) {
             let scoreChanged = false;
             if (old && f.is_played && (old.home !== homeScore || old.away !== awayScore)) scoreChanged = true;
 
-            const li       = document.createElement('li');
-            li.className   = 'match-item' + (today && !f.is_played ? ' today-live' : '');
-            li.id          = 'fixture-li-' + f.id;
+            const li = document.createElement('li');
+            li.className = 'match-item' + (today && !f.is_played ? ' today-live' : '');
+            li.id = 'fixture-li-' + f.id;
             const groupTag = f.group_name ? `<span class="gtag">${f.group_name}</span>` : '';
 
             let scoreOrTime = '';
@@ -901,7 +1183,11 @@ function renderFixtures(fixtures) {
     });
 
     if (items.length === 0) {
-        container.innerHTML = `<li><div class="empty"><div class="empty-ico">📅</div><strong>No fixtures</strong><p>Nothing matches this filter.</p></div></li>`;
+        // If "today" has nothing, show a friendly message with a shortcut
+        const emptyMsg = fixtureFilter === 'today'
+            ? `<li><div class="empty"><div class="empty-ico">☀️</div><strong>No fixtures today</strong><p>No matches scheduled for today. <span style="color:var(--g5);font-weight:600;cursor:pointer" onclick="filterFixtures('all', document.querySelector('[data-filter=all]'))">View all fixtures →</span></p></div></li>`
+            : `<li><div class="empty"><div class="empty-ico">📅</div><strong>No fixtures</strong><p>Nothing matches this filter.</p></div></li>`;
+        container.innerHTML = emptyMsg;
         return;
     }
     container.innerHTML = '';
@@ -993,9 +1279,7 @@ function updateTopScorers(scorers) {
                 <div class="scorer-rank ${medalClass}">${i + 1}</div>
                 <div class="scorer-bar-wrap">
                     <div class="scorer-name">${t.name}</div>
-                    <div class="scorer-bar-bg">
-                        <div class="scorer-bar" style="width:${pct}%"></div>
-                    </div>
+                    <div class="scorer-bar-bg"><div class="scorer-bar" style="width:${pct}%"></div></div>
                 </div>
                 <div class="scorer-goals">${t.total_goals || 0}</div>
             </div>
@@ -1003,12 +1287,286 @@ function updateTopScorers(scorers) {
     }).join('');
 }
 
+/* ══════════════════════════════════════════════════
+   ── TEAMS SECTION ──
+══════════════════════════════════════════════════ */
+let allTeamsData = [];
+
+function updateTeamsGrid(standings) {
+    allTeamsData = standings;
+    renderTeamsGrid(standings);
+}
+
+function renderTeamsGrid(teams) {
+    const grid  = document.getElementById('teams-grid');
+    const count = document.getElementById('teams-count');
+    if (!grid) return;
+    if (count) count.textContent = teams.length;
+
+    if (!teams || teams.length === 0) {
+        grid.innerHTML = `<div style="grid-column:span 2;"><div class="empty"><div class="empty-ico">👥</div><strong>No teams yet</strong></div></div>`;
+        return;
+    }
+
+    grid.innerHTML = teams.map(t => `
+        <button class="team-card-btn" onclick="openTeamProfile(${t.id})">
+            <div class="team-avatar-lg">${initials(t.name)}</div>
+            <div class="team-card-name">${t.name}</div>
+            <div class="team-card-pts">${t.points || 0} pts</div>
+        </button>
+    `).join('');
+}
+
+function filterTeamsGrid(query) {
+    const q = query.toLowerCase();
+    const filtered = q ? allTeamsData.filter(t => t.name.toLowerCase().includes(q)) : allTeamsData;
+    renderTeamsGrid(filtered);
+}
+
+/* ══════════════════════════════════════════════════
+   ── TEAM PROFILE ──
+══════════════════════════════════════════════════ */
+let currentTeamId = null;
+
+function openTeamProfile(teamId) {
+    currentTeamId = teamId;
+    const team = allTeamsData.find(t => t.id == teamId);
+    if (!team) return;
+
+    // Set header
+    document.getElementById('tov-name').textContent = team.name;
+    document.getElementById('tov-sub').textContent  = team.player_name || 'Team';
+    document.getElementById('tov-avatar').textContent = initials(team.name);
+
+    // Hero stats
+    document.getElementById('ts-pts').textContent    = team.points    || 0;
+    document.getElementById('ts-played').textContent = team.played    || 0;
+    document.getElementById('ts-wins').textContent   = team.wins      || 0;
+    document.getElementById('ts-draws').textContent  = team.draws     || 0;
+    document.getElementById('ts-losses').textContent = team.losses    || 0;
+    document.getElementById('ts-gf').textContent     = team.goals_for || 0;
+    document.getElementById('ts-ga').textContent     = team.goals_against || 0;
+
+    // Reset to overview tab
+    switchTeamTab('overview', document.querySelector('.ttab'));
+
+    // Build content
+    buildTeamOverview(team);
+    buildTeamMatches(team);
+    buildTeamTable(team);
+    buildTeamStats(team);
+    buildTeamH2H(team);
+
+    // Open
+    document.getElementById('team-overlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeTeamProfile() {
+    document.getElementById('team-overlay').classList.remove('open');
+    document.body.style.overflow = '';
+}
+
+function switchTeamTab(tab, el) {
+    document.querySelectorAll('.ttab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tov-panel').forEach(p => p.classList.remove('active'));
+    if (el) el.classList.add('active');
+    const panel = document.getElementById('tp-' + tab);
+    if (panel) panel.classList.add('active');
+}
+
+/* ── OVERVIEW ── */
+function buildTeamOverview(team) {
+    // Next match
+    const nextMatch = allFixtures.find(f =>
+        !f.is_played && (f.home_team__name === team.name || f.away_team__name === team.name)
+    );
+    const nmEl = document.getElementById('tp-next-match');
+    if (nextMatch) {
+        const opp = nextMatch.home_team__name === team.name ? nextMatch.away_team__name : nextMatch.home_team__name;
+        const isHome = nextMatch.home_team__name === team.name;
+        nmEl.innerHTML = `
+            <div class="next-match-card" style="margin-bottom:14px;">
+                <div class="next-match-lbl">⚡ Next Match</div>
+                <div class="next-match-teams">
+                    <div class="nmt-team">
+                        <div class="nmt-avatar">${initials(team.name)}</div>
+                        <div class="nmt-name">${team.name}</div>
+                    </div>
+                    <div class="nmt-vs">VS</div>
+                    <div class="nmt-team">
+                        <div class="nmt-avatar">${initials(opp)}</div>
+                        <div class="nmt-name">${opp}</div>
+                    </div>
+                </div>
+                <div class="next-match-time">${isHome ? '🏠 Home' : '✈️ Away'} · ${nextMatch.match_date ? fmtDate(nextMatch.match_date) + ' · ' + fmtTime(nextMatch.match_date) : 'TBD'}</div>
+            </div>
+        `;
+    } else {
+        nmEl.innerHTML = '';
+    }
+
+    // Form (last 5 results)
+    const teamResults = allResults.filter(r => r.home_team === team.name || r.away_team === team.name).slice(-5);
+    const formEl = document.getElementById('tp-form');
+    if (teamResults.length === 0) {
+        formEl.innerHTML = '<span style="font-size:0.72rem;color:var(--ink3)">No matches played yet</span>';
+    } else {
+        formEl.innerHTML = teamResults.map(r => {
+            const isHome = r.home_team === team.name;
+            const myScore  = isHome ? r.home_score : r.away_score;
+            const oppScore = isHome ? r.away_score  : r.home_score;
+            const result = myScore > oppScore ? 'W' : (myScore < oppScore ? 'L' : 'D');
+            return `<div class="fdot ${result}" title="${r.home_team} ${r.home_score}-${r.away_score} ${r.away_team}">${result}</div>`;
+        }).join('');
+    }
+
+    // Quick stats grid
+    const gd = (team.goals_for || 0) - (team.goals_against || 0);
+    const winRate = team.played ? Math.round((team.wins / team.played) * 100) : 0;
+    document.getElementById('tp-ov-grid').innerHTML = `
+        <div class="ov-cell"><div class="ov-cell-val">${team.goals_for || 0}</div><div class="ov-cell-lbl">Goals For</div></div>
+        <div class="ov-cell"><div class="ov-cell-val">${team.goals_against || 0}</div><div class="ov-cell-lbl">Goals Against</div></div>
+        <div class="ov-cell"><div class="ov-cell-val">${gd >= 0 ? '+' : ''}${gd}</div><div class="ov-cell-lbl">Goal Diff</div></div>
+        <div class="ov-cell"><div class="ov-cell-val">${winRate}%</div><div class="ov-cell-lbl">Win Rate</div></div>
+    `;
+}
+
+/* ── MATCHES ── */
+function buildTeamMatches(team) {
+    const teamMatches = allResults.filter(r => r.home_team === team.name || r.away_team === team.name).reverse();
+    const upcoming    = allFixtures.filter(f => !f.is_played && (f.home_team__name === team.name || f.away_team__name === team.name));
+    const el = document.getElementById('tp-matches-list');
+
+    if (teamMatches.length === 0 && upcoming.length === 0) {
+        el.innerHTML = `<div class="empty"><div class="empty-ico">📅</div><strong>No matches yet</strong></div>`;
+        return;
+    }
+
+    let html = '';
+
+    // Upcoming first
+    upcoming.forEach(f => {
+        const opp = f.home_team__name === team.name ? f.away_team__name : f.home_team__name;
+        html += `
+            <div class="tm-match">
+                <div class="tm-result-badge" style="background:var(--bg3);color:var(--ink3);font-size:0.5rem;">UP</div>
+                <div class="tm-match-info">
+                    <div class="tm-match-teams">vs ${opp}</div>
+                    <div class="tm-match-date">${f.match_date ? fmtDate(f.match_date) + ' · ' + fmtTime(f.match_date) : 'TBD'}</div>
+                </div>
+                <span class="mbadge">Pending</span>
+            </div>`;
+    });
+
+    // Past results
+    teamMatches.forEach(r => {
+        const isHome   = r.home_team === team.name;
+        const myScore  = isHome ? r.home_score : r.away_score;
+        const oppScore = isHome ? r.away_score  : r.home_score;
+        const opp      = isHome ? r.away_team : r.home_team;
+        const res      = myScore > oppScore ? 'W' : (myScore < oppScore ? 'L' : 'D');
+        html += `
+            <div class="tm-match">
+                <div class="tm-result-badge ${res}">${res}</div>
+                <div class="tm-match-info">
+                    <div class="tm-match-teams">vs ${opp}</div>
+                    <div class="tm-match-date">${r.match_date ? fmtDate(r.match_date) : 'Played'}</div>
+                </div>
+                <div class="tm-score">${myScore} – ${oppScore}</div>
+            </div>`;
+    });
+
+    el.innerHTML = html;
+}
+
+/* ── TABLE ── */
+function buildTeamTable(team) {
+    const tbody = document.getElementById('tp-table-body');
+    const sorted = [...allStandings].sort((a,b) => b.points - a.points || ((b.goals_for - b.goals_against) - (a.goals_for - a.goals_against)));
+    tbody.innerHTML = sorted.map((t, i) => {
+        const gd = (t.goals_for||0) - (t.goals_against||0);
+        const isCurrentTeam = t.id == team.id;
+        return `<tr ${isCurrentTeam ? 'class="highlight-team"' : ''}>
+            <td>${i+1}</td>
+            <td>${t.name}</td>
+            <td>${t.played||0}</td>
+            <td>${t.wins||0}</td>
+            <td>${t.draws||0}</td>
+            <td>${t.losses||0}</td>
+            <td>${gd >= 0 ? '+' : ''}${gd}</td>
+            <td>${t.points||0}</td>
+        </tr>`;
+    }).join('');
+}
+
+/* ── STATS ── */
+function buildTeamStats(team) {
+    const maxGF = Math.max(...allStandings.map(t => t.goals_for || 0)) || 1;
+    const maxGA = Math.max(...allStandings.map(t => t.goals_against || 0)) || 1;
+    const maxPts = Math.max(...allStandings.map(t => t.points || 0)) || 1;
+    const maxPlayed = Math.max(...allStandings.map(t => t.played || 0)) || 1;
+    const gd = (team.goals_for || 0) - (team.goals_against || 0);
+    const winRate = team.played ? Math.round((team.wins / team.played) * 100) : 0;
+    const avgGF = team.played ? (team.goals_for / team.played).toFixed(1) : '0.0';
+    const avgGA = team.played ? (team.goals_against / team.played).toFixed(1) : '0.0';
+
+    document.getElementById('tp-stats-content').innerHTML = `
+        <div class="stat-row">
+            <div class="stat-row-hdr"><span class="stat-row-lbl">Goals Scored</span><span class="stat-row-val">${team.goals_for || 0}</span></div>
+            <div class="stat-bar-bg"><div class="stat-bar-fill" style="width:${Math.round(((team.goals_for||0)/maxGF)*100)}%"></div></div>
+        </div>
+        <div class="stat-row">
+            <div class="stat-row-hdr"><span class="stat-row-lbl">Goals Conceded</span><span class="stat-row-val">${team.goals_against || 0}</span></div>
+            <div class="stat-bar-bg"><div class="stat-bar-fill" style="width:${Math.round(((team.goals_against||0)/maxGA)*100)}%;background:linear-gradient(90deg,var(--live),#ff8080)"></div></div>
+        </div>
+        <div class="stat-row">
+            <div class="stat-row-hdr"><span class="stat-row-lbl">Points</span><span class="stat-row-val">${team.points || 0}</span></div>
+            <div class="stat-bar-bg"><div class="stat-bar-fill" style="width:${Math.round(((team.points||0)/maxPts)*100)}%"></div></div>
+        </div>
+        <div class="stat-row">
+            <div class="stat-row-hdr"><span class="stat-row-lbl">Win Rate</span><span class="stat-row-val">${winRate}%</span></div>
+            <div class="stat-bar-bg"><div class="stat-bar-fill" style="width:${winRate}%"></div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px;">
+            <div class="ov-cell"><div class="ov-cell-val">${avgGF}</div><div class="ov-cell-lbl">Avg GF / Game</div></div>
+            <div class="ov-cell"><div class="ov-cell-val">${avgGA}</div><div class="ov-cell-lbl">Avg GA / Game</div></div>
+            <div class="ov-cell"><div class="ov-cell-val">${team.wins||0}</div><div class="ov-cell-lbl">Wins</div></div>
+            <div class="ov-cell"><div class="ov-cell-val">${team.draws||0}</div><div class="ov-cell-lbl">Draws</div></div>
+        </div>
+    `;
+}
+
+/* ── H2H ── */
+function buildTeamH2H(team) {
+    const h2hResults = allResults.filter(r =>
+        r.home_team === team.name || r.away_team === team.name
+    ).slice(-5).reverse();
+
+    const el = document.getElementById('tp-h2h-list');
+
+    if (h2hResults.length === 0) {
+        el.innerHTML = `<div class="empty"><div class="empty-ico">🤝</div><strong>No H2H data yet</strong><p>Past matchups appear here once played.</p></div>`;
+        return;
+    }
+
+    el.innerHTML = h2hResults.map(r => `
+        <div class="h2h-row">
+            <div class="h2h-teams-col">
+                <div class="h2h-matchup">${r.home_team} vs ${r.away_team}</div>
+                <div class="h2h-date">${r.match_date ? fmtDate(r.match_date) : 'Played'}</div>
+            </div>
+            <div class="h2h-score">${r.home_score} – ${r.away_score}</div>
+        </div>
+    `).join('');
+}
+
 /* ─── MAIN FETCH ─── */
 async function fetchLiveData() {
     try {
         const res  = await fetch(`/tournament-live/${TOURNAMENT_ID}/`);
         const data = await res.json();
-        if (data.standings)   updateStandings(data.standings);
+        if (data.standings)   { updateStandings(data.standings); updateTeamsGrid(data.standings); }
         if (data.fixtures)    updateFixtures(data.fixtures);
         if (data.results)     updateResults(data.results);
         if (data.top_scorers) updateTopScorers(data.top_scorers);
