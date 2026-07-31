@@ -2,7 +2,7 @@
     "name": "Tournament Hub",
     "short_name": "TourneyHub",
     "description": "Live tournament dashboard with real-time updates",
-    "start_url": "lobby/",
+    "start_url": "/lobby/",
     "display": "standalone",
     "background_color": "#F2F2F7",
     "theme_color": "#007AFF",
