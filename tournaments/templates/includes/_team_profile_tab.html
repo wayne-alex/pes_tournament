@@ -1,0 +1,41 @@
+<div class="card">
+    <div class="card-header">Select Team</div>
+    <select id="team-selector" class="stadium-select" onchange="onTeamSelect(this.value)">
+        <!-- populated via JS -->
+    </select>
+</div>
+
+<div class="card">
+    <div class="card-header">Next Fixture</div>
+    <div id="tp-next-match"></div>
+    <div style="margin-top: 16px;">
+        <div style="font-family:var(--font-mono); font-size:10px; font-weight:600; color:var(--floodlight-dim); text-transform:uppercase; letter-spacing:0.6px; margin-bottom:8px;">Recent Form</div>
+        <div id="tp-form" style="display:flex;"></div>
+    </div>
+    <div style="margin-top:18px;">
+        <div class="card-header" style="margin-bottom:6px;">Performance Trajectory</div>
+        <svg id="form-graph-svg" width="300" height="60" style="width:100%; overflow:visible;"></svg>
+    </div>
+</div>
+
+<div class="card" id="tp-h2h-card"></div>
+
+<div class="card">
+    <div class="card-header">Overall Metrics</div>
+    <div id="tp-ov-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 13px; font-family: var(--font-mono);"></div>
+</div>
+
+<div class="card">
+    <div class="card-header">Standings Snapshot</div>
+    <table class="stadium-table">
+        <thead>
+            <tr><th>#</th><th>Team</th><th class="num">P</th><th class="num">GD</th><th class="num" style="text-align:right">Pts</th></tr>
+        </thead>
+        <tbody id="tp-table-body"></tbody>
+    </table>
+</div>
+
+<div class="card">
+    <div class="card-header">Match History</div>
+    <div id="tp-matches-list"></div>
+</div>

@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete Team - Tournament Manager{% endblock %}
+{% block page_title %}Delete Team{% endblock %}
+{% block page_subtitle %}Confirm team deletion{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-5 col-md-7">
+        <!-- iOS Container Card -->
+        <div class="ios-card border-0 p-4 shadow-sm">
+
+            <!-- Compact Header Icon & Title -->
+            <div class="text-center mb-3">
+                <div class="ios-danger-badge mx-auto mb-2">
+                    <i class="bi bi-trash3-fill"></i>
+                </div>
+                <h6 class="fw-bold text-dark mb-1 fs-6">Delete Team?</h6>
+                <p class="text-muted ios-caption mb-0">This action cannot be undone.</p>
+            </div>
+
+            <!-- Team Details Card -->
+            <div class="ios-list-group mb-3 p-3">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div class="ios-avatar-badge">
+                        {{ team.name|slice:":2"|upper }}
+                    </div>
+                    <div class="overflow-hidden">
+                        <div class="fw-bold text-dark text-truncate fs-7">{{ team.name }}</div>
+                        <div class="ios-caption text-muted">
+                            <i class="bi bi-person me-1"></i>{{ team.player_name|default:'Unassigned' }}
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="my-2 border-light">
+
+                <div class="d-flex align-items-center justify-content-between ios-caption text-muted">
+                    <span><i class="bi bi-trophy me-1 text-warning"></i>{{ team.tournament.name }}</span>
+                    <span class="fw-semibold text-dark">{{ team.played }}P ({{ team.wins }}W {{ team.draws }}D {{ team.losses }}L)</span>
+                </div>
+            </div>
+
+            <!-- Optional Fixtures Warning Box -->
+            {% if has_fixtures %}
+            <div class="ios-alert-warning p-3 mb-4">
+                <div class="d-flex align-items-start gap-2 fs-7">
+                    <i class="bi bi-exclamation-triangle-fill flex-shrink-0 mt-1"></i>
+                    <div>
+                        <strong class="d-block mb-1 fw-semibold">Fixtures Associated</strong>
+                        <span class="ios-caption d-block">This team has fixtures assigned. Deleting it will also erase all related matches and recorded results.</span>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Actions Bar -->
+            <form method="post" id="deleteTeamForm">
+                {% csrf_token %}
+                <div class="d-flex align-items-center justify-content-end gap-2">
+                    <a href="{% url 'admin_team_list' %}" class="btn btn-ios-secondary btn-sm px-3">
+                        Cancel
+                    </a>
+                    <button type="submit" class="btn btn-ios-danger btn-sm px-3">
+                        <i class="bi bi-trash-fill me-1"></i> Confirm Delete
+                    </button>
+                </div>
+            </form>
+
+        </div>
+    </div>
+</div>
+
+<!-- Native iOS Aesthetic Custom Styles -->
+<style>
+/* Card & Glassmorphism Container */
+.ios-card {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 16px;
+    border: 1px solid rgba(229, 231, 235, 0.8);
+}
+
+/* Micro Typography */
+.ios-caption {
+    font-size: 0.75rem;
+    letter-spacing: -0.01em;
+}
+
+.fs-7 {
+    font-size: 0.8125rem;
+}
+
+/* Icon Badges */
+.ios-danger-badge {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(255, 59, 48, 0.12);
+    color: #ff3b30;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+}
+
+.ios-avatar-badge {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #007aff 0%, #5856d6 100%);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.8rem;
+    box-shadow: 0 2px 6px rgba(0, 122, 255, 0.2);
+}
+
+/* Inner Containers */
+.ios-list-group {
+    background: rgba(118, 118, 128, 0.05);
+    border-radius: 12px;
+    border: 1px solid rgba(229, 231, 235, 0.6);
+}
+
+.ios-alert-warning {
+    background: rgba(255, 149, 0, 0.08);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 149, 0, 0.2);
+    color: #995c00;
+}
+
+/* iOS Interactive Buttons */
+.btn-ios-danger {
+    background-color: #ff3b30;
+    color: #ffffff;
+    border-radius: 8px;
+    font-weight: 600;
+    border: none;
+    transition: all 0.15s ease;
+}
+.btn-ios-danger:hover {
+    background-color: #e03126;
+    color: #ffffff;
+    transform: scale(0.98);
+}
+
+.btn-ios-secondary {
+    background-color: rgba(118, 118, 128, 0.12);
+    color: #1c1c1e;
+    border-radius: 8px;
+    font-weight: 500;
+    border: none;
+    transition: all 0.15s ease;
+}
+.btn-ios-secondary:hover {
+    background-color: rgba(118, 118, 128, 0.2);
+    color: #1c1c1e;
+    transform: scale(0.98);
+}
+</style>
+{% endblock %}

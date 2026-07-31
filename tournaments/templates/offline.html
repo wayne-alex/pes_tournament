@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tournament Hub - Offline</title>
+    <style>
+        :root {
+            --ios-bg: #F2F2F7;
+            --ios-blue: #007AFF;
+            --ios-text: #1C1C1E;
+            --ios-subtext: #8E8E93;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+            background: var(--ios-bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .offline-container {
+            text-align: center;
+            background: white;
+            border-radius: 28px;
+            padding: 40px 30px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.08);
+            max-width: 380px;
+            width: 100%;
+        }
+
+        .offline-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 24px;
+            background: linear-gradient(135deg, #F2F2F7, #E5E5EA);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+        }
+
+        .offline-title {
+            font-size: 24px;
+            font-weight: 900;
+            color: var(--ios-text);
+            margin-bottom: 8px;
+        }
+
+        .offline-subtitle {
+            font-size: 13px;
+            color: var(--ios-blue);
+            font-weight: 700;
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .offline-message {
+            font-size: 14px;
+            color: var(--ios-subtext);
+            margin-bottom: 28px;
+            line-height: 1.6;
+        }
+
+        .offline-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .offline-btn {
+            background: var(--ios-blue);
+            color: white;
+            border: none;
+            padding: 14px 24px;
+            border-radius: 16px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+        }
+
+        .offline-btn:active {
+            background: #0056CC;
+            transform: scale(0.97);
+        }
+
+        .offline-btn.secondary {
+            background: var(--ios-bg);
+            color: var(--ios-blue);
+        }
+
+        .offline-btn.secondary:active {
+            background: #E5E5EA;
+        }
+
+        .cached-info {
+            margin-top: 24px;
+            padding: 14px 16px;
+            background: #F2F2F7;
+            border-radius: 14px;
+            font-size: 12px;
+            color: var(--ios-subtext);
+            line-height: 1.5;
+        }
+
+        .connection-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            color: #FF3B30;
+            margin-bottom: 16px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #FF3B30;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        .online .status-dot {
+            background: #34C759;
+        }
+        .online .connection-status {
+            color: #34C759;
+        }
+    </style>
+</head>
+<body>
+    <div class="offline-container" id="offlineContainer">
+        <div class="offline-icon">📡</div>
+        <div class="connection-status">
+            <span class="status-dot"></span>
+            <span id="connectionText">No Connection</span>
+        </div>
+        <h1 class="offline-title">You're Offline</h1>
+        <p class="offline-subtitle">TOURNAMENT HUB</p>
+        <p class="offline-message">
+            Don't worry! Previously viewed pages and data are available offline.
+            Your app will automatically sync when you're back online.
+        </p>
+
+        <div class="offline-actions">
+            <button class="offline-btn" onclick="location.reload()">
+                Try Again
+            </button>
+            <button class="offline-btn secondary" onclick="window.history.back()">
+                Go Back
+            </button>
+        </div>
+
+        <div class="cached-info" id="cachedInfo">
+            Checking cached data...
+        </div>
+    </div>
+
+    <script>
+        // Check cache status
+        async function checkCacheStatus() {
+            const info = document.getElementById('cachedInfo');
+
+            if ('caches' in window) {
+                try {
+                    const cacheNames = await caches.keys();
+                    if (cacheNames.length > 0) {
+                        let totalItems = 0;
+                        for (const name of cacheNames) {
+                            const cache = await caches.open(name);
+                            const keys = await cache.keys();
+                            totalItems += keys.length;
+                        }
+                        info.innerHTML = `
+                            ✅ <strong>${totalItems} items</strong> cached across ${cacheNames.length} cache(s)<br>
+                            <span style="font-size:11px;">Previously viewed pages and data are available</span>
+                        `;
+                    } else {
+                        info.innerHTML = '📦 No cached data yet. Browse online to cache content.';
+                    }
+                } catch (e) {
+                    info.innerHTML = 'Unable to check cache status';
+                }
+            } else {
+                info.innerHTML = 'Caching not supported in this browser';
+            }
+        }
+
+        // Monitor online/offline status
+        function updateOnlineStatus() {
+            const container = document.getElementById('offlineContainer');
+            const connectionText = document.getElementById('connectionText');
+
+            if (navigator.onLine) {
+                container.classList.add('online');
+                connectionText.textContent = 'Connected';
+                // Auto-reload when back online
+                setTimeout(() => location.reload(), 500);
+            } else {
+                container.classList.remove('online');
+                connectionText.textContent = 'No Connection';
+            }
+        }
+
+        window.addEventListener('online', updateOnlineStatus);
+        window.addEventListener('offline', updateOnlineStatus);
+
+        // Initial checks
+        checkCacheStatus();
+        updateOnlineStatus();
+
+        // Register service worker update
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(registrations => {
+                registrations.forEach(reg => reg.update());
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,278 @@
+{% extends 'superadmin/base.html' %}
+{% load static %}
+
+{% block title %}Enter Result - Tournament Manager{% endblock %}
+{% block page_title %}Enter Match Result{% endblock %}
+{% block page_subtitle %}{{ fixture.home_team }} vs {{ fixture.away_team }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6 col-md-8">
+        <!-- iOS Form Container Card -->
+        <div class="ios-card border-0 p-4 shadow-sm">
+
+            <!-- Match Meta Header -->
+            <div class="text-center pb-3 mb-4 border-bottom border-light">
+                <div class="d-inline-flex align-items-center gap-1 mb-1">
+                    <span class="ios-round-chip">Round {{ fixture.round }}</span>
+                    {% if fixture.group %}
+                    <span class="ios-group-chip">{{ fixture.group.name }}</span>
+                    {% endif %}
+                </div>
+                <h6 class="fw-bold text-dark mb-1 fs-6">{{ fixture.tournament.name }}</h6>
+                <span class="ios-caption text-muted">
+                    <i class="bi bi-clock me-1"></i>{{ fixture.match_date|date:'M d, Y H:i'|default:'Date TBD' }}
+                </span>
+            </div>
+
+            <!-- Form -->
+            <form method="post" class="ios-form">
+                {% csrf_token %}
+
+                <!-- Scoreboard Card -->
+                <div class="ios-scoreboard-card p-3 p-md-4 mb-4">
+                    <div class="row align-items-center g-2">
+                        <!-- Home Team -->
+                        <div class="col-4 text-center">
+                            <span class="fw-bold text-dark d-block fs-7 text-truncate mb-1" title="{{ fixture.home_team.name }}">
+                                {{ fixture.home_team.name }}
+                            </span>
+                            <span class="ios-caption text-muted uppercase fw-semibold">Home</span>
+                        </div>
+
+                        <!-- Home Score Input -->
+                        <div class="col-2">
+                            <input type="number" name="home_score" class="form-control ios-score-input text-center"
+                                   value="{{ result.home_score|default:'0' }}" min="0" required>
+                        </div>
+
+                        <!-- Divider / Status Indicator -->
+                        <div class="col-2 text-center">
+                            <span id="scoreStatus" class="ios-caption fw-semibold text-muted d-block my-1">vs</span>
+                        </div>
+
+                        <!-- Away Score Input -->
+                        <div class="col-2">
+                            <input type="number" name="away_score" class="form-control ios-score-input text-center"
+                                   value="{{ result.away_score|default:'0' }}" min="0" required>
+                        </div>
+
+                        <!-- Away Team -->
+                        <div class="col-4 text-center">
+                            <span class="fw-bold text-dark d-block fs-7 text-truncate mb-1" title="{{ fixture.away_team.name }}">
+                                {{ fixture.away_team.name }}
+                            </span>
+                            <span class="ios-caption text-muted uppercase fw-semibold">Away</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mark as Played Switch Card -->
+                <div class="ios-switch-card p-3 mb-4 d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="fw-semibold text-dark fs-7 d-block">Mark as Played</span>
+                        <span class="ios-caption text-muted">Set match status to finished and update standings</span>
+                    </div>
+                    <div class="form-check form-switch m-0 p-0">
+                        <input class="form-check-input ios-switch" type="checkbox" name="is_played" id="isPlayed" {% if fixture.is_played %}checked{% endif %}>
+                    </div>
+                </div>
+
+                {% if fixture.is_played %}
+                <!-- Already Played Info Alert -->
+                <div class="ios-alert-info p-3 mb-4">
+                    <div class="d-flex align-items-center gap-2 fs-7">
+                        <i class="bi bi-info-circle-fill flex-shrink-0"></i>
+                        <span class="ios-caption">This result has been recorded. Adjust scores and click save to overwrite.</span>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Actions Bar -->
+                <div class="d-flex align-items-center justify-content-end gap-2 pt-2 border-top border-light">
+                    <a href="{% url 'admin_result_list' %}" class="btn btn-ios-secondary btn-sm px-3">
+                        Cancel
+                    </a>
+                    <button type="submit" class="btn btn-ios-success btn-sm px-3">
+                        <i class="bi bi-check-circle-fill me-1"></i> Save Result
+                    </button>
+                </div>
+            </form>
+
+        </div>
+    </div>
+</div>
+
+<!-- Dynamic Score Status JavaScript -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const homeScore = document.querySelector('input[name="home_score"]');
+    const awayScore = document.querySelector('input[name="away_score"]');
+    const scoreStatus = document.getElementById('scoreStatus');
+
+    function updateScoreDisplay() {
+        const home = parseInt(homeScore.value);
+        const away = parseInt(awayScore.value);
+
+        if (isNaN(home) || isNaN(away)) {
+            scoreStatus.className = 'ios-caption fw-semibold text-muted d-block my-1';
+            scoreStatus.textContent = 'vs';
+            return;
+        }
+
+        if (home > away) {
+            scoreStatus.className = 'ios-status-badge win d-block my-1';
+            scoreStatus.textContent = 'HOME WIN';
+        } else if (home < away) {
+            scoreStatus.className = 'ios-status-badge loss d-block my-1';
+            scoreStatus.textContent = 'AWAY WIN';
+        } else {
+            scoreStatus.className = 'ios-status-badge draw d-block my-1';
+            scoreStatus.textContent = 'DRAW';
+        }
+    }
+
+    homeScore.addEventListener('input', updateScoreDisplay);
+    awayScore.addEventListener('input', updateScoreDisplay);
+    updateScoreDisplay(); // Initialize on load
+});
+</script>
+
+<!-- Native iOS Aesthetic Custom Styles -->
+<style>
+/* Card & Glassmorphism Container */
+.ios-card {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 16px;
+    border: 1px solid rgba(229, 231, 235, 0.8);
+}
+
+/* Typography & Badges */
+.ios-caption {
+    font-size: 0.75rem;
+    letter-spacing: -0.01em;
+}
+
+.fs-7 {
+    font-size: 0.8125rem;
+}
+
+.ios-round-chip {
+    background: rgba(0, 122, 255, 0.1);
+    color: #007aff;
+    font-weight: 600;
+    font-size: 0.72rem;
+    padding: 3px 8px;
+    border-radius: 6px;
+}
+
+.ios-group-chip {
+    background: rgba(118, 118, 128, 0.12);
+    color: #1c1c1e;
+    font-weight: 500;
+    font-size: 0.72rem;
+    padding: 3px 8px;
+    border-radius: 6px;
+}
+
+/* Scoreboard Card */
+.ios-scoreboard-card {
+    background: rgba(242, 242, 247, 0.6);
+    border: 1px solid rgba(229, 231, 235, 0.8);
+    border-radius: 14px;
+}
+
+.ios-score-input {
+    font-size: 1.25rem !important;
+    font-weight: 700 !important;
+    color: #1c1c1e !important;
+    padding: 6px 4px !important;
+    border-radius: 10px !important;
+    background-color: #ffffff !important;
+    border: 1px solid rgba(229, 231, 235, 0.8) !important;
+}
+
+.ios-score-input:focus {
+    border-color: #007aff !important;
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15) !important;
+}
+
+/* Dynamic Status Badges */
+.ios-status-badge {
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 2px 4px;
+    border-radius: 4px;
+    letter-spacing: 0.02em;
+}
+.ios-status-badge.win {
+    background: rgba(52, 199, 89, 0.15);
+    color: #248a3d;
+}
+.ios-status-badge.loss {
+    background: rgba(255, 59, 48, 0.15);
+    color: #d70015;
+}
+.ios-status-badge.draw {
+    background: rgba(255, 149, 0, 0.15);
+    color: #c27000;
+}
+
+/* Switch Component */
+.ios-switch-card {
+    background: rgba(242, 242, 247, 0.4);
+    border: 1px solid rgba(229, 231, 235, 0.8);
+    border-radius: 12px;
+}
+
+.ios-switch {
+    width: 2.75em !important;
+    height: 1.5em !important;
+    background-color: rgba(120, 120, 128, 0.2) !important;
+    border-color: transparent !important;
+    cursor: pointer;
+}
+.ios-switch:checked {
+    background-color: #34c759 !important;
+}
+
+/* Callouts */
+.ios-alert-info {
+    background: rgba(0, 122, 255, 0.08);
+    border-radius: 12px;
+    border: 1px solid rgba(0, 122, 255, 0.2);
+    color: #0056b3;
+}
+
+/* Buttons */
+.btn-ios-success {
+    background-color: #34c759;
+    color: #ffffff;
+    border-radius: 9px;
+    font-weight: 600;
+    border: none;
+    transition: all 0.15s ease;
+}
+.btn-ios-success:hover {
+    background-color: #2fb350;
+    color: #ffffff;
+    transform: scale(0.98);
+}
+
+.btn-ios-secondary {
+    background-color: rgba(118, 118, 128, 0.12);
+    color: #1c1c1e;
+    border-radius: 9px;
+    font-weight: 500;
+    border: none;
+    transition: all 0.15s ease;
+}
+.btn-ios-secondary:hover {
+    background-color: rgba(118, 118, 128, 0.2);
+    color: #1c1c1e;
+    transform: scale(0.98);
+}
+</style>
+{% endblock %}

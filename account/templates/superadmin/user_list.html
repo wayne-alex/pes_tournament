@@ -1,0 +1,251 @@
+{% extends 'superadmin/base.html' %}
+
+{% block title %}Users - Tournament Manager{% endblock %}
+{% block page_title %}User Management{% endblock %}
+{% block page_subtitle %}Manage system users and their roles{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* iOS Custom Table Styling */
+    .table-ios {
+        margin-bottom: 0;
+        vertical-align: middle;
+    }
+
+    .table-ios thead th {
+        font-size: 0.725rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        color: var(--ios-text-secondary);
+        border-bottom: 1px solid var(--ios-border);
+        padding: 0.85rem 1rem;
+        background: transparent;
+    }
+
+    .table-ios tbody td {
+        padding: 0.85rem 1rem;
+        border-bottom: 1px solid var(--ios-border);
+        font-size: 0.875rem;
+        color: var(--ios-text-primary);
+        background: transparent;
+    }
+
+    .table-ios tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    /* iOS Contact Style Avatar */
+    .user-avatar-sm {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #007aff, #5856d6);
+        color: white;
+        font-weight: 600;
+        font-size: 0.75rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    /* iOS Translucent Status Badges */
+    .badge-ios {
+        font-weight: 600;
+        padding: 0.35rem 0.65rem;
+        border-radius: 20px;
+        font-size: 0.725rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+    }
+
+    .badge-ios-role {
+        background: rgba(88, 86, 214, 0.12);
+        color: #5856d6;
+    }
+
+    .badge-ios-active {
+        background: rgba(52, 199, 89, 0.12);
+        color: #248a3d;
+    }
+
+    .badge-ios-inactive {
+        background: rgba(255, 59, 48, 0.12);
+        color: #ff3b30;
+    }
+
+    .status-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background-color: currentColor;
+    }
+
+    /* iOS Soft Action Icon Buttons */
+    .btn-action-ios {
+        width: 32px;
+        height: 32px;
+        border-radius: 10px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: none;
+        background: rgba(118, 118, 128, 0.08);
+        color: var(--ios-text-primary);
+        transition: transform 0.15s ease, background-color 0.15s ease;
+        text-decoration: none;
+    }
+
+    .btn-action-ios:active {
+        transform: scale(0.92);
+    }
+
+    .btn-action-ios.edit:hover {
+        background: rgba(0, 122, 255, 0.15);
+        color: #007aff;
+    }
+
+    .btn-action-ios.delete:hover {
+        background: rgba(255, 59, 48, 0.15);
+        color: #ff3b30;
+    }
+
+    /* iOS Native Pagination Controls */
+    .pagination-ios {
+        gap: 0.35rem;
+    }
+
+    .pagination-ios .page-link {
+        border-radius: 10px !important;
+        border: 1px solid var(--ios-border);
+        background: rgba(255, 255, 255, 0.6);
+        color: var(--ios-text-primary);
+        font-size: 0.825rem;
+        font-weight: 500;
+        padding: 0.4rem 0.8rem;
+        transition: all 0.15s ease;
+    }
+
+    .pagination-ios .page-item.active .page-link {
+        background: #007aff;
+        border-color: #007aff;
+        color: white;
+        font-weight: 600;
+        box-shadow: 0 2px 8px rgba(0, 122, 255, 0.25);
+    }
+
+    .pagination-ios .page-link:hover:not(.active) {
+        background: rgba(118, 118, 128, 0.12);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <!-- Header Controls -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="form-title mb-0 border-0 pb-0">
+            <i class="bi bi-people-fill text-primary me-2"></i>All Users
+        </h5>
+        <a href="{% url 'admin_user_create' %}" class="btn btn-primary d-inline-flex align-items-center gap-1">
+            <i class="bi bi-person-plus-fill"></i> Add User
+        </a>
+    </div>
+
+    <!-- User Table -->
+    <div class="table-responsive">
+        <table class="table table-ios">
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Joined</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="user-avatar-sm">
+                                {{ user.username|slice:":1"|upper }}
+                            </div>
+                            <strong class="fw-semibold">{{ user.username }}</strong>
+                        </div>
+                    </td>
+                    <td>{{ user.get_full_name|default:'-' }}</td>
+                    <td class="text-secondary">{{ user.email|default:'-' }}</td>
+                    <td>
+                        <span class="badge-ios badge-ios-role">
+                            {{ user.get_role_display }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if user.is_active %}
+                        <span class="badge-ios badge-ios-active">
+                            <span class="status-dot"></span> Active
+                        </span>
+                        {% else %}
+                        <span class="badge-ios badge-ios-inactive">
+                            <span class="status-dot"></span> Inactive
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td class="text-secondary">{{ user.date_joined|date:'M d, Y' }}</td>
+                    <td>
+                        <div class="d-flex justify-content-end gap-1">
+                            <a href="{% url 'admin_user_edit' user.id %}" class="btn-action-ios edit" title="Edit User">
+                                <i class="bi bi-pencil-fill"></i>
+                            </a>
+                            <a href="{% url 'admin_user_delete' user.id %}" class="btn-action-ios delete" title="Delete User">
+                                <i class="bi bi-trash-fill"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center py-5 text-secondary">
+                        <i class="bi bi-person-x d-block fs-2 mb-2"></i>
+                        No users found in the system
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- iOS Native Pagination -->
+    {% if users.has_other_pages %}
+    <div class="mt-4 pt-2 border-top" style="border-color: var(--ios-border) !important;">
+        <nav>
+            <ul class="pagination pagination-ios justify-content-center mb-0">
+                {% if users.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ users.previous_page_number }}">Previous</a>
+                </li>
+                {% endif %}
+
+                {% for num in users.paginator.page_range %}
+                <li class="page-item {% if users.number == num %}active{% endif %}">
+                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                </li>
+                {% endfor %}
+
+                {% if users.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ users.next_page_number }}">Next</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,56 @@
+{% extends 'superadmin/base.html' %}
+
+{% block title %}Bulk Create Teams - Tournament Manager{% endblock %}
+{% block page_title %}Bulk Create Teams{% endblock %}
+{% block page_subtitle %}Create multiple teams at once{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-xl-8 col-lg-10">
+        <div class="form-container">
+            <h5 class="form-title">Bulk Create Teams</h5>
+            
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i>
+                Enter one team name per line. Teams with the same name in the same tournament will be skipped.
+            </div>
+            
+            <form method="post">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label for="tournament" class="form-label">Tournament *</label>
+                    <select name="tournament" id="tournament" class="form-select" required>
+                        <option value="">Select a tournament...</option>
+                        {% for tournament in tournaments %}
+                        <option value="{{ tournament.id }}">{{ tournament.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="default_player_name" class="form-label">Default Player Name</label>
+                    <input type="text" name="default_player_name" id="default_player_name" class="form-control" 
+                           placeholder="Leave blank to use team name">
+                    <div class="form-text">Optional: This will be used for all teams if no player name is specified per team.</div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="team_names" class="form-label">Team Names *</label>
+                    <textarea name="team_names" id="team_names" class="form-control" rows="10" 
+                              placeholder="Enter one team per line&#10;Example:&#10;Real Madrid&#10;Barcelona&#10;Bayern Munich" required></textarea>
+                    <div class="form-text">Enter one team name per line. Duplicate names in the same tournament will be skipped.</div>
+                </div>
+                
+                <div class="d-flex gap-2 mt-4">
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-upload"></i> Create Teams
+                    </button>
+                    <a href="{% url 'admin_team_list' %}" class="btn btn-secondary">
+                        <i class="bi bi-x-circle"></i> Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

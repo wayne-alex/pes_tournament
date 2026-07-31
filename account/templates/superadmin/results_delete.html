@@ -1,0 +1,197 @@
+{% extends 'superadmin/base.html' %}
+{% load static %}
+
+{% block title %}Delete Result - Tournament Manager{% endblock %}
+{% block page_title %}Delete Result{% endblock %}
+{% block page_subtitle %}Confirm match result deletion{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-xl-6 col-lg-8">
+        <!-- Main Form Container Card -->
+        <div class="ios-card border-0 p-4 shadow-sm mb-4">
+
+            <!-- Warning Header -->
+            <div class="text-center mb-4">
+                <div class="ios-danger-icon-badge mx-auto mb-3">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                </div>
+                <h5 class="fw-bold text-dark mb-1 fs-5">Delete Match Result</h5>
+                <span class="ios-caption text-muted">This action is permanent and cannot be undone.</span>
+            </div>
+
+            <!-- Match Overview Card -->
+            <div class="ios-match-summary-card p-3 p-md-4 mb-4">
+                <div class="row align-items-center text-center g-2 mb-3">
+                    <!-- Home Team -->
+                    <div class="col-5">
+                        <span class="fw-bold text-dark fs-6 d-block text-truncate" title="{{ fixture.home_team.name }}">
+                            {{ fixture.home_team.name }}
+                        </span>
+                        <span class="ios-caption text-muted uppercase fw-semibold">Home</span>
+                    </div>
+
+                    <!-- Recorded Score -->
+                    <div class="col-2">
+                        <span class="ios-score-badge">
+                            {{ result.home_score }} - {{ result.away_score }}
+                        </span>
+                    </div>
+
+                    <!-- Away Team -->
+                    <div class="col-5">
+                        <span class="fw-bold text-dark fs-6 d-block text-truncate" title="{{ fixture.away_team.name }}">
+                            {{ fixture.away_team.name }}
+                        </span>
+                        <span class="ios-caption text-muted uppercase fw-semibold">Away</span>
+                    </div>
+                </div>
+
+                <!-- Match Details Divider & Meta -->
+                <div class="pt-3 border-top border-light-subtle text-center">
+                    <div class="d-inline-flex flex-wrap justify-content-center gap-2 align-items-center">
+                        <span class="ios-meta-pill">
+                            <i class="bi bi-trophy me-1"></i>{{ fixture.tournament.name }}
+                        </span>
+                        <span class="ios-meta-pill">
+                            <i class="bi bi-layers me-1"></i>Round {{ fixture.round }}
+                        </span>
+                        <span class="ios-meta-pill">
+                            <i class="bi bi-clock me-1"></i>{{ fixture.match_date|date:'M d, Y H:i'|default:'TBD' }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Soft Danger Impact Callout -->
+            <div class="ios-alert-danger d-flex align-items-start gap-3 p-3 rounded-3 mb-4">
+                <i class="bi bi-info-circle-fill fs-5 flex-shrink-0 mt-1"></i>
+                <div>
+                    <div class="fw-bold fs-7">Deleting this result will:</div>
+                    <ul class="ios-caption text-muted mb-0 ps-3 mt-1">
+                        <li>Permanently remove the recorded score from the fixture</li>
+                        <li>Recalculate overall team standings and statistics</li>
+                        <li>Reset the fixture status back to <strong>Unplayed</strong></li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Delete Form Actions -->
+            <form method="post" class="ios-form">
+                {% csrf_token %}
+                <div class="d-flex align-items-center justify-content-end gap-2 pt-2 border-top border-light">
+                    <a href="{% url 'admin_result_list' %}" class="btn btn-ios-secondary btn-sm px-3">
+                        <i class="bi bi-arrow-left me-1"></i> Cancel
+                    </a>
+                    <button type="submit" class="btn btn-ios-danger btn-sm px-3">
+                        <i class="bi bi-trash-fill me-1"></i> Confirm Delete
+                    </button>
+                </div>
+            </form>
+
+        </div>
+    </div>
+</div>
+
+<!-- Native iOS Aesthetic Custom Styles -->
+<style>
+/* Card & Glassmorphism Container */
+.ios-card {
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 18px;
+    border: 1px solid rgba(229, 231, 235, 0.8);
+}
+
+/* Typography & Subtleties */
+.ios-caption {
+    font-size: 0.75rem;
+    letter-spacing: -0.01em;
+}
+
+.fs-7 {
+    font-size: 0.8125rem;
+}
+
+/* Badges & Icons */
+.ios-danger-icon-badge {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: rgba(255, 59, 48, 0.12);
+    color: #ff3b30;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+}
+
+.ios-match-summary-card {
+    background: rgba(242, 242, 247, 0.6);
+    border: 1px solid rgba(229, 231, 235, 0.9);
+    border-radius: 14px;
+}
+
+.ios-score-badge {
+    background-color: #ff3b30;
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 1.1rem;
+    padding: 4px 12px;
+    border-radius: 10px;
+    display: inline-block;
+    box-shadow: 0 2px 6px rgba(255, 59, 48, 0.25);
+}
+
+.ios-meta-pill {
+    background: rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(229, 231, 235, 0.8);
+    color: #48484a;
+    font-size: 0.72rem;
+    font-weight: 500;
+    padding: 3px 10px;
+    border-radius: 20px;
+}
+
+/* Callouts */
+.ios-alert-danger {
+    background-color: rgba(255, 59, 48, 0.08);
+    border: 1px solid rgba(255, 59, 48, 0.2);
+    color: #d70015;
+}
+
+.ios-alert-danger ul li {
+    margin-bottom: 2px;
+}
+
+/* Buttons */
+.btn-ios-danger {
+    background-color: #ff3b30;
+    color: #ffffff;
+    border-radius: 9px;
+    font-weight: 600;
+    border: none;
+    transition: all 0.15s ease;
+}
+.btn-ios-danger:hover {
+    background-color: #d70015;
+    color: #ffffff;
+    transform: scale(0.98);
+}
+
+.btn-ios-secondary {
+    background-color: rgba(118, 118, 128, 0.12);
+    color: #1c1c1e;
+    border-radius: 9px;
+    font-weight: 500;
+    border: none;
+    transition: all 0.15s ease;
+}
+.btn-ios-secondary:hover {
+    background-color: rgba(118, 118, 128, 0.2);
+    color: #1c1c1e;
+    transform: scale(0.98);
+}
+</style>
+{% endblock %}

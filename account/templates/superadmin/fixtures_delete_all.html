@@ -1,0 +1,172 @@
+{% extends 'superadmin/base.html' %}
+{% load static %}
+
+{% block title %}Delete All Fixtures - Tournament Manager{% endblock %}
+{% block page_title %}Delete All Fixtures{% endblock %}
+{% block page_subtitle %}Wipe scheduled fixtures for a selected tournament{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6 col-md-8">
+        <!-- iOS Container Card -->
+        <div class="ios-card border-0 p-4 shadow-sm">
+            
+            <!-- High-Risk Warning Header -->
+            <div class="text-center mb-4">
+                <div class="ios-danger-badge mx-auto mb-2">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                </div>
+                <h6 class="fw-bold text-dark mb-1 fs-6">Bulk Fixture Deletion</h6>
+                <p class="text-muted ios-caption mb-0">Select a tournament to purge all associated fixture records.</p>
+            </div>
+
+            <!-- Danger Context Alert -->
+            <div class="ios-alert-danger p-3 mb-4">
+                <div class="d-flex align-items-start gap-2 fs-7">
+                    <i class="bi bi-shield-fill-x flex-shrink-0 mt-1"></i>
+                    <div>
+                        <strong class="d-block mb-1 fw-semibold">Irreversible Administrative Action</strong>
+                        <span class="ios-caption d-block">This action will permanently delete every fixture under the selected tournament. Any linked completed match results and statistics will also be purged.</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form -->
+            <form method="post" class="ios-form">
+                {% csrf_token %}
+                
+                <!-- Tournament Select -->
+                <div class="mb-4">
+                    <label for="tournament" class="ios-form-label">
+                        Target Tournament <span class="text-danger">*</span>
+                    </label>
+                    <select name="tournament" id="tournament" class="form-select" required>
+                        <option value="">Select a tournament to purge...</option>
+                        {% for t in tournaments %}
+                        <option value="{{ t.id }}">
+                            {{ t.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <div class="ios-caption text-muted mt-1">
+                        <i class="bi bi-info-circle me-1"></i>Only fixtures for the selected tournament will be destroyed
+                    </div>
+                </div>
+
+                <!-- Actions Bar -->
+                <div class="d-flex align-items-center justify-content-end gap-2 pt-2 border-top border-light">
+                    <a href="{% url 'admin_fixture_list' %}" class="btn btn-ios-secondary btn-sm px-3">
+                        Cancel
+                    </a>
+                    <button type="submit" class="btn btn-ios-danger btn-sm px-3" onclick="return confirm('ARE YOU ABSOLUTELY SURE?\n\nThis will delete ALL fixtures and recorded results for the selected tournament!')">
+                        <i class="bi bi-trash3-fill me-1"></i> Delete All Fixtures
+                    </button>
+                </div>
+            </form>
+
+        </div>
+    </div>
+</div>
+
+<!-- Native iOS Aesthetic Custom Styles -->
+<style>
+/* Card & Glassmorphism Container */
+.ios-card {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 16px;
+    border: 1px solid rgba(229, 231, 235, 0.8);
+}
+
+/* Typography & Subtleties */
+.ios-caption {
+    font-size: 0.75rem;
+    letter-spacing: -0.01em;
+}
+
+.fs-7 {
+    font-size: 0.8125rem;
+}
+
+.ios-form-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #48484a;
+    letter-spacing: -0.01em;
+    margin-bottom: 4px;
+    display: block;
+}
+
+/* Badges & Alerts */
+.ios-danger-badge {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: rgba(255, 59, 48, 0.12);
+    color: #ff3b30;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+}
+
+.ios-alert-danger {
+    background: rgba(255, 59, 48, 0.08);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 59, 48, 0.2);
+    color: #d70015;
+}
+
+/* Form Inputs Custom iOS Override */
+.ios-form select {
+    display: block;
+    width: 100%;
+    padding: 8px 12px;
+    font-size: 0.875rem;
+    font-weight: 400;
+    line-height: 1.5;
+    color: #1c1c1e;
+    background-color: rgba(242, 242, 247, 0.7);
+    border: 1px solid rgba(229, 231, 235, 0.8);
+    border-radius: 10px;
+    transition: all 0.15s ease-in-out;
+}
+
+.ios-form select:focus {
+    background-color: #ffffff;
+    border-color: #ff3b30;
+    outline: 0;
+    box-shadow: 0 0 0 3px rgba(255, 59, 48, 0.15);
+}
+
+/* Buttons */
+.btn-ios-danger {
+    background-color: #ff3b30;
+    color: #ffffff;
+    border-radius: 9px;
+    font-weight: 600;
+    border: none;
+    transition: all 0.15s ease;
+}
+.btn-ios-danger:hover {
+    background-color: #e03126;
+    color: #ffffff;
+    transform: scale(0.98);
+}
+
+.btn-ios-secondary {
+    background-color: rgba(118, 118, 128, 0.12);
+    color: #1c1c1e;
+    border-radius: 9px;
+    font-weight: 500;
+    border: none;
+    transition: all 0.15s ease;
+}
+.btn-ios-secondary:hover {
+    background-color: rgba(118, 118, 128, 0.2);
+    color: #1c1c1e;
+    transform: scale(0.98);
+}
+</style>
+{% endblock %}

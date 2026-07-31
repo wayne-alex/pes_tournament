@@ -1,0 +1,389 @@
+{% extends 'superadmin/base.html' %}
+{% load static %}
+
+{% block title %}Results - Tournament Manager{% endblock %}
+{% block page_title %}Results Management{% endblock %}
+{% block page_subtitle %}View and manage all match results{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <!-- iOS Table Card Container -->
+        <div class="ios-card border-0 shadow-sm p-3 p-md-4">
+
+            <!-- Header Toolbar -->
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4 pb-3 border-bottom border-light">
+                <div>
+                    <h6 class="fw-bold text-dark mb-0 fs-6">Match Results</h6>
+                    <span class="ios-caption text-muted">{{ result_count }} total recorded results</span>
+                </div>
+
+                <div class="d-flex align-items-center flex-wrap gap-2">
+                    <button class="btn btn-ios-secondary btn-sm px-3" type="button" data-bs-toggle="collapse" data-bs-target="#filterCollapse">
+                        <i class="bi bi-funnel-fill me-1"></i> Filter
+                    </button>
+                    <a href="{% url 'admin_result_batch_enter' %}" class="btn btn-ios-primary btn-sm px-3">
+                        <i class="bi bi-pencil-square me-1"></i> Batch Enter
+                    </a>
+                    <a href="{% url 'admin_result_enter' %}" class="btn btn-ios-success btn-sm px-3">
+                        <i class="bi bi-plus-lg me-1"></i> Enter Result
+                    </a>
+                    <a href="{% url 'admin_result_export' %}" class="btn btn-ios-secondary btn-sm px-3">
+                        <i class="bi bi-download me-1"></i> Export
+                    </a>
+                </div>
+            </div>
+
+            <!-- iOS Filter Collapse Section -->
+            <div class="collapse {% if selected_tournament or selected_team or date_from or date_to %}show{% endif %}" id="filterCollapse">
+                <div class="ios-filter-panel p-3 mb-4">
+                    <form method="get" class="row g-2 align-items-end">
+                        <div class="col-lg-3 col-md-6">
+                            <label class="ios-form-label">Tournament</label>
+                            <select name="tournament" class="form-select form-select-sm">
+                                <option value="">All Tournaments</option>
+                                {% for tournament in tournaments %}
+                                <option value="{{ tournament.id }}" {% if selected_tournament == tournament.id|stringformat:'s' %}selected{% endif %}>
+                                    {{ tournament.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-lg-3 col-md-6">
+                            <label class="ios-form-label">Team</label>
+                            <select name="team" class="form-select form-select-sm">
+                                <option value="">All Teams</option>
+                                {% for team in teams %}
+                                <option value="{{ team.id }}" {% if selected_team == team.id|stringformat:'s' %}selected{% endif %}>
+                                    {{ team.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-lg-2 col-md-4 col-6">
+                            <label class="ios-form-label">Date From</label>
+                            <input type="date" name="date_from" class="form-control form-control-sm" value="{{ date_from }}">
+                        </div>
+                        <div class="col-lg-2 col-md-4 col-6">
+                            <label class="ios-form-label">Date To</label>
+                            <input type="date" name="date_to" class="form-control form-control-sm" value="{{ date_to }}">
+                        </div>
+                        <div class="col-lg-2 col-md-4">
+                            <button type="submit" class="btn btn-ios-primary btn-sm w-100">
+                                <i class="bi bi-search me-1"></i> Apply
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- iOS Styled Table -->
+            <div class="table-responsive">
+                <table class="table align-middle ios-table mb-0">
+                    <thead>
+                        <tr>
+                            <th>Date & Time</th>
+                            <th>Tournament</th>
+                            <th class="text-end">Home Team</th>
+                            <th class="text-center">Score</th>
+                            <th>Away Team</th>
+                            <th>Round</th>
+                            <th>Updated</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for result in results %}
+                        <tr>
+                            <td class="text-nowrap">
+                                <span class="fw-semibold text-dark d-block fs-7">
+                                    {{ result.fixture.match_date|date:'M d, Y'|default:'TBD' }}
+                                </span>
+                                <span class="ios-caption text-muted">
+                                    {{ result.fixture.match_date|date:'H:i'|default:'--:--' }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge ios-badge-subtle text-truncate" style="max-width: 140px;" title="{{ result.fixture.tournament.name }}">
+                                    {{ result.fixture.tournament.name }}
+                                </span>
+                            </td>
+                            <td class="text-end fw-semibold text-dark fs-7">
+                                {{ result.fixture.home_team.name }}
+                            </td>
+                            <td class="text-center">
+                                <span class="ios-score-pill px-2 py-1 fw-bold {% if result.home_score > result.away_score %}home-win{% elif result.home_score < result.away_score %}away-win{% else %}draw{% endif %}">
+                                    {{ result.home_score }} - {{ result.away_score }}
+                                </span>
+                            </td>
+                            <td class="fw-semibold text-dark fs-7">
+                                {{ result.fixture.away_team.name }}
+                            </td>
+                            <td>
+                                <span class="ios-round-chip">R{{ result.fixture.round }}</span>
+                            </td>
+                            <td class="text-nowrap">
+                                <span class="ios-caption text-muted">{{ result.updated_at|timesince }} ago</span>
+                            </td>
+                            <td class="text-end">
+                                <div class="d-inline-flex gap-1">
+                                    <a href="{% url 'admin_result_edit' result.id %}" class="btn btn-ios-icon btn-sm" title="Edit Result">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <a href="{% url 'admin_result_delete' result.id %}" class="btn btn-ios-icon text-danger btn-sm" title="Delete Result">
+                                        <i class="bi bi-trash3"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center py-5">
+                                <div class="ios-empty-state my-3">
+                                    <div class="ios-avatar-badge mx-auto mb-3">
+                                        <i class="bi bi-clipboard-x fs-3"></i>
+                                    </div>
+                                    <h6 class="fw-bold text-dark mb-1">No Results Recorded</h6>
+                                    <p class="ios-caption text-muted mb-3">Try adjusting your filters or record match scores.</p>
+                                    <a href="{% url 'admin_result_enter' %}" class="btn btn-ios-success btn-sm px-3">
+                                        <i class="bi bi-plus-lg me-1"></i> Enter First Result
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- iOS Styled Pagination -->
+            {% if results.has_other_pages %}
+            <div class="d-flex justify-content-center pt-4 border-top border-light">
+                <nav>
+                    <ul class="pagination pagination-sm ios-pagination mb-0 gap-1">
+                        {% if results.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ results.previous_page_number }}{% if selected_tournament %}&tournament={{ selected_tournament }}{% endif %}{% if selected_team %}&team={{ selected_team }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}">
+                                <i class="bi bi-chevron-left"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% for num in results.paginator.page_range %}
+                        <li class="page-item {% if results.number == num %}active{% endif %}">
+                            <a class="page-link" href="?page={{ num }}{% if selected_tournament %}&tournament={{ selected_tournament }}{% endif %}{% if selected_team %}&team={{ selected_team }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}">
+                                {{ num }}
+                            </a>
+                        </li>
+                        {% endfor %}
+
+                        {% if results.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ results.next_page_number }}{% if selected_tournament %}&tournament={{ selected_tournament }}{% endif %}{% if selected_team %}&team={{ selected_team }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+
+        </div>
+    </div>
+</div>
+
+<!-- Native iOS Aesthetic Custom Styles -->
+<style>
+/* Card & Glassmorphism Container */
+.ios-card {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 16px;
+    border: 1px solid rgba(229, 231, 235, 0.8);
+}
+
+/* Typography & Subtleties */
+.ios-caption {
+    font-size: 0.75rem;
+    letter-spacing: -0.01em;
+}
+
+.fs-7 {
+    font-size: 0.8125rem;
+}
+
+.ios-form-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #48484a;
+    letter-spacing: -0.01em;
+    margin-bottom: 4px;
+    display: block;
+}
+
+/* Filter Panel */
+.ios-filter-panel {
+    background: rgba(242, 242, 247, 0.6);
+    border-radius: 12px;
+    border: 1px solid rgba(229, 231, 235, 0.8);
+}
+
+/* Table Design */
+.ios-table th {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #8e8e93;
+    border-bottom: 1px solid rgba(229, 231, 235, 0.8);
+    padding: 12px 10px;
+}
+
+.ios-table td {
+    padding: 12px 10px;
+    border-bottom: 1px solid rgba(242, 242, 247, 0.8);
+}
+
+/* Score Pills */
+.ios-score-pill {
+    border-radius: 8px;
+    font-size: 0.8125rem;
+    display: inline-block;
+    min-width: 54px;
+    letter-spacing: -0.01em;
+}
+
+.ios-score-pill.home-win {
+    background: rgba(52, 199, 89, 0.12);
+    color: #248a3d;
+}
+
+.ios-score-pill.away-win {
+    background: rgba(255, 59, 48, 0.12);
+    color: #d70015;
+}
+
+.ios-score-pill.draw {
+    background: rgba(255, 149, 0, 0.12);
+    color: #c27000;
+}
+
+/* Badges & Chips */
+.ios-badge-subtle {
+    background: rgba(118, 118, 128, 0.1);
+    color: #1c1c1e;
+    font-weight: 500;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    padding: 4px 8px;
+}
+
+.ios-round-chip {
+    background: rgba(0, 122, 255, 0.1);
+    color: #007aff;
+    font-weight: 600;
+    font-size: 0.72rem;
+    padding: 3px 8px;
+    border-radius: 6px;
+}
+
+.ios-avatar-badge {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: rgba(118, 118, 128, 0.12);
+    color: #8e8e93;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Form Controls */
+.ios-filter-panel select,
+.ios-filter-panel input {
+    background-color: #ffffff;
+    border: 1px solid rgba(229, 231, 235, 0.8);
+    border-radius: 8px;
+    font-size: 0.8125rem;
+}
+
+.ios-filter-panel select:focus,
+.ios-filter-panel input:focus {
+    border-color: #007aff;
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.12);
+}
+
+/* iOS Buttons */
+.btn-ios-primary {
+    background-color: #007aff;
+    color: #ffffff;
+    border-radius: 8px;
+    font-weight: 600;
+    border: none;
+    transition: all 0.15s ease;
+}
+.btn-ios-primary:hover {
+    background-color: #0062cc;
+    color: #ffffff;
+}
+
+.btn-ios-success {
+    background-color: #34c759;
+    color: #ffffff;
+    border-radius: 8px;
+    font-weight: 600;
+    border: none;
+    transition: all 0.15s ease;
+}
+.btn-ios-success:hover {
+    background-color: #2fb350;
+    color: #ffffff;
+}
+
+.btn-ios-secondary {
+    background-color: rgba(118, 118, 128, 0.12);
+    color: #1c1c1e;
+    border-radius: 8px;
+    font-weight: 500;
+    border: none;
+    transition: all 0.15s ease;
+}
+.btn-ios-secondary:hover {
+    background-color: rgba(118, 118, 128, 0.2);
+    color: #1c1c1e;
+}
+
+.btn-ios-icon {
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background: rgba(118, 118, 128, 0.08);
+    color: #1c1c1e;
+    border: none;
+    transition: all 0.15s ease;
+}
+.btn-ios-icon:hover {
+    background: rgba(118, 118, 128, 0.18);
+}
+
+/* Pagination */
+.ios-pagination .page-link {
+    border-radius: 8px !important;
+    border: none;
+    background: rgba(118, 118, 128, 0.1);
+    color: #1c1c1e;
+    font-size: 0.8125rem;
+    padding: 5px 11px;
+}
+.ios-pagination .page-item.active .page-link {
+    background-color: #007aff;
+    color: #ffffff;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,195 @@
+{% extends 'superadmin/base.html' %}
+
+{% block title %}{{ title }} - Tournament Manager{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block page_subtitle %}{{ action }} team details{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-7 col-md-9">
+        <!-- iOS Form Container Card -->
+        <div class="ios-card border-0 p-4 shadow-sm">
+
+            <!-- Compact Header Block -->
+            <div class="d-flex align-items-center justify-content-between mb-4 pb-3 border-bottom border-light">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="ios-avatar-badge">
+                        <i class="bi bi-shield-fill-check"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0 fs-6">{{ title }}</h6>
+                        <span class="ios-caption text-muted">Fill in the required information below</span>
+                    </div>
+                </div>
+
+                {% if team %}
+                <a href="{% url 'admin_team_stats' team.id %}" class="btn btn-ios-secondary btn-sm">
+                    <i class="bi bi-chart-bar-fill me-1 text-primary"></i> Stats
+                </a>
+                {% endif %}
+            </div>
+
+            <!-- Form -->
+            <form method="post" class="ios-form">
+                {% csrf_token %}
+
+                <div class="row g-3 mb-3">
+                    <!-- Team Name -->
+                    <div class="col-md-6">
+                        <label for="{{ form.name.id_for_label }}" class="ios-form-label">
+                            Team Name <span class="text-danger">*</span>
+                        </label>
+                        {{ form.name }}
+                        {% if form.name.errors %}
+                        <div class="ios-form-error mt-1">
+                            <i class="bi bi-exclamation-circle-fill me-1"></i>{{ form.name.errors.0 }}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Player Name -->
+                    <div class="col-md-6">
+                        <label for="{{ form.player_name.id_for_label }}" class="ios-form-label">
+                            Player Name
+                        </label>
+                        {{ form.player_name }}
+                        {% if form.player_name.errors %}
+                        <div class="ios-form-error mt-1">
+                            <i class="bi bi-exclamation-circle-fill me-1"></i>{{ form.player_name.errors.0 }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Tournament Selection -->
+                <div class="mb-4">
+                    <label for="{{ form.tournament.id_for_label }}" class="ios-form-label">
+                        Tournament <span class="text-danger">*</span>
+                    </label>
+                    {{ form.tournament }}
+                    {% if form.tournament.errors %}
+                    <div class="ios-form-error mt-1">
+                        <i class="bi bi-exclamation-circle-fill me-1"></i>{{ form.tournament.errors.0 }}
+                    </div>
+                    {% else %}
+                    <div class="ios-caption text-muted mt-1">Select the tournament this team will participate in</div>
+                    {% endif %}
+                </div>
+
+                <!-- Actions Bar -->
+                <div class="d-flex align-items-center justify-content-end gap-2 pt-2">
+                    <a href="{% url 'admin_team_list' %}" class="btn btn-ios-secondary btn-sm px-3">
+                        Cancel
+                    </a>
+                    <button type="submit" class="btn btn-ios-primary btn-sm px-3">
+                        <i class="bi bi-check-lg me-1"></i> {{ action }} Team
+                    </button>
+                </div>
+            </form>
+
+        </div>
+    </div>
+</div>
+
+<!-- Native iOS Aesthetic Form Custom Styles -->
+<style>
+/* Card & Glassmorphism Container */
+.ios-card {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 16px;
+    border: 1px solid rgba(229, 231, 235, 0.8);
+}
+
+/* Typography & Subtleties */
+.ios-caption {
+    font-size: 0.75rem;
+    letter-spacing: -0.01em;
+}
+
+.ios-form-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #48484a;
+    letter-spacing: -0.01em;
+    margin-bottom: 4px;
+    display: block;
+}
+
+.ios-avatar-badge {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: rgba(0, 122, 255, 0.1);
+    color: #007aff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+}
+
+/* Form Inputs Custom iOS Override */
+.ios-form input[type="text"],
+.ios-form input[type="number"],
+.ios-form select,
+.ios-form textarea {
+    display: block;
+    width: 100%;
+    padding: 7px 12px;
+    font-size: 0.875rem;
+    font-weight: 400;
+    line-height: 1.5;
+    color: #1c1c1e;
+    background-color: rgba(242, 242, 247, 0.7);
+    border: 1px solid rgba(229, 231, 235, 0.8);
+    border-radius: 10px;
+    transition: all 0.15s ease-in-out;
+}
+
+.ios-form input:focus,
+.ios-form select:focus,
+.ios-form textarea:focus {
+    background-color: #ffffff;
+    border-color: #007aff;
+    outline: 0;
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15);
+}
+
+/* Error States */
+.ios-form-error {
+    font-size: 0.72rem;
+    color: #ff3b30;
+    font-weight: 500;
+}
+
+/* iOS Interactive Buttons */
+.btn-ios-primary {
+    background-color: #007aff;
+    color: #ffffff;
+    border-radius: 9px;
+    font-weight: 600;
+    border: none;
+    transition: all 0.15s ease;
+}
+.btn-ios-primary:hover {
+    background-color: #0062cc;
+    color: #ffffff;
+    transform: scale(0.98);
+}
+
+.btn-ios-secondary {
+    background-color: rgba(118, 118, 128, 0.12);
+    color: #1c1c1e;
+    border-radius: 9px;
+    font-weight: 500;
+    border: none;
+    transition: all 0.15s ease;
+}
+.btn-ios-secondary:hover {
+    background-color: rgba(118, 118, 128, 0.2);
+    color: #1c1c1e;
+    transform: scale(0.98);
+}
+</style>
+{% endblock %}

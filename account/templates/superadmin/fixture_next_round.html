@@ -1,0 +1,195 @@
+{% extends 'superadmin/base.html' %}
+{% load static %}
+
+{% block title %}Generate Next Round - Tournament Manager{% endblock %}
+{% block page_title %}Generate Next Swiss Round{% endblock %}
+{% block page_subtitle %}Generate the next round of Swiss tournament fixtures{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8 col-md-10">
+        <!-- iOS Form Container Card -->
+        <div class="ios-card border-0 p-4 shadow-sm">
+
+            <!-- Header Block -->
+            <div class="d-flex align-items-center gap-2 mb-4 pb-3 border-bottom border-light">
+                <div class="ios-avatar-badge">
+                    <i class="bi bi-arrow-repeat"></i>
+                </div>
+                <div>
+                    <h6 class="fw-bold text-dark mb-0 fs-6">Swiss System Round Generation</h6>
+                    <span class="ios-caption text-muted">Pair teams automatically based on cumulative standings</span>
+                </div>
+            </div>
+
+            <!-- Swiss System Explanation -->
+            <div class="ios-alert-info p-3 mb-3">
+                <div class="d-flex align-items-start gap-2 fs-7">
+                    <i class="bi bi-info-circle-fill flex-shrink-0 mt-1"></i>
+                    <div>
+                        <strong class="d-block mb-1 fw-semibold">Swiss Pairing Algorithm</strong>
+                        <span class="ios-caption d-block">The next round pairs competitors with similar scores while ensuring no repeat match-ups take place across previous rounds.</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Prerequisites Warning -->
+            <div class="ios-alert-warning p-3 mb-4">
+                <div class="d-flex align-items-start gap-2 fs-7">
+                    <i class="bi bi-exclamation-triangle-fill flex-shrink-0 mt-1"></i>
+                    <div>
+                        <strong class="d-block mb-1 fw-semibold">Generation Requirements</strong>
+                        <ul class="ios-caption mb-0 mt-1 ps-3">
+                            <li>All fixtures in the current active round must have recorded results.</li>
+                            <li>Bye rounds are automatically awarded to eligible unplayed teams.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form -->
+            <form method="post" class="ios-form">
+                {% csrf_token %}
+
+                <!-- Tournament Selector -->
+                <div class="mb-4">
+                    <label for="tournament" class="ios-form-label">
+                        Select Swiss Tournament <span class="text-danger">*</span>
+                    </label>
+                    <select name="tournament" id="tournament" class="form-select" required>
+                        <option value="">Select a tournament...</option>
+                        {% for tournament in tournaments %}
+                        <option value="{{ tournament.id }}">
+                            {{ tournament.name }} ({{ tournament.swiss_total_rounds|default:'?' }} total rounds)
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <div class="ios-caption text-muted mt-1">
+                        <i class="bi bi-filter me-1"></i>Only Swiss format tournaments are displayed
+                    </div>
+                </div>
+
+                <!-- Actions Bar -->
+                <div class="d-flex align-items-center justify-content-end gap-2 pt-2 border-top border-light">
+                    <a href="{% url 'admin_fixture_list' %}" class="btn btn-ios-secondary btn-sm px-3">
+                        Cancel
+                    </a>
+                    <button type="submit" class="btn btn-ios-success btn-sm px-3" onclick="return confirm('Generate next Swiss round?')">
+                        <i class="bi bi-arrow-right-circle-fill me-1"></i> Generate Next Round
+                    </button>
+                </div>
+            </form>
+
+        </div>
+    </div>
+</div>
+
+<!-- Native iOS Aesthetic Form Custom Styles -->
+<style>
+/* Card & Glassmorphism Container */
+.ios-card {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 16px;
+    border: 1px solid rgba(229, 231, 235, 0.8);
+}
+
+/* Typography & Badges */
+.ios-caption {
+    font-size: 0.75rem;
+    letter-spacing: -0.01em;
+}
+
+.fs-7 {
+    font-size: 0.8125rem;
+}
+
+.ios-form-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #48484a;
+    letter-spacing: -0.01em;
+    margin-bottom: 4px;
+    display: block;
+}
+
+.ios-avatar-badge {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: rgba(0, 122, 255, 0.12);
+    color: #007aff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+}
+
+/* Callout Alerts */
+.ios-alert-info {
+    background: rgba(0, 122, 255, 0.08);
+    border-radius: 12px;
+    border: 1px solid rgba(0, 122, 255, 0.2);
+    color: #0056b3;
+}
+
+.ios-alert-warning {
+    background: rgba(255, 149, 0, 0.08);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 149, 0, 0.2);
+    color: #995c00;
+}
+
+/* Form Inputs Custom iOS Override */
+.ios-form select {
+    display: block;
+    width: 100%;
+    padding: 7px 12px;
+    font-size: 0.875rem;
+    font-weight: 400;
+    line-height: 1.5;
+    color: #1c1c1e;
+    background-color: rgba(242, 242, 247, 0.7);
+    border: 1px solid rgba(229, 231, 235, 0.8);
+    border-radius: 10px;
+    transition: all 0.15s ease-in-out;
+}
+
+.ios-form select:focus {
+    background-color: #ffffff;
+    border-color: #007aff;
+    outline: 0;
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15);
+}
+
+/* iOS Interactive Buttons */
+.btn-ios-success {
+    background-color: #34c759;
+    color: #ffffff;
+    border-radius: 9px;
+    font-weight: 600;
+    border: none;
+    transition: all 0.15s ease;
+}
+.btn-ios-success:hover {
+    background-color: #2fb350;
+    color: #ffffff;
+    transform: scale(0.98);
+}
+
+.btn-ios-secondary {
+    background-color: rgba(118, 118, 128, 0.12);
+    color: #1c1c1e;
+    border-radius: 9px;
+    font-weight: 500;
+    border: none;
+    transition: all 0.15s ease;
+}
+.btn-ios-secondary:hover {
+    background-color: rgba(118, 118, 128, 0.2);
+    color: #1c1c1e;
+    transform: scale(0.98);
+}
+</style>
+{% endblock %}

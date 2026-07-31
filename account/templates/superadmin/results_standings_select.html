@@ -1,0 +1,159 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}View Standings - Tournament Manager{% endblock %}
+{% block page_title %}Tournament Standings{% endblock %}
+{% block page_subtitle %}Select a tournament to view current rankings and statistics{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6 col-md-8">
+        <!-- iOS Form Container Card -->
+        <div class="ios-card border-0 p-4 shadow-sm">
+
+            <!-- Hero Header Icon -->
+            <div class="text-center mb-4">
+                <div class="ios-trophy-badge mx-auto mb-3">
+                    <i class="bi bi-trophy-fill"></i>
+                </div>
+                <h5 class="fw-bold text-dark mb-1 fs-5">Select Tournament</h5>
+                <p class="ios-caption text-muted mb-0">Choose an active tournament to inspect its current leaderboard</p>
+            </div>
+
+            {% if tournaments %}
+            <!-- Form -->
+            <form method="post" class="ios-form">
+                {% csrf_token %}
+
+                <div class="mb-4">
+                    <label for="tournament" class="ios-form-label">
+                        Target Tournament <span class="text-danger">*</span>
+                    </label>
+                    <select name="tournament" id="tournament" class="form-select" required>
+                        <option value="">Choose a tournament...</option>
+                        {% for tournament in tournaments %}
+                        <option value="{{ tournament.id }}">
+                            {{ tournament.name }} ({{ tournament.get_tournament_format_display }}) • {{ tournament.teams.count }} teams
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <div class="ios-caption text-muted mt-2">
+                        <i class="bi bi-info-circle me-1"></i>Standings update automatically as match results are entered.
+                    </div>
+                </div>
+
+                <!-- Submit Action Button -->
+                <div class="pt-2 border-top border-light">
+                    <button type="submit" class="btn btn-ios-primary w-100 py-2">
+                        <i class="bi bi-trophy-fill me-1"></i> View Standings
+                    </button>
+                </div>
+            </form>
+            {% else %}
+            <!-- Empty State -->
+            <div class="ios-empty-state text-center py-4">
+                <div class="ios-empty-badge mx-auto mb-3">
+                    <i class="bi bi-folder-x fs-2 text-muted"></i>
+                </div>
+                <h6 class="fw-bold text-dark mb-1">No Tournaments Found</h6>
+                <p class="ios-caption text-muted mb-4">There are currently no tournaments available to view standings.</p>
+
+                <a href="{% url 'admin_tournament_create' %}" class="btn btn-ios-primary btn-sm px-4">
+                    <i class="bi bi-plus-circle-fill me-1"></i> Create Tournament
+                </a>
+            </div>
+            {% endif %}
+
+        </div>
+    </div>
+</div>
+
+<!-- Native iOS Aesthetic Custom Styles -->
+<style>
+/* Card & Glassmorphism Container */
+.ios-card {
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 18px;
+    border: 1px solid rgba(229, 231, 235, 0.8);
+}
+
+/* Typography & Subtleties */
+.ios-caption {
+    font-size: 0.75rem;
+    letter-spacing: -0.01em;
+}
+
+.ios-form-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #48484a;
+    letter-spacing: -0.01em;
+    margin-bottom: 4px;
+    display: block;
+}
+
+/* Badges & Icons */
+.ios-trophy-badge {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(255, 149, 0, 0.15), rgba(255, 204, 0, 0.25));
+    color: #ff9500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.85rem;
+    box-shadow: inset 0 0 0 1px rgba(255, 149, 0, 0.2);
+}
+
+.ios-empty-badge {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: rgba(118, 118, 128, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Form Select Custom iOS Override */
+.ios-form select {
+    display: block;
+    width: 100%;
+    padding: 10px 14px;
+    font-size: 0.875rem;
+    font-weight: 400;
+    line-height: 1.5;
+    color: #1c1c1e;
+    background-color: rgba(242, 242, 247, 0.7);
+    border: 1px solid rgba(229, 231, 235, 0.8);
+    border-radius: 12px;
+    transition: all 0.15s ease-in-out;
+}
+
+.ios-form select:focus {
+    background-color: #ffffff;
+    border-color: #007aff;
+    outline: 0;
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.18);
+}
+
+/* Primary Button */
+.btn-ios-primary {
+    background-color: #007aff;
+    color: #ffffff;
+    border-radius: 10px;
+    font-weight: 600;
+    border: none;
+    transition: all 0.15s ease;
+}
+
+.btn-ios-primary:hover {
+    background-color: #0062cc;
+    color: #ffffff;
+    transform: scale(0.98);
+}
+</style>
+{% endblock %}

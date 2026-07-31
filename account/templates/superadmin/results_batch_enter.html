@@ -1,0 +1,144 @@
+{% extends 'superadmin/base.html' %}
+
+{% block title %}Batch Enter Results - Tournament Manager{% endblock %}
+{% block page_title %}Batch Enter Results{% endblock %}
+{% block page_subtitle %}Enter results for multiple fixtures at once{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="form-container">
+            <h5 class="form-title">Batch Result Entry</h5>
+            
+            <form method="post" id="batchForm">
+                {% csrf_token %}
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <label for="tournament" class="form-label">Tournament *</label>
+                        <select name="tournament" id="tournament" class="form-select" required>
+                            <option value="">Select tournament...</option>
+                            {% for tournament in tournaments %}
+                            <option value="{{ tournament.id }}">{{ tournament.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="round" class="form-label">Round (Optional)</label>
+                        <input type="number" name="round" id="round" class="form-control" placeholder="All rounds" min="1">
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <button type="button" class="btn btn-primary w-100" onclick="loadFixtures()">
+                            <i class="bi bi-search"></i> Load Fixtures
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="fixturesContainer" style="display: none;">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        Enter scores for the fixtures below. Empty fields will be skipped.
+                    </div>
+                    
+                    <div id="fixtureList" class="row g-3">
+                        <!-- Fixtures will be loaded here via AJAX -->
+                    </div>
+                    
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="bi bi-check-all"></i> Save All Results
+                        </button>
+                        <a href="{% url 'admin_result_list' %}" class="btn btn-secondary btn-lg">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+function loadFixtures() {
+    const tournament = document.getElementById('tournament').value;
+    const round = document.getElementById('round').value;
+    
+    if (!tournament) {
+        alert('Please select a tournament.');
+        return;
+    }
+    
+    const container = document.getElementById('fixturesContainer');
+    const list = document.getElementById('fixtureList');
+    
+    // Show loading
+    list.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">Loading fixtures...</p></div>';
+    container.style.display = 'block';
+    
+    // Fetch fixtures via AJAX
+    fetch(`/admin/fixtures/api/get-unplayed/?tournament=${tournament}&round=${round}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.fixtures && data.fixtures.length > 0) {
+                let html = '';
+                data.fixtures.forEach(fixture => {
+                    html += `
+                        <div class="col-md-6 mb-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <strong>Round ${fixture.round}</strong>
+                                        <small class="text-muted">${fixture.tournament}</small>
+                                    </div>
+                                    <div class="row align-items-center">
+                                        <div class="col-4 text-end">
+                                            <strong>${fixture.home_team}</strong>
+                                        </div>
+                                        <div class="col-2">
+                                            <input type="number" name="home_score_${fixture.id}" 
+                                                   class="form-control text-center" placeholder="0" min="0">
+                                        </div>
+                                        <div class="col-1 text-center">
+                                            <span class="text-muted">vs</span>
+                                        </div>
+                                        <div class="col-2">
+                                            <input type="number" name="away_score_${fixture.id}" 
+                                                   class="form-control text-center" placeholder="0" min="0">
+                                        </div>
+                                        <div class="col-3">
+                                            <strong>${fixture.away_team}</strong>
+                                        </div>
+                                    </div>
+                                    ${fixture.match_date ? `<small class="text-muted">${fixture.match_date}</small>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                list.innerHTML = html;
+            } else {
+                list.innerHTML = `
+                    <div class="col-12">
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            No unplayed fixtures found for the selected criteria.
+                        </div>
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            list.innerHTML = `
+                <div class="col-12">
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-circle"></i>
+                        Error loading fixtures. Please try again.
+                    </div>
+                </div>
+            `;
+            console.error('Error:', error);
+        });
+}
+</script>
+{% endblock %}
+{% endblock %}

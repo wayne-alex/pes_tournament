@@ -1,0 +1,167 @@
+{% extends 'superadmin/base.html' %}
+
+{% block title %}{{ title }} - Tournament Manager{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block page_subtitle %}Fill in the details below{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Custom iOS Native Input & Form Extensions */
+    .ios-form-label {
+        font-size: 0.825rem;
+        font-weight: 600;
+        color: var(--ios-text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+        margin-bottom: 0.35rem;
+    }
+
+    .form-control, .form-select {
+        border-radius: 12px;
+        border: 1px solid var(--ios-border);
+        background-color: rgba(118, 118, 128, 0.08);
+        padding: 0.7rem 0.9rem;
+        font-size: 0.9rem;
+        color: var(--ios-text-primary);
+        transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    .form-control:focus, .form-select:focus {
+        background-color: #ffffff;
+        border-color: var(--ios-tint);
+        box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15);
+        outline: none;
+    }
+
+    .is-invalid {
+        border-color: #ff3b30 !important;
+        background-color: rgba(255, 59, 48, 0.04) !important;
+    }
+
+    .ios-error-message {
+        color: #ff3b30;
+        font-size: 0.8rem;
+        font-weight: 500;
+        margin-top: 0.35rem;
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+    }
+
+    .ios-help-text {
+        color: var(--ios-text-secondary);
+        font-size: 0.775rem;
+        margin-top: 0.35rem;
+    }
+
+    /* iOS System Buttons */
+    .btn-ios-submit {
+        background-color: var(--ios-tint);
+        color: #ffffff;
+        border: none;
+        border-radius: 12px;
+        padding: 0.65rem 1.5rem;
+        font-weight: 600;
+        font-size: 0.875rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        box-shadow: 0 2px 10px rgba(0, 122, 255, 0.25);
+        transition: transform 0.15s ease, background-color 0.15s ease;
+    }
+
+    .btn-ios-submit:hover {
+        background-color: #0062cc;
+        color: #ffffff;
+    }
+
+    .btn-ios-submit:active {
+        transform: scale(0.96);
+    }
+
+    .btn-ios-cancel {
+        background: rgba(118, 118, 128, 0.12);
+        color: var(--ios-text-primary);
+        border: none;
+        border-radius: 12px;
+        padding: 0.65rem 1.5rem;
+        font-weight: 600;
+        font-size: 0.875rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        text-decoration: none;
+        transition: transform 0.15s ease, background-color 0.15s ease;
+    }
+
+    .btn-ios-cancel:hover {
+        background: rgba(118, 118, 128, 0.2);
+        color: var(--ios-text-primary);
+    }
+
+    .btn-ios-cancel:active {
+        transform: scale(0.96);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-xl-7 col-lg-9">
+        <div class="form-container">
+            <h5 class="form-title d-flex align-items-center gap-2">
+                <i class="bi bi-pencil-square text-primary"></i> {{ title }}
+            </h5>
+
+            <form method="post" novalidate>
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                <div class="alert alert-danger border-0 rounded-3 mb-4" style="background: rgba(255, 59, 48, 0.12); color: #ff3b30;">
+                    <div class="d-flex align-items-center gap-2 font-semibold">
+                        <i class="bi bi-exclamation-circle-fill"></i>
+                        <span>Please correct the errors below:</span>
+                    </div>
+                    <ul class="mb-0 mt-2 ps-3 small">
+                        {% for error in form.non_field_errors %}
+                        <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+
+                {% for field in form %}
+                <div class="mb-3">
+                    <label for="{{ field.id_for_label }}" class="ios-form-label">
+                        {{ field.label }}
+                    </label>
+
+                    {{ field }}
+
+                    {% if field.errors %}
+                    <div class="ios-error-message">
+                        <i class="bi bi-exclamation-circle"></i> {{ field.errors.0 }}
+                    </div>
+                    {% endif %}
+
+                    {% if field.help_text %}
+                    <div class="ios-help-text">
+                        {{ field.help_text }}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+
+                <div class="d-flex align-items-center gap-2 mt-4 pt-2 border-top" style="border-color: var(--ios-border) !important;">
+                    <button type="submit" class="btn-ios-submit">
+                        <i class="bi bi-check-lg"></i> Save Changes
+                    </button>
+                    <a href="{% url 'admin_user_list' %}" class="btn-ios-cancel">
+                        <i class="bi bi-x-lg"></i> Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

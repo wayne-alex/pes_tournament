@@ -1,0 +1,245 @@
+{% extends 'superadmin/base.html' %}
+{% load static %}
+
+{% block title %}Dashboard - Tournament Manager{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block page_subtitle %}Overview of your tournament management system{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Custom iOS Native Extensions for Dashboard Elements */
+    .btn-ios {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.6rem 1.1rem;
+        border-radius: 12px;
+        font-weight: 600;
+        font-size: 0.875rem;
+        border: none;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        transition: transform 0.15s ease, background-color 0.15s ease;
+    }
+
+    .btn-ios:active {
+        transform: scale(0.96);
+    }
+
+    .btn-ios-primary { background: rgba(0, 122, 255, 0.12); color: #007aff; }
+    .btn-ios-primary:hover { background: #007aff; color: #ffffff; }
+
+    .btn-ios-success { background: rgba(52, 199, 89, 0.12); color: #34c759; }
+    .btn-ios-success:hover { background: #34c759; color: #ffffff; }
+
+    .btn-ios-info { background: rgba(88, 86, 214, 0.12); color: #5856d6; }
+    .btn-ios-info:hover { background: #5856d6; color: #ffffff; }
+
+    .btn-ios-warning { background: rgba(255, 149, 0, 0.12); color: #ff9500; }
+    .btn-ios-warning:hover { background: #ff9500; color: #ffffff; }
+
+    /* iOS System Table Styling */
+    .table-ios {
+        margin-bottom: 0;
+        vertical-align: middle;
+    }
+
+    .table-ios thead th {
+        font-size: 0.725rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        color: var(--ios-text-secondary);
+        border-bottom: 1px solid var(--ios-border);
+        padding-bottom: 0.75rem;
+        background: transparent;
+    }
+
+    .table-ios tbody td {
+        padding: 0.85rem 0.75rem;
+        border-bottom: 1px solid var(--ios-border);
+        font-size: 0.875rem;
+        color: var(--ios-text-primary);
+        background: transparent;
+    }
+
+    .table-ios tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .badge-ios-success {
+        background: rgba(52, 199, 89, 0.12);
+        color: #248a3d;
+        font-weight: 600;
+        padding: 0.35rem 0.65rem;
+        border-radius: 20px;
+        font-size: 0.725rem;
+    }
+
+    /* iOS Progress Bars */
+    .progress-ios-track {
+        height: 6px;
+        background: rgba(118, 118, 128, 0.12);
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .progress-ios-bar {
+        height: 100%;
+        border-radius: 10px;
+        transition: width 0.4s ease;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Key Metrics / Stat Cards -->
+<div class="row g-3 g-md-4 mb-4">
+    <div class="col-xl-3 col-lg-6 col-md-6">
+        <div class="stat-card">
+            <div class="stat-icon blue"><i class="bi bi-people-fill"></i></div>
+            <div class="stat-number">{{ total_users|default:0 }}</div>
+            <div class="stat-label">Total Users</div>
+
+        </div>
+    </div>
+    <div class="col-xl-3 col-lg-6 col-md-6">
+        <div class="stat-card">
+            <div class="stat-icon purple"><i class="bi bi-trophy-fill"></i></div>
+            <div class="stat-number">{{ total_tournaments|default:0 }}</div>
+            <div class="stat-label">Active Tournaments</div>
+
+        </div>
+    </div>
+    <div class="col-xl-3 col-lg-6 col-md-6">
+        <div class="stat-card">
+            <div class="stat-icon green"><i class="bi bi-shield-fill"></i></div>
+            <div class="stat-number">{{ total_teams|default:0 }}</div>
+            <div class="stat-label">Registered Teams</div>
+
+        </div>
+    </div>
+    <div class="col-xl-3 col-lg-6 col-md-6">
+        <div class="stat-card">
+            <div class="stat-icon orange"><i class="bi bi-calendar-event-fill"></i></div>
+            <div class="stat-number">{{ upcoming_fixtures|default:0 }}</div>
+            <div class="stat-label">Upcoming Fixtures</div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions Section -->
+<div class="row g-4 mb-4">
+    <div class="col-12">
+        <div class="form-container">
+            <h5 class="form-title">
+                <i class="bi bi-bolt-fill text-warning me-1"></i> Quick Actions
+            </h5>
+            <div class="d-flex flex-wrap gap-2">
+                <a href="{% url 'admin_user_create' %}" class="btn-ios btn-ios-primary">
+                    <i class="bi bi-person-plus-fill"></i> Create User
+                </a>
+                <a href="{% url 'admin_tournament_create' %}" class="btn-ios btn-ios-success">
+                    <i class="bi bi-plus-circle-fill"></i> Create Tournament
+                </a>
+                <a href="{% url 'admin_team_create' %}" class="btn-ios btn-ios-info">
+                    <i class="bi bi-shield-plus"></i> Add Team
+                </a>
+                <a href="{% url 'admin_fixture_generate' %}" class="btn-ios btn-ios-warning">
+                    <i class="bi bi-calendar-plus-fill"></i> Generate Fixtures
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Activity & Analytics Grid -->
+<div class="row g-4">
+    <!-- Recent Activity Table -->
+    <div class="col-xl-8">
+        <div class="form-container h-100">
+            <h5 class="form-title">
+                <i class="bi bi-clock-history me-1"></i> Recent Activity
+            </h5>
+            <div class="table-responsive">
+                <table class="table table-ios">
+                    <thead>
+                        <tr>
+                            <th>Event</th>
+                            <th>User</th>
+                            <th>Time</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for activity in recent_activities %}
+                        <tr>
+                            <td class="fw-semibold">{{ activity.event }}</td>
+                            <td>{{ activity.user }}</td>
+                            <td class="text-secondary">{{ activity.time|timesince }} ago</td>
+                            <td><span class="badge-ios-success">Completed</span></td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center py-4 text-secondary">
+                                <i class="bi bi-inbox d-block fs-3 mb-1"></i>
+                                No recent activity recorded
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats Bars -->
+    <div class="col-xl-4">
+        <div class="form-container h-100">
+            <h5 class="form-title">
+                <i class="bi bi-chart-bar-fill me-1"></i> Quick Stats
+            </h5>
+
+            <div class="mb-3">
+                <div class="d-flex justify-content-between mb-1 fs-6">
+                    <span class="text-secondary fw-500">Tournaments</span>
+                    <strong class="fw-bold">{{ total_tournaments|default:0 }}</strong>
+                </div>
+                <div class="progress-ios-track">
+                    <div class="progress-ios-bar" style="width: 75%; background-color: #007aff;"></div>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <div class="d-flex justify-content-between mb-1 fs-6">
+                    <span class="text-secondary fw-500">Teams</span>
+                    <strong class="fw-bold">{{ total_teams|default:0 }}</strong>
+                </div>
+                <div class="progress-ios-track">
+                    <div class="progress-ios-bar" style="width: 60%; background-color: #34c759;"></div>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <div class="d-flex justify-content-between mb-1 fs-6">
+                    <span class="text-secondary fw-500">Fixtures</span>
+                    <strong class="fw-bold">{{ total_fixtures|default:0 }}</strong>
+                </div>
+                <div class="progress-ios-track">
+                    <div class="progress-ios-bar" style="width: 45%; background-color: #ff9500;"></div>
+                </div>
+            </div>
+
+            <div>
+                <div class="d-flex justify-content-between mb-1 fs-6">
+                    <span class="text-secondary fw-500">Results</span>
+                    <strong class="fw-bold">{{ total_results|default:0 }}</strong>
+                </div>
+                <div class="progress-ios-track">
+                    <div class="progress-ios-bar" style="width: 30%; background-color: #ff3b30;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

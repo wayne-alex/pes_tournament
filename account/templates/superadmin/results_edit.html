@@ -1,0 +1,234 @@
+{% extends 'superadmin/base.html' %}
+{% load static %}
+
+{% block title %}Edit Result - Tournament Manager{% endblock %}
+{% block page_title %}Edit Match Result{% endblock %}
+{% block page_subtitle %}{{ fixture.home_team.name }} vs {{ fixture.away_team.name }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-xl-7 col-lg-9">
+        <!-- Main Form Container Card -->
+        <div class="ios-card border-0 p-4 shadow-sm mb-4">
+
+            <!-- Context Header & Info -->
+            <div class="d-flex align-items-center justify-content-between pb-3 mb-4 border-bottom border-light">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="ios-avatar-badge bg-warning-subtle text-warning">
+                        <i class="bi bi-pencil-square"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">{{ fixture.tournament.name }}</h6>
+                        <span class="ios-caption text-muted">Round {{ fixture.round }} • {{ fixture.match_date|date:'M d, Y H:i'|default:'Date TBD' }}</span>
+                    </div>
+                </div>
+
+                {% if result.updated_at %}
+                <span class="ios-badge-pill bg-light text-secondary">
+                    <i class="bi bi-clock-history me-1"></i> Updated {{ result.updated_at|timesince }} ago
+                </span>
+                {% endif %}
+            </div>
+
+            <!-- Soft Recalculation Warning Callout -->
+            <div class="ios-alert-warning d-flex align-items-start gap-3 p-3 rounded-3 mb-4">
+                <i class="bi bi-exclamation-triangle-fill fs-5 flex-shrink-0 mt-1"></i>
+                <div>
+                    <div class="fw-bold fs-7">Statistics Recalculation Notice</div>
+                    <div class="ios-caption text-muted">Editing this match result will automatically update points, goal differences, and standings across the tournament.</div>
+                </div>
+            </div>
+
+            <!-- Score Edit Form -->
+            <form method="post" class="ios-form">
+                {% csrf_token %}
+
+                <!-- Scoreboard Control Area -->
+                <div class="ios-scoreboard-box p-4 mb-4 rounded-4">
+                    <div class="row align-items-center g-3 text-center">
+
+                        <!-- Home Team -->
+                        <div class="col-md-4 col-12 order-1 text-md-end">
+                            <div class="fw-bold text-dark fs-5 text-truncate" title="{{ fixture.home_team.name }}">
+                                {{ fixture.home_team.name }}
+                            </div>
+                            <span class="badge bg-primary-subtle text-primary fw-medium rounded-pill px-2 py-1 fs-7 mt-1">
+                                Home Team
+                            </span>
+                        </div>
+
+                        <!-- Score Input Fields -->
+                        <div class="col-md-4 col-12 order-2 my-3 my-md-0">
+                            <div class="d-flex align-items-center justify-content-center gap-2">
+                                <div class="score-input-wrapper">
+                                    <input type="number"
+                                           name="home_score"
+                                           class="form-control ios-score-input"
+                                           value="{{ result.home_score }}"
+                                           min="0"
+                                           required
+                                           aria-label="Home Team Score">
+                                </div>
+
+                                <span class="fw-bold text-muted fs-4 px-1">:</span>
+
+                                <div class="score-input-wrapper">
+                                    <input type="number"
+                                           name="away_score"
+                                           class="form-control ios-score-input"
+                                           value="{{ result.away_score }}"
+                                           min="0"
+                                           required
+                                           aria-label="Away Team Score">
+                                </div>
+                            </div>
+                            <span class="ios-caption text-muted d-block mt-2">Enter updated final goals</span>
+                        </div>
+
+                        <!-- Away Team -->
+                        <div class="col-md-4 col-12 order-3 text-md-start">
+                            <div class="fw-bold text-dark fs-5 text-truncate" title="{{ fixture.away_team.name }}">
+                                {{ fixture.away_team.name }}
+                            </div>
+                            <span class="badge bg-secondary-subtle text-secondary fw-medium rounded-pill px-2 py-1 fs-7 mt-1">
+                                Away Team
+                            </span>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Action Controls -->
+                <div class="d-flex align-items-center justify-content-end gap-2 pt-3 border-top border-light">
+                    <a href="{% url 'admin_result_list' %}" class="btn btn-ios-secondary btn-sm px-4">
+                        <i class="bi bi-x-circle me-1"></i> Cancel
+                    </a>
+                    <button type="submit" class="btn btn-ios-primary btn-sm px-4">
+                        <i class="bi bi-check-circle-fill me-1"></i> Update Result
+                    </button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Native iOS Aesthetic Custom Styles -->
+<style>
+/* Card & Container Aesthetics */
+.ios-card {
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 18px;
+    border: 1px solid rgba(229, 231, 235, 0.8);
+}
+
+.ios-scoreboard-box {
+    background: rgba(242, 242, 247, 0.6);
+    border: 1px solid rgba(229, 231, 235, 0.9);
+}
+
+/* Typography & Subtleties */
+.ios-caption {
+    font-size: 0.75rem;
+    letter-spacing: -0.01em;
+}
+
+.fs-7 {
+    font-size: 0.8125rem;
+}
+
+/* Badges & Alerts */
+.ios-avatar-badge {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+}
+
+.ios-badge-pill {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.ios-alert-warning {
+    background-color: rgba(255, 149, 0, 0.1);
+    border: 1px solid rgba(255, 149, 0, 0.25);
+    color: #b45309;
+}
+
+/* Score Input Controls */
+.score-input-wrapper {
+    width: 70px;
+}
+
+.ios-score-input {
+    height: 60px;
+    font-size: 1.75rem;
+    font-weight: 700;
+    text-align: center;
+    border-radius: 14px;
+    border: 1px solid rgba(209, 213, 219, 0.8);
+    background-color: #ffffff;
+    color: #1c1c1e;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
+    transition: all 0.15s ease-in-out;
+}
+
+.ios-score-input:focus {
+    border-color: #007aff;
+    background-color: #ffffff;
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.18);
+    outline: none;
+}
+
+/* Hide Number Input Spinners for cleaner iOS look */
+.ios-score-input::-webkit-outer-spin-button,
+.ios-score-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+.ios-score-input[type=number] {
+    -moz-appearance: textfield;
+}
+
+/* Buttons */
+.btn-ios-primary {
+    background-color: #007aff;
+    color: #ffffff;
+    border-radius: 10px;
+    font-weight: 600;
+    border: none;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    transition: all 0.15s ease;
+}
+.btn-ios-primary:hover {
+    background-color: #0062cc;
+    color: #ffffff;
+    transform: scale(0.98);
+}
+
+.btn-ios-secondary {
+    background-color: rgba(118, 118, 128, 0.12);
+    color: #1c1c1e;
+    border-radius: 10px;
+    font-weight: 500;
+    border: none;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    transition: all 0.15s ease;
+}
+.btn-ios-secondary:hover {
+    background-color: rgba(118, 118, 128, 0.2);
+    color: #1c1c1e;
+    transform: scale(0.98);
+}
+</style>
+{% endblock %}

@@ -1,0 +1,212 @@
+{% extends 'superadmin/base_login.html' %}
+{% load static %}
+
+{% block title %}Logout - Tournament Manager{% endblock %}
+{% block page_title %}Logout{% endblock %}
+{% block page_subtitle %}Confirm account sign out{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12 col-sm-10 col-md-8 col-lg-6 col-xl-5">
+        <!-- Main Form Container Card -->
+        <div class="ios-card border-0 p-4 p-md-5 shadow-sm">
+
+            <!-- Warning/Icon Header -->
+            <div class="text-center mb-4">
+                <div class="ios-logout-badge mx-auto mb-3">
+                    <i class="bi bi-box-arrow-right"></i>
+                </div>
+                <h4 class="fw-bold text-dark mb-1 fs-5">Sign Out of Account</h4>
+                <p class="ios-caption text-muted mb-0">Are you sure you want to log out of your session?</p>
+            </div>
+
+            <!-- User Info Preview Card -->
+            <div class="ios-user-card p-3 mb-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="ios-avatar flex-shrink-0">
+                        {{ user.username|slice:":1"|upper }}
+                    </div>
+                    <div class="overflow-hidden">
+                        <h6 class="fw-bold text-dark mb-0 text-truncate">{{ user.get_full_name|default:user.username }}</h6>
+                        <span class="ios-caption text-muted d-block text-truncate">{{ user.email|default:'No email provided' }}</span>
+                        {% if user.get_role_display %}
+                        <span class="ios-role-pill mt-1">
+                            {{ user.get_role_display }}
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Session Metadata Info Grid -->
+            <div class="row g-2 mb-4">
+                <div class="col-6">
+                    <div class="ios-info-box p-2 text-center">
+                        <i class="bi bi-clock-history text-muted mb-1 d-block fs-6"></i>
+                        <span class="ios-caption text-muted d-block">Session Expiry</span>
+                        <span class="fw-semibold text-dark fs-7 d-block text-truncate">
+                            {{ request.session.get_expiry_date|date:'M d, H:i'|default:'N/A' }}
+                        </span>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="ios-info-box p-2 text-center">
+                        <i class="bi bi-hdd-network text-muted mb-1 d-block fs-6"></i>
+                        <span class="ios-caption text-muted d-block">IP Address</span>
+                        <span class="fw-semibold text-dark fs-7 d-block text-truncate">
+                            {{ request.META.REMOTE_ADDR|default:'127.0.0.1' }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions Form -->
+            <form method="post" id="logoutForm" class="ios-form">
+                {% csrf_token %}
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-ios-danger py-2 border-0" id="logoutBtn">
+                        <i class="bi bi-box-arrow-right me-1"></i> Confirm Logout
+                    </button>
+                    <a href="{% url 'superadmin_dashboard' %}" class="btn btn-ios-secondary py-2 border-0 text-center text-decoration-none">
+                        <i class="bi bi-arrow-left me-1"></i> Cancel
+                    </a>
+                </div>
+            </form>
+
+            <!-- Security Footer -->
+            <div class="mt-4 text-center">
+                <span class="ios-caption text-muted d-inline-flex align-items-center gap-1">
+                    <i class="bi bi-shield-lock-fill text-success"></i> Secure session termination enabled
+                </span>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Native iOS Aesthetic Custom Styles -->
+<style>
+/* Card & Glassmorphism Container */
+.ios-card {
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 20px;
+    border: 1px solid rgba(229, 231, 235, 0.8);
+}
+
+/* Typography & Labels */
+.ios-caption {
+    font-size: 0.75rem;
+    letter-spacing: -0.01em;
+}
+
+.fs-7 {
+    font-size: 0.8125rem;
+}
+
+/* Header & Avatar Badges */
+.ios-logout-badge {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: rgba(255, 59, 48, 0.12);
+    color: #ff3b30;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.85rem;
+}
+
+.ios-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #007aff, #5856d6);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1.2rem;
+    box-shadow: 0 4px 10px rgba(0, 122, 255, 0.25);
+}
+
+/* Cards & Info Boxes */
+.ios-user-card {
+    background: rgba(242, 242, 247, 0.6);
+    border: 1px solid rgba(229, 231, 235, 0.8);
+    border-radius: 14px;
+}
+
+.ios-info-box {
+    background: rgba(242, 242, 247, 0.4);
+    border: 1px solid rgba(229, 231, 235, 0.6);
+    border-radius: 12px;
+}
+
+.ios-role-pill {
+    display: inline-block;
+    background: rgba(0, 122, 255, 0.1);
+    color: #007aff;
+    font-size: 0.68rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 12px;
+}
+
+/* Buttons */
+.btn-ios-danger {
+    background-color: #ff3b30;
+    color: #ffffff;
+    border-radius: 11px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: all 0.15s ease;
+}
+
+.btn-ios-danger:hover {
+    background-color: #d70015;
+    color: #ffffff;
+    transform: scale(0.98);
+}
+
+.btn-ios-secondary {
+    background-color: rgba(118, 118, 128, 0.12);
+    color: #1c1c1e;
+    border-radius: 11px;
+    font-weight: 500;
+    font-size: 0.9rem;
+    transition: all 0.15s ease;
+}
+
+.btn-ios-secondary:hover {
+    background-color: rgba(118, 118, 128, 0.2);
+    color: #1c1c1e;
+    transform: scale(0.98);
+}
+</style>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const logoutForm = document.getElementById('logoutForm');
+    const logoutBtn = document.getElementById('logoutBtn');
+
+    if (logoutForm && logoutBtn) {
+        logoutForm.addEventListener('submit', function() {
+            logoutBtn.disabled = true;
+            logoutBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Logging out...';
+        });
+    }
+    
+    // Keyboard shortcut: ESC to cancel
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            window.location.href = "{% url 'superadmin_dashboard' %}";
+        }
+    });
+});
+</script>
+{% endblock %}
+{% endblock %}

@@ -1,0 +1,326 @@
+{% extends 'superadmin/base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - Tournament Manager{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block page_subtitle %}{{ action }} fixture details{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8 col-md-10">
+        <!-- iOS Form Container Card -->
+        <div class="ios-card border-0 p-4 shadow-sm">
+
+            <!-- Header Block -->
+            <div class="d-flex align-items-center justify-content-between mb-4 pb-3 border-bottom border-light">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="ios-avatar-badge">
+                        <i class="bi bi-calendar-event-fill"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0 fs-6">{{ title }}</h6>
+                        <span class="ios-caption text-muted">Configure match details and team assignments</span>
+                    </div>
+                </div>
+
+                {% if fixture %}
+                <a href="{% url 'admin_result_enter' fixture.id %}" class="btn btn-ios-success btn-sm">
+                    <i class="bi bi-check-circle-fill me-1"></i> Enter Result
+                </a>
+                {% endif %}
+            </div>
+
+            <!-- Warning Callout for Played Fixtures -->
+            {% if fixture and fixture.is_played %}
+            <div class="ios-alert-warning p-3 mb-4">
+                <div class="d-flex align-items-start gap-2 fs-7">
+                    <i class="bi bi-exclamation-triangle-fill flex-shrink-0 mt-1"></i>
+                    <div>
+                        <strong class="d-block mb-1 fw-semibold">Fixture Already Played</strong>
+                        <span class="ios-caption d-block">Modifying teams or schedules for completed fixtures may directly alter tournament standings and recorded statistics.</span>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Form -->
+            <form method="post" class="ios-form">
+                {% csrf_token %}
+
+                <!-- Tournament & Group -->
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label for="{{ form.tournament.id_for_label }}" class="ios-form-label">
+                            Tournament <span class="text-danger">*</span>
+                        </label>
+                        {{ form.tournament }}
+                        {% if form.tournament.errors %}
+                        <div class="ios-form-error mt-1">
+                            <i class="bi bi-exclamation-circle-fill me-1"></i>{{ form.tournament.errors.0 }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.group.id_for_label }}" class="ios-form-label">
+                            Group <span class="text-muted font-normal">(Optional)</span>
+                        </label>
+                        {{ form.group }}
+                        {% if form.group.errors %}
+                        <div class="ios-form-error mt-1">
+                            <i class="bi bi-exclamation-circle-fill me-1"></i>{{ form.group.errors.0 }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Home & Away Teams -->
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label for="{{ form.home_team.id_for_label }}" class="ios-form-label">
+                            Home Team <span class="text-danger">*</span>
+                        </label>
+                        {{ form.home_team }}
+                        {% if form.home_team.errors %}
+                        <div class="ios-form-error mt-1">
+                            <i class="bi bi-exclamation-circle-fill me-1"></i>{{ form.home_team.errors.0 }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.away_team.id_for_label }}" class="ios-form-label">
+                            Away Team
+                        </label>
+                        {{ form.away_team }}
+                        {% if form.away_team.errors %}
+                        <div class="ios-form-error mt-1">
+                            <i class="bi bi-exclamation-circle-fill me-1"></i>{{ form.away_team.errors.0 }}
+                        </div>
+                        {% else %}
+                        <div class="ios-caption text-muted mt-1">Leave blank to award a Bye</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Match Date & Round -->
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label for="{{ form.match_date.id_for_label }}" class="ios-form-label">
+                            Match Date & Time
+                        </label>
+                        {{ form.match_date }}
+                        {% if form.match_date.errors %}
+                        <div class="ios-form-error mt-1">
+                            <i class="bi bi-exclamation-circle-fill me-1"></i>{{ form.match_date.errors.0 }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.round.id_for_label }}" class="ios-form-label">
+                            Round <span class="text-danger">*</span>
+                        </label>
+                        {{ form.round }}
+                        {% if form.round.errors %}
+                        <div class="ios-form-error mt-1">
+                            <i class="bi bi-exclamation-circle-fill me-1"></i>{{ form.round.errors.0 }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Actions Bar -->
+                <div class="d-flex align-items-center justify-content-end gap-2 pt-2 border-top border-light">
+                    <a href="{% url 'admin_fixture_list' %}" class="btn btn-ios-secondary btn-sm px-3">
+                        Cancel
+                    </a>
+                    <button type="submit" class="btn btn-ios-primary btn-sm px-3">
+                        <i class="bi bi-check-lg me-1"></i> {{ action }} Fixture
+                    </button>
+                </div>
+            </form>
+
+        </div>
+    </div>
+</div>
+
+<!-- Native iOS Aesthetic Form Custom Styles -->
+<style>
+/* Card & Glassmorphism Container */
+.ios-card {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 16px;
+    border: 1px solid rgba(229, 231, 235, 0.8);
+}
+
+/* Typography & Badges */
+.ios-caption {
+    font-size: 0.75rem;
+    letter-spacing: -0.01em;
+}
+
+.fs-7 {
+    font-size: 0.8125rem;
+}
+
+.ios-form-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #48484a;
+    letter-spacing: -0.01em;
+    margin-bottom: 4px;
+    display: block;
+}
+
+.ios-avatar-badge {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: rgba(0, 122, 255, 0.1);
+    color: #007aff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+}
+
+.ios-alert-warning {
+    background: rgba(255, 149, 0, 0.08);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 149, 0, 0.2);
+    color: #995c00;
+}
+
+/* Form Inputs Custom iOS Override */
+.ios-form input[type="text"],
+.ios-form input[type="number"],
+.ios-form input[type="datetime-local"],
+.ios-form select,
+.ios-form textarea {
+    display: block;
+    width: 100%;
+    padding: 7px 12px;
+    font-size: 0.875rem;
+    font-weight: 400;
+    line-height: 1.5;
+    color: #1c1c1e;
+    background-color: rgba(242, 242, 247, 0.7);
+    border: 1px solid rgba(229, 231, 235, 0.8);
+    border-radius: 10px;
+    transition: all 0.15s ease-in-out;
+}
+
+.ios-form input:focus,
+.ios-form select:focus,
+.ios-form textarea:focus {
+    background-color: #ffffff;
+    border-color: #007aff;
+    outline: 0;
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15);
+}
+
+/* Error States */
+.ios-form-error {
+    font-size: 0.72rem;
+    color: #ff3b30;
+    font-weight: 500;
+}
+
+/* iOS Interactive Buttons */
+.btn-ios-primary {
+    background-color: #007aff;
+    color: #ffffff;
+    border-radius: 9px;
+    font-weight: 600;
+    border: none;
+    transition: all 0.15s ease;
+}
+.btn-ios-primary:hover {
+    background-color: #0062cc;
+    color: #ffffff;
+    transform: scale(0.98);
+}
+
+.btn-ios-secondary {
+    background-color: rgba(118, 118, 128, 0.12);
+    color: #1c1c1e;
+    border-radius: 9px;
+    font-weight: 500;
+    border: none;
+    transition: all 0.15s ease;
+}
+.btn-ios-secondary:hover {
+    background-color: rgba(118, 118, 128, 0.2);
+    color: #1c1c1e;
+    transform: scale(0.98);
+}
+
+.btn-ios-success {
+    background-color: rgba(52, 199, 89, 0.12);
+    color: #248a3d;
+    border-radius: 9px;
+    font-weight: 600;
+    border: none;
+    transition: all 0.15s ease;
+}
+.btn-ios-success:hover {
+    background-color: rgba(52, 199, 89, 0.22);
+    color: #1b6d30;
+    transform: scale(0.98);
+}
+</style>
+
+<script>
+// Auto-filter teams based on tournament selection
+document.addEventListener('DOMContentLoaded', function() {
+    const tournamentSelect = document.getElementById('id_tournament');
+    const homeTeamSelect = document.getElementById('id_home_team');
+    const awayTeamSelect = document.getElementById('id_away_team');
+    
+    if (tournamentSelect && homeTeamSelect && awayTeamSelect) {
+        // Store all team options
+        const allHomeOptions = homeTeamSelect.innerHTML;
+        const allAwayOptions = awayTeamSelect.innerHTML;
+        
+        tournamentSelect.addEventListener('change', function() {
+            const tournamentId = this.value;
+            
+            // Filter teams based on tournament
+            filterTeams(homeTeamSelect, allHomeOptions, tournamentId);
+            filterTeams(awayTeamSelect, allAwayOptions, tournamentId);
+        });
+    }
+    
+    function filterTeams(selectElement, allOptions, tournamentId) {
+        if (!tournamentId) {
+            selectElement.innerHTML = allOptions;
+            return;
+        }
+        
+        // Parse options and filter
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(allOptions, 'text/html');
+        const options = doc.querySelectorAll('option');
+        
+        let filtered = '<option value="">---------</option>';
+        let found = false;
+        
+        options.forEach(option => {
+            if (option.value) {
+                const teamTournament = option.dataset.tournament || '';
+                if (teamTournament == tournamentId) {
+                    filtered += option.outerHTML;
+                    found = true;
+                }
+            }
+        });
+        
+        selectElement.innerHTML = filtered;
+        
+        if (!found) {
+            selectElement.innerHTML += '<option value="" disabled>No teams available</option>';
+        }
+    }
+});
+</script>
+{% endblock %}

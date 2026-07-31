@@ -1,0 +1,277 @@
+{% extends 'superadmin/base.html' %}
+{% load static %}
+
+{% block title %}Edit Schedule - Tournament Manager{% endblock %}
+{% block page_title %}Edit Fixture Schedule{% endblock %}
+{% block page_subtitle %}Bulk update fixture dates and times{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8 col-md-10">
+        <!-- iOS Form Container Card -->
+        <div class="ios-card border-0 p-4 shadow-sm">
+
+            <!-- Header Block -->
+            <div class="d-flex align-items-center gap-2 mb-4 pb-3 border-bottom border-light">
+                <div class="ios-avatar-badge">
+                    <i class="bi bi-calendar-range-fill"></i>
+                </div>
+                <div>
+                    <h6 class="fw-bold text-dark mb-0 fs-6">Bulk Schedule Adjustments</h6>
+                    <span class="ios-caption text-muted">Batch shift match schedules or align upcoming fixtures to a fixed target date</span>
+                </div>
+            </div>
+
+            <!-- Callout Info Alert -->
+            <div class="ios-alert-info p-3 mb-4">
+                <div class="d-flex align-items-start gap-2 fs-7">
+                    <i class="bi bi-info-circle-fill flex-shrink-0 mt-1"></i>
+                    <div>
+                        <strong class="d-block mb-1 fw-semibold">Upcoming Matches Only</strong>
+                        <span class="ios-caption d-block">This tool updates all unplayed matches simultaneously. Completed fixtures with recorded results will remain untouched.</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form -->
+            <form method="post" class="ios-form">
+                {% csrf_token %}
+
+                <!-- Tournament Selector -->
+                <div class="mb-4">
+                    <label for="tournament" class="ios-form-label">
+                        Target Tournament <span class="text-danger">*</span>
+                    </label>
+                    <select name="tournament" id="tournament" class="form-select" required>
+                        <option value="">Select a tournament...</option>
+                        {% for tournament in tournaments %}
+                        <option value="{{ tournament.id }}">{{ tournament.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Action Modes Grid -->
+                <div class="mb-4">
+                    <label class="ios-form-label mb-2">Select Adjustment Mode</label>
+
+                    <div class="row g-3">
+                        <!-- Mode 1: Shift Days -->
+                        <div class="col-md-4">
+                            <label class="ios-option-card h-100 p-3 d-block position-relative" for="shift_dates">
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="radio" name="action" id="shift_dates" value="shift_dates" checked>
+                                    <span class="fw-bold text-dark fs-7 ms-1">Shift Days</span>
+                                </div>
+                                <div class="ios-input-group mt-2">
+                                    <input type="number" name="date_offset" class="form-control form-control-sm" placeholder="Days" min="-365" max="365">
+                                    <span class="ios-input-addon">days</span>
+                                </div>
+                                <span class="ios-caption text-muted d-block mt-2">Offset forwards (+) or backwards (-)</span>
+                            </label>
+                        </div>
+
+                        <!-- Mode 2: Shift Hours -->
+                        <div class="col-md-4">
+                            <label class="ios-option-card h-100 p-3 d-block position-relative" for="shift_time">
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="radio" name="action" id="shift_time" value="shift_time">
+                                    <span class="fw-bold text-dark fs-7 ms-1">Shift Hours</span>
+                                </div>
+                                <div class="ios-input-group mt-2">
+                                    <input type="number" name="time_offset" class="form-control form-control-sm" placeholder="Hours" min="-24" max="24">
+                                    <span class="ios-input-addon">hrs</span>
+                                </div>
+                                <span class="ios-caption text-muted d-block mt-2">Adjust match kick-off times</span>
+                            </label>
+                        </div>
+
+                        <!-- Mode 3: Set Specific Date -->
+                        <div class="col-md-4">
+                            <label class="ios-option-card h-100 p-3 d-block position-relative" for="set_date">
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="radio" name="action" id="set_date" value="set_date">
+                                    <span class="fw-bold text-dark fs-7 ms-1">Fixed Target</span>
+                                </div>
+                                <div class="mt-2">
+                                    <input type="datetime-local" name="new_date" class="form-control form-control-sm">
+                                </div>
+                                <span class="ios-caption text-muted d-block mt-2">Overwrite all fixtures to target date</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Warning Alert -->
+                <div class="ios-alert-warning p-3 mb-4">
+                    <div class="d-flex align-items-start gap-2 fs-7">
+                        <i class="bi bi-exclamation-triangle-fill flex-shrink-0 mt-1"></i>
+                        <div>
+                            <strong class="d-block mb-1 fw-semibold">Confirmation Required</strong>
+                            <span class="ios-caption d-block">This action will modify schedule timestamps across multiple matches simultaneously.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions Bar -->
+                <div class="d-flex align-items-center justify-content-end gap-2 pt-2 border-top border-light">
+                    <a href="{% url 'admin_fixture_list' %}" class="btn btn-ios-secondary btn-sm px-3">
+                        Cancel
+                    </a>
+                    <button type="submit" class="btn btn-ios-warning btn-sm px-3" onclick="return confirm('Apply bulk schedule changes to all upcoming fixtures?')">
+                        <i class="bi bi-calendar-check-fill me-1"></i> Update Schedule
+                    </button>
+                </div>
+            </form>
+
+        </div>
+    </div>
+</div>
+
+<!-- Native iOS Aesthetic Custom Styles -->
+<style>
+/* Card & Glassmorphism Container */
+.ios-card {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 16px;
+    border: 1px solid rgba(229, 231, 235, 0.8);
+}
+
+/* Option Cards */
+.ios-option-card {
+    background: rgba(242, 242, 247, 0.5);
+    border: 1px solid rgba(229, 231, 235, 0.8);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.15s ease-in-out;
+}
+.ios-option-card:hover {
+    background: rgba(242, 242, 247, 0.8);
+}
+.ios-option-card:has(input[type="radio"]:checked) {
+    background: #ffffff;
+    border-color: #007aff;
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.12);
+}
+
+/* Typography & Subtleties */
+.ios-caption {
+    font-size: 0.72rem;
+    letter-spacing: -0.01em;
+}
+
+.fs-7 {
+    font-size: 0.8125rem;
+}
+
+.ios-form-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #48484a;
+    letter-spacing: -0.01em;
+    margin-bottom: 4px;
+    display: block;
+}
+
+/* Badges & Indicators */
+.ios-avatar-badge {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: rgba(255, 149, 0, 0.12);
+    color: #ff9500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+}
+
+/* Callouts */
+.ios-alert-info {
+    background: rgba(0, 122, 255, 0.08);
+    border-radius: 12px;
+    border: 1px solid rgba(0, 122, 255, 0.2);
+    color: #0056b3;
+}
+
+.ios-alert-warning {
+    background: rgba(255, 149, 0, 0.08);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 149, 0, 0.2);
+    color: #995c00;
+}
+
+/* Form Inputs Custom iOS Override */
+.ios-form select,
+.ios-form input[type="number"],
+.ios-form input[type="datetime-local"] {
+    display: block;
+    width: 100%;
+    padding: 7px 12px;
+    font-size: 0.85rem;
+    font-weight: 400;
+    color: #1c1c1e;
+    background-color: rgba(242, 242, 247, 0.7);
+    border: 1px solid rgba(229, 231, 235, 0.8);
+    border-radius: 9px;
+    transition: all 0.15s ease-in-out;
+}
+
+.ios-form select:focus,
+.ios-form input:focus {
+    background-color: #ffffff;
+    border-color: #007aff;
+    outline: 0;
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15);
+}
+
+.ios-input-group {
+    display: flex;
+    align-items: center;
+}
+.ios-input-group input {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+.ios-input-addon {
+    padding: 6px 10px;
+    font-size: 0.75rem;
+    color: #8e8e93;
+    background: rgba(118, 118, 128, 0.12);
+    border: 1px solid rgba(229, 231, 235, 0.8);
+    border-left: none;
+    border-top-right-radius: 9px;
+    border-bottom-right-radius: 9px;
+}
+
+/* Buttons */
+.btn-ios-warning {
+    background-color: #ff9500;
+    color: #ffffff;
+    border-radius: 9px;
+    font-weight: 600;
+    border: none;
+    transition: all 0.15s ease;
+}
+.btn-ios-warning:hover {
+    background-color: #e08200;
+    color: #ffffff;
+    transform: scale(0.98);
+}
+
+.btn-ios-secondary {
+    background-color: rgba(118, 118, 128, 0.12);
+    color: #1c1c1e;
+    border-radius: 9px;
+    font-weight: 500;
+    border: none;
+    transition: all 0.15s ease;
+}
+.btn-ios-secondary:hover {
+    background-color: rgba(118, 118, 128, 0.2);
+    color: #1c1c1e;
+    transform: scale(0.98);
+}
+</style>
+{% endblock %}

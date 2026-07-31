@@ -1,0 +1,310 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Standings - {{ tournament.name }}{% endblock %}
+{% block page_title %}Tournament Standings{% endblock %}
+{% block page_subtitle %}{{ tournament.name }} • {{ tournament.get_tournament_format_display }}{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Tournament Header Banner -->
+    <div class="col-12">
+        <div class="ios-card border-0 p-4 shadow-sm">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="ios-icon-badge">
+                        <i class="bi bi-trophy-fill"></i>
+                    </div>
+                    <div>
+                        <h4 class="fw-bold text-dark mb-1">{{ tournament.name }}</h4>
+                        <span class="ios-caption text-muted">
+                            <i class="bi bi-people-fill me-1"></i>{{ total_teams }} Teams &nbsp;•&nbsp;
+                            <i class="bi bi-controller me-1"></i>{{ total_matches }} Matches Played
+                        </span>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="ios-format-badge">
+                        {{ tournament.get_tournament_format_display }}
+                    </span>
+                    <span class="ios-mode-badge">
+                        {{ tournament.get_mode_display }}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Standings Table Container -->
+    <div class="col-12">
+        <div class="ios-card border-0 p-4 shadow-sm">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle standings-table mb-0">
+                    <thead>
+                        <tr>
+                            <th scope="col" class="text-center">#</th>
+                            <th scope="col" class="text-start">Team</th>
+                            <th scope="col">P</th>
+                            <th scope="col">W</th>
+                            <th scope="col">D</th>
+                            <th scope="col">L</th>
+                            <th scope="col">GF</th>
+                            <th scope="col">GA</th>
+                            <th scope="col">GD</th>
+                            <th scope="col">PTS</th>
+                            <th scope="col" class="text-center">Form</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for team in teams %}
+                        <tr>
+                            <!-- Rank Position Badges -->
+                            <td class="text-center">
+                                {% if forloop.counter == 1 %}
+                                    <span class="ios-rank-badge rank-1" title="1st Place">1</span>
+                                {% elif forloop.counter == 2 %}
+                                    <span class="ios-rank-badge rank-2" title="2nd Place">2</span>
+                                {% elif forloop.counter == 3 %}
+                                    <span class="ios-rank-badge rank-3" title="3rd Place">3</span>
+                                {% else %}
+                                    <span class="ios-rank-badge rank-default">{{ forloop.counter }}</span>
+                                {% endif %}
+                            </td>
+
+                            <!-- Team Details -->
+                            <td class="text-start">
+                                <span class="fw-semibold text-dark d-block">{{ team.name }}</span>
+                                <span class="ios-caption text-muted">{{ team.player_name|default:'No player assigned' }}</span>
+                            </td>
+
+                            <!-- Match Stats -->
+                            <td class="fw-medium">{{ team.played }}</td>
+                            <td class="text-success fw-medium">{{ team.wins }}</td>
+                            <td class="text-secondary fw-medium">{{ team.draws }}</td>
+                            <td class="text-danger fw-medium">{{ team.losses }}</td>
+                            <td class="text-muted fs-7">{{ team.goals_for }}</td>
+                            <td class="text-muted fs-7">{{ team.goals_against }}</td>
+
+                            <!-- Goal Difference -->
+                            <td class="fw-semibold {% if team.goal_difference > 0 %}text-success{% elif team.goal_difference < 0 %}text-danger{% else %}text-muted{% endif %}">
+                                {% if team.goal_difference > 0 %}+{% endif %}{{ team.goal_difference }}
+                            </td>
+
+                            <!-- Points -->
+                            <td>
+                                <span class="ios-pts-badge">
+                                    {{ team.points }}
+                                </span>
+                            </td>
+
+                            <!-- Form Guide (Last 5) -->
+                            <td class="text-center">
+                                {% if team.form %}
+                                <div class="d-inline-flex gap-1 align-items-center justify-content-center">
+                                    {% for result in team.form|slice:":5" %}
+                                    <span class="ios-form-pill {% if result == 'W' %}form-w{% elif result == 'D' %}form-d{% else %}form-l{% endif %}">
+                                        {{ result }}
+                                    </span>
+                                    {% endfor %}
+                                </div>
+                                {% else %}
+                                <span class="ios-caption text-muted">—</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="11" class="text-center py-5">
+                                <div class="ios-empty-state text-center">
+                                    <i class="bi bi-shield-slash fs-1 text-muted mb-2 d-block"></i>
+                                    <p class="text-muted mb-0 fw-medium">No teams found for this tournament yet.</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Quick Action Links -->
+            <div class="mt-4 pt-3 border-top border-light d-flex flex-wrap gap-2 justify-content-end">
+                <a href="{% url 'admin_result_list' %}?tournament={{ tournament.id }}" class="btn btn-ios-secondary btn-sm">
+                    <i class="bi bi-list-stars me-1"></i> View Results
+                </a>
+                <a href="{% url 'admin_fixture_list' %}?tournament={{ tournament.id }}" class="btn btn-ios-secondary btn-sm">
+                    <i class="bi bi-calendar-event me-1"></i> View Fixtures
+                </a>
+                <a href="{% url 'admin_result_export' %}?tournament={{ tournament.id }}" class="btn btn-ios-primary btn-sm">
+                    <i class="bi bi-download me-1"></i> Export Results
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Native iOS Aesthetic Custom Styles -->
+<style>
+/* Glassmorphism Card Container */
+.ios-card {
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 18px;
+    border: 1px solid rgba(229, 231, 235, 0.8);
+}
+
+.ios-caption {
+    font-size: 0.75rem;
+    letter-spacing: -0.01em;
+}
+
+.fs-7 {
+    font-size: 0.8125rem;
+}
+
+/* Header Elements */
+.ios-icon-badge {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    background: rgba(0, 122, 255, 0.1);
+    color: #007aff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.35rem;
+}
+
+.ios-format-badge {
+    background: rgba(0, 122, 255, 0.12);
+    color: #007aff;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 5px 12px;
+    border-radius: 20px;
+}
+
+.ios-mode-badge {
+    background: rgba(118, 118, 128, 0.12);
+    color: #48484a;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 5px 12px;
+    border-radius: 20px;
+}
+
+/* Table Design */
+.standings-table {
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.standings-table th {
+    text-align: center;
+    font-weight: 600;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #8e8e93;
+    border-bottom: 1px solid rgba(229, 231, 235, 0.8);
+    padding-bottom: 12px;
+}
+
+.standings-table td {
+    text-align: center;
+    padding: 12px 8px;
+    border-bottom: 1px solid rgba(242, 242, 247, 0.8);
+}
+
+/* Rank Badges */
+.ios-rank-badge {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.75rem;
+}
+
+.rank-1 {
+    background: linear-gradient(135deg, #ffcc00, #ff9500);
+    color: #ffffff;
+    box-shadow: 0 2px 5px rgba(255, 149, 0, 0.3);
+}
+
+.rank-2 {
+    background: linear-gradient(135deg, #e5e5ea, #aeaeHandling);
+    color: #ffffff;
+    background-color: #8e8e93;
+}
+
+.rank-3 {
+    background: linear-gradient(135deg, #ff9500, #c6441b);
+    color: #ffffff;
+}
+
+.rank-default {
+    background: rgba(118, 118, 128, 0.08);
+    color: #636366;
+}
+
+/* Points Badge */
+.ios-pts-badge {
+    background: rgba(0, 122, 255, 0.08);
+    color: #007aff;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 8px;
+    display: inline-block;
+    font-size: 0.875rem;
+}
+
+/* Form Pills */
+.ios-form-pill {
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.65rem;
+    color: #ffffff;
+}
+
+.form-w { background-color: #34c759; }
+.form-d { background-color: #ff9500; }
+.form-l { background-color: #ff3b30; }
+
+/* Buttons */
+.btn-ios-primary {
+    background-color: #007aff;
+    color: #ffffff;
+    border-radius: 9px;
+    font-weight: 600;
+    border: none;
+    transition: all 0.15s ease;
+}
+.btn-ios-primary:hover {
+    background-color: #0062cc;
+    color: #ffffff;
+    transform: scale(0.98);
+}
+
+.btn-ios-secondary {
+    background-color: rgba(118, 118, 128, 0.12);
+    color: #1c1c1e;
+    border-radius: 9px;
+    font-weight: 500;
+    border: none;
+    transition: all 0.15s ease;
+}
+.btn-ios-secondary:hover {
+    background-color: rgba(118, 118, 128, 0.2);
+    color: #1c1c1e;
+    transform: scale(0.98);
+}
+</style>
+{% endblock %}

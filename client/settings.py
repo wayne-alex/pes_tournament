@@ -51,6 +51,7 @@ INSTALLED_APPS = [
 
     # Your app
     "tournaments.apps.TournamentsConfig",
+    "account.apps.AccountConfig",
 ]
 
 # --------------------------------------------------
@@ -98,19 +99,28 @@ TEMPLATES = [
 # --------------------------------------------------
 # DATABASE
 # --------------------------------------------------
-DATABASES = {
-    "default": {
-        "ENGINE": os.getenv(
-            "DATABASE_ENGINE",
-            "django.db.backends.postgresql"
-        ),
-        "NAME": os.getenv("DATABASE_NAME"),
-        "USER": os.getenv("DATABASE_USER"),
-        "PASSWORD": os.getenv("DATABASE_PASSWORD"),
-        "HOST": os.getenv("DATABASE_HOST"),
-        "PORT": os.getenv("DATABASE_PORT"),
+if DEBUG:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": os.getenv(
+                "DATABASE_ENGINE",
+                "django.db.backends.postgresql"
+            ),
+            "NAME": os.getenv("DATABASE_NAME"),
+            "USER": os.getenv("DATABASE_USER"),
+            "PASSWORD": os.getenv("DATABASE_PASSWORD"),
+            "HOST": os.getenv("DATABASE_HOST"),
+            "PORT": os.getenv("DATABASE_PORT"),
+        }
+    }
+
 
 # --------------------------------------------------
 # PASSWORD VALIDATION
@@ -177,3 +187,5 @@ if not DEBUG:
     CSRF_COOKIE_SECURE = True
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
+
+AUTH_USER_MODEL='tournaments.User'

@@ -1,0 +1,47 @@
+{% if group_tables %}
+    {% for gt in group_tables %}
+    <div class="card">
+        <div class="card-header">{{ gt.group.name }}</div>
+        <table class="stadium-table">
+            <thead>
+                <tr><th>#</th><th>Team</th><th class="num">P</th><th class="num">GD</th><th class="num" style="text-align:right">Pts</th></tr>
+            </thead>
+            <tbody>
+                {% for t in gt.teams %}
+                <tr {% if forloop.counter <= tournament.qualify_per_group %}class="qualify-line"{% endif %}>
+                    <td class="pos-cell">{{ forloop.counter }}</td>
+                    <td><strong>{{ t.name }}</strong></td>
+                    <td class="num">{{ t.played }}</td>
+                    <td class="num">{{ t.goal_difference|stringformat:"+d" }}</td>
+                    <td class="num" style="text-align:right; font-weight:700; color:var(--ochre);">{{ t.points }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="empty-note">No teams in this group yet</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endfor %}
+{% else %}
+    <div class="card">
+        <div class="card-header">Standings</div>
+        <table class="stadium-table">
+            <thead>
+                <tr><th>#</th><th>Team</th><th class="num">P</th><th class="num">GD</th><th class="num" style="text-align:right">Pts</th></tr>
+            </thead>
+            <tbody>
+                {% for t in league_table %}
+                <tr>
+                    <td class="pos-cell">{{ forloop.counter }}</td>
+                    <td><strong>{{ t.name }}</strong></td>
+                    <td class="num">{{ t.played }}</td>
+                    <td class="num">{{ t.goal_difference|stringformat:"+d" }}</td>
+                    <td class="num" style="text-align:right; font-weight:700; color:var(--ochre);">{{ t.points }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="empty-note">No teams registered yet</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endif %}

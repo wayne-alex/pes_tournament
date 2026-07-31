@@ -1,0 +1,309 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete User - Tournament Manager{% endblock %}
+{% block page_title %}Delete User{% endblock %}
+{% block page_subtitle %}Confirm user account removal{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* iOS Alert Container */
+    .ios-delete-card {
+        background: var(--ios-card-bg);
+        backdrop-filter: blur(25px);
+        -webkit-backdrop-filter: blur(25px);
+        border-radius: 20px;
+        padding: 2rem;
+        border: 1px solid rgba(255, 255, 255, 0.6);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+    }
+
+    /* Destructive Icon Housing */
+    .delete-icon-wrapper {
+        width: 72px;
+        height: 72px;
+        border-radius: 50%;
+        background: rgba(255, 59, 48, 0.12);
+        color: #ff3b30;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.25rem;
+        margin: 0 auto 1.25rem;
+        animation: iosPulse 2s infinite ease-in-out;
+    }
+
+    /* iOS Inset Detail Card */
+    .user-info-card-ios {
+        background: rgba(118, 118, 128, 0.08);
+        border-radius: 16px;
+        padding: 1.25rem;
+        border: 1px solid var(--ios-border);
+    }
+
+    .avatar-ios-lg {
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #007aff, #5856d6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        color: white;
+        font-weight: 700;
+        box-shadow: 0 4px 12px rgba(0, 122, 255, 0.2);
+    }
+
+    /* Inset Grid Tiles */
+    .detail-tile-ios {
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border-radius: 12px;
+        padding: 0.75rem 1rem;
+        border: 1px solid var(--ios-border);
+    }
+
+    .detail-tile-ios .tile-label {
+        font-size: 0.725rem;
+        font-weight: 600;
+        color: var(--ios-text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+        margin-bottom: 0.2rem;
+    }
+
+    .detail-tile-ios .tile-value {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--ios-text-primary);
+    }
+
+    /* System Callouts (Banners) */
+    .ios-callout {
+        border-radius: 14px;
+        padding: 1rem 1.15rem;
+        font-size: 0.85rem;
+        border: none;
+        margin-bottom: 1rem;
+    }
+
+    .ios-callout-warning {
+        background: rgba(255, 149, 0, 0.12);
+        color: #995a00;
+    }
+
+    .ios-callout-info {
+        background: rgba(0, 122, 255, 0.12);
+        color: #0056b3;
+    }
+
+    /* iOS Translucent Status Badges */
+    .badge-ios {
+        font-weight: 600;
+        padding: 0.3rem 0.6rem;
+        border-radius: 20px;
+        font-size: 0.725rem;
+        display: inline-flex;
+        align-items: center;
+    }
+
+    .badge-ios-role { background: rgba(88, 86, 214, 0.12); color: #5856d6; }
+    .badge-ios-super { background: rgba(255, 59, 48, 0.12); color: #ff3b30; }
+    .badge-ios-active { background: rgba(52, 199, 89, 0.12); color: #248a3d; }
+    .badge-ios-inactive { background: rgba(255, 59, 48, 0.12); color: #ff3b30; }
+
+    /* Buttons */
+    .btn-ios-danger {
+        background-color: #ff3b30;
+        color: #ffffff;
+        border: none;
+        border-radius: 12px;
+        padding: 0.7rem 1.5rem;
+        font-weight: 600;
+        font-size: 0.9rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        box-shadow: 0 4px 14px rgba(255, 59, 48, 0.25);
+        transition: transform 0.15s ease, background-color 0.15s ease;
+    }
+
+    .btn-ios-danger:hover {
+        background-color: #d70015;
+        color: #ffffff;
+    }
+
+    .btn-ios-danger:active {
+        transform: scale(0.96);
+    }
+
+    .btn-ios-secondary {
+        background: rgba(118, 118, 128, 0.12);
+        color: var(--ios-text-primary);
+        border: none;
+        border-radius: 12px;
+        padding: 0.7rem 1.5rem;
+        font-weight: 600;
+        font-size: 0.9rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        text-decoration: none;
+        transition: transform 0.15s ease, background-color 0.15s ease;
+    }
+
+    .btn-ios-secondary:hover {
+        background: rgba(118, 118, 128, 0.2);
+        color: var(--ios-text-primary);
+    }
+
+    .btn-ios-secondary:active {
+        transform: scale(0.96);
+    }
+
+    @keyframes iosPulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.85; transform: scale(0.96); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-xl-6 col-lg-8">
+        <div class="ios-delete-card">
+            <!-- Header Icon & Text -->
+            <div class="text-center mb-4">
+                <div class="delete-icon-wrapper">
+                    <i class="bi bi-person-x-fill"></i>
+                </div>
+                <h5 class="fw-bold fs-4 mb-1" style="color: var(--ios-text-primary);">Delete User Account</h5>
+                <p class="text-secondary small mb-0">This action is permanent and cannot be undone.</p>
+            </div>
+            
+            <!-- User Summary Header Card -->
+            <div class="user-info-card-ios mb-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="avatar-ios-lg">
+                        {{ user.username|slice:":1"|upper }}
+                    </div>
+                    <div>
+                        <h6 class="fw-bold mb-0 fs-6">{{ user.get_full_name|default:user.username }}</h6>
+                        <div class="text-secondary small">{{ user.email|default:'No email registered' }}</div>
+                        <div class="text-secondary small font-monospace mt-1">{{ user.get_role_display }}</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Account Attribute Grid -->
+            <div class="user-details mb-4">
+                <div class="row g-2">
+                    <div class="col-6">
+                        <div class="detail-tile-ios">
+                            <div class="tile-label">Username</div>
+                            <div class="tile-value text-truncate">{{ user.username }}</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="detail-tile-ios">
+                            <div class="tile-label">Role</div>
+                            <div>
+                                <span class="badge-ios {% if user.role == 'superadmin' %}badge-ios-super{% else %}badge-ios-role{% endif %}">
+                                    {{ user.get_role_display }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="detail-tile-ios">
+                            <div class="tile-label">Status</div>
+                            <div>
+                                <span class="badge-ios {% if user.is_active %}badge-ios-active{% else %}badge-ios-inactive{% endif %}">
+                                    {% if user.is_active %}Active{% else %}Inactive{% endif %}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="detail-tile-ios">
+                            <div class="tile-label">Joined</div>
+                            <div class="tile-value">{{ user.date_joined|date:'M d, Y' }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Warning System Banners -->
+            {% if user.is_superuser %}
+            <div class="ios-callout ios-callout-warning d-flex align-items-start gap-2">
+                <i class="bi bi-exclamation-triangle-fill fs-6 mt-1"></i>
+                <div>
+                    <strong>Superuser Warning:</strong> This account holds elevated permissions. Deleting them may affect key admin features.
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if user.managed_tournaments.all %}
+            <div class="ios-callout ios-callout-info">
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <i class="bi bi-info-circle-fill fs-6"></i>
+                    <strong>Managed Tournaments Notice:</strong>
+                </div>
+                <div class="ps-4">
+                    <ul class="mb-1 ps-0 style-none small">
+                        {% for tournament in user.managed_tournaments.all %}
+                        <li>• {{ tournament.name }}</li>
+                        {% endfor %}
+                    </ul>
+                    <span class="small opacity-75">Deleting this account removes assigned management privileges.</span>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Submission Actions -->
+            <form method="post" id="deleteForm">
+                {% csrf_token %}
+                <div class="d-flex gap-2 justify-content-center mt-4">
+                    <button type="submit" class="btn-ios-danger" id="deleteBtn">
+                        <i class="bi bi-trash-fill" id="deleteIcon"></i> 
+                        <span id="btnText">Confirm Delete</span>
+                        <span class="spinner-border spinner-border-sm d-none" id="deleteSpinner" role="status"></span>
+                    </button>
+                    <a href="{% url 'admin_user_list' %}" class="btn-ios-secondary">
+                        <i class="bi bi-chevron-left"></i> Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const deleteForm = document.getElementById('deleteForm');
+    const deleteBtn = document.getElementById('deleteBtn');
+    const deleteIcon = document.getElementById('deleteIcon');
+    const deleteSpinner = document.getElementById('deleteSpinner');
+    const btnText = document.getElementById('btnText');
+    
+    let isSubmitting = false;
+
+    deleteForm.addEventListener('submit', function(e) {
+        if (isSubmitting) {
+            e.preventDefault();
+            return false;
+        }
+        
+        isSubmitting = true;
+        deleteBtn.style.pointerEvents = 'none';
+        deleteBtn.style.opacity = '0.85';
+        deleteIcon.classList.add('d-none');
+        deleteSpinner.classList.remove('d-none');
+        btnText.textContent = 'Deleting...';
+    });
+});
+</script>
+{% endblock %}

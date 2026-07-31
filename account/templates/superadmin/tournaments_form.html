@@ -1,0 +1,162 @@
+{% extends 'superadmin/base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - Tournament Manager{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block page_subtitle %}Configure tournament rules, formats, and visibility settings{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8 col-md-10">
+        <div class="card shadow-sm border-0 rounded-3">
+            <div class="card-header bg-white py-3 border-bottom-0 d-flex align-items-center justify-content-between">
+                <h5 class="mb-0 fw-bold text-dark">
+                    <i class="bi bi-trophy text-primary me-2"></i> {{ title }}
+                </h5>
+                <a href="{% url 'admin_tournament_list' %}" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-arrow-left me-1"></i> Back to List
+                </a>
+            </div>
+            
+            <div class="card-body p-4">
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {% for error in form.non_field_errors %}
+                            <div><i class="bi bi-exclamation-triangle-fill me-2"></i> {{ error }}</div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <form method="post" novalidate>
+                    {% csrf_token %}
+
+                    <!-- Tournament Name -->
+                    <div class="mb-3">
+                        <label for="{{ form.name.id_for_label }}" class="form-label fw-semibold">
+                            Tournament Name <span class="text-danger">*</span>
+                        </label>
+                        {{ form.name }}
+                        {% if form.name.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.name.errors|join:", " }}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">Choose a descriptive name for your tournament (e.g., Summer League 2026).</div>
+                    </div>
+
+                    <div class="row">
+                        <!-- Tournament Format -->
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.tournament_format.id_for_label }}" class="form-label fw-semibold">
+                                Tournament Format <span class="text-danger">*</span>
+                            </label>
+                            {{ form.tournament_format }}
+                            {% if form.tournament_format.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.tournament_format.errors|join:", " }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Tournament Mode -->
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.mode.id_for_label }}" class="form-label fw-semibold">
+                                Match Mode <span class="text-danger">*</span>
+                            </label>
+                            {{ form.mode }}
+                            {% if form.mode.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.mode.errors|join:", " }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Format-Specific Settings (Group + Knockout) -->
+                    <div class="mb-3 p-3 bg-light rounded border" id="groupSettingsWrapper" style="display: none;">
+                        <label for="{{ form.qualify_per_group.id_for_label }}" class="form-label fw-semibold text-dark">
+                            Teams Qualifying per Group
+                        </label>
+                        <div class="w-50">
+                            {{ form.qualify_per_group }}
+                        </div>
+                        {% if form.qualify_per_group.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.qualify_per_group.errors|join:", " }}
+                            </div>
+                        {% endif %}
+                        <small class="text-muted d-block mt-1">Number of top teams from each group advancing to knockout stage.</small>
+                    </div>
+
+                    <!-- Visibility Toggle -->
+                    <div class="mb-4">
+                        <div class="form-check form-switch card-switch p-2 bg-light rounded border d-flex align-items-center justify-content-between">
+                            <div>
+                                <label for="{{ form.is_open.id_for_label }}" class="form-check-label fw-semibold cursor-pointer mb-0 me-3">
+                                    Open Tournament for Registration
+                                </label>
+                                <small class="text-muted d-block">Allow team registrations and public visibility immediately after creation.</small>
+                            </div>
+                            <div class="me-2">
+                                {{ form.is_open }}
+                            </div>
+                        </div>
+                        {% if form.is_open.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.is_open.errors|join:", " }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <hr class="my-4">
+
+                    <!-- Actions -->
+                    <div class="d-flex justify-content-end gap-2">
+                        <a href="{% url 'admin_tournament_list' %}" class="btn btn-outline-secondary">
+                            Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="bi bi-check-circle me-1"></i> Save Tournament
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const formatSelect = document.getElementById('{{ form.tournament_format.id_for_label }}');
+    const groupSettings = document.getElementById('groupSettingsWrapper');
+
+    function toggleGroupSettings() {
+        if (!formatSelect || !groupSettings) return;
+        
+        // Show group qualification field only when format is "Group + Knockout"
+        if (formatSelect.value === 'group_knockout') {
+            groupSettings.style.display = 'block';
+        } else {
+            groupSettings.style.display = 'none';
+        }
+    }
+
+    if (formatSelect) {
+        formatSelect.addEventListener('change', toggleGroupSettings);
+        // Initial state check on page load
+        toggleGroupSettings();
+    }
+});
+</script>
+{% endblock %}

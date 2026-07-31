@@ -1,0 +1,544 @@
+{% extends 'superadmin/base.html' %}
+{% load static %}
+
+{% block title %}Fixtures - Tournament Manager{% endblock %}
+{% block page_title %}Fixture Management{% endblock %}
+{% block page_subtitle %}Manage all fixtures and schedules{% endblock %}
+
+{% block content %}
+<div class="ios-container">
+
+    <!-- Header Actions Toolbar -->
+    <div class="ios-card mb-4 p-3 border-0">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+
+            <!-- Left: Counter & Filters -->
+            <div class="d-flex align-items-center gap-3 flex-wrap">
+                <div>
+                    <h5 class="fw-bold text-dark mb-0 fs-5">All Fixtures</h5>
+                    <span class="ios-caption text-muted">{{ fixture_count }} fixture{{ fixture_count|pluralize }} total</span>
+                </div>
+
+                <!-- Filter Dropdown -->
+                <div class="dropdown ms-md-2">
+                    <button class="btn btn-ios-secondary dropdown-toggle btn-sm d-flex align-items-center gap-2"
+                            type="button"
+                            data-bs-toggle="dropdown"
+                            aria-expanded="false">
+                        <i class="bi bi-funnel-fill text-primary"></i>
+                        <span>
+                            {% if selected_tournament %}
+                                {% for t in tournaments %}
+                                    {% if t.id|stringformat:'s' == selected_tournament %}{{ t.name }}{% endif %}
+                                {% endfor %}
+                            {% elif selected_status %}
+                                {{ selected_status|title }}
+                            {% else %}
+                                Filter List
+                            {% endif %}
+                        </span>
+                    </button>
+                    <ul class="dropdown-menu ios-dropdown-menu shadow-lg border-0">
+                        <li>
+                            <a class="dropdown-item {% if not selected_tournament and not selected_status %}active{% endif %}" href="?">
+                                All Fixtures
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><h6 class="dropdown-header ios-caption text-uppercase fw-bold text-muted">By Tournament</h6></li>
+                        {% for tournament in tournaments %}
+                        <li>
+                            <a class="dropdown-item {% if selected_tournament == tournament.id|stringformat:'s' %}active{% endif %}"
+                               href="?tournament={{ tournament.id }}">
+                                {{ tournament.name }}
+                            </a>
+                        </li>
+                        {% endfor %}
+                        <li><hr class="dropdown-divider"></li>
+                        <li><h6 class="dropdown-header ios-caption text-uppercase fw-bold text-muted">By Status</h6></li>
+                        <li>
+                            <a class="dropdown-item {% if selected_status == 'upcoming' %}active{% endif %}" href="?status=upcoming">
+                                Upcoming
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item {% if selected_status == 'played' %}active{% endif %}" href="?status=played">
+                                Played
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Right: Action Buttons Group -->
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <a href="{% url 'admin_fixture_create' %}" class="btn btn-ios-primary btn-sm">
+                    <i class="bi bi-plus-lg me-1"></i> Add Fixture
+                </a>
+                <a href="{% url 'admin_fixture_generate' %}" class="btn btn-ios-secondary btn-sm">
+                    <i class="bi bi-magic me-1 text-success"></i> Generate
+                </a>
+                <a href="{% url 'admin_fixture_schedule_edit' %}" class="btn btn-ios-secondary btn-sm">
+                    <i class="bi bi-calendar-range me-1 text-warning"></i> Schedule
+                </a>
+
+                <!-- Danger Dropdown Menu -->
+                <div class="dropdown">
+                    <button class="btn btn-ios-secondary btn-sm px-2" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-trash-fill text-danger"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end ios-dropdown-menu shadow-lg border-0">
+                        <li>
+                            <a class="dropdown-item text-danger" href="{% url 'admin_fixture_delete_all' %}">
+                                <i class="bi bi-trash3 me-1"></i> Delete All Fixtures
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item text-danger" href="#" onclick="confirmDeleteSelected()">
+                                <i class="bi bi-check-square me-1"></i> Delete Selected
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Table Container Card -->
+    <div class="ios-card p-0 border-0 overflow-hidden shadow-sm">
+        <div class="table-responsive">
+            <table class="table ios-table align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th class="ps-4" style="width: 40px;">
+                            <input type="checkbox" id="selectAll" class="form-check-input ios-checkbox">
+                        </th>
+                        <th>Schedule</th>
+                        <th>Home</th>
+                        <th class="text-center">Score / vs</th>
+                        <th>Away</th>
+                        <th>Tournament</th>
+                        <th>Round</th>
+                        <th>Status</th>
+                        <th class="text-end pe-4">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for fixture in fixtures %}
+                    <tr class="ios-table-row">
+                        <!-- Checkbox -->
+                        <td class="ps-4">
+                            <input type="checkbox" class="form-check-input ios-checkbox fixture-checkbox" value="{{ fixture.id }}">
+                        </td>
+
+                        <!-- Date & Time -->
+                        <td>
+                            <div class="d-flex flex-column">
+                                <span class="fw-semibold text-dark fs-7">
+                                    {{ fixture.match_date|date:'M d, Y'|default:'TBD' }}
+                                </span>
+                                {% if fixture.match_date %}
+                                <span class="ios-caption text-muted">
+                                    <i class="bi bi-clock me-1"></i>{{ fixture.match_date|date:'H:i' }}
+                                </span>
+                                {% endif %}
+                            </div>
+                        </td>
+
+                        <!-- Home Team -->
+                        <td>
+                            <div class="d-flex align-items-center gap-1">
+                                <span class="fw-bold text-dark fs-7">{{ fixture.home_team.name }}</span>
+                                {% if fixture.away_team is None %}
+                                    <span class="ios-badge ios-badge-warning ms-1">Bye</span>
+                                {% endif %}
+                            </div>
+                        </td>
+
+                        <!-- Score / VS Pill -->
+                        <td class="text-center">
+                            {% if fixture.is_played and fixture.result %}
+                                <span class="ios-score-pill {% if fixture.result.home_score > fixture.result.away_score %}ios-score-win{% elif fixture.result.home_score < fixture.result.away_score %}ios-score-loss{% else %}ios-score-draw{% endif %}">
+                                    {{ fixture.result.home_score }} - {{ fixture.result.away_score }}
+                                </span>
+                            {% else %}
+                                <span class="ios-vs-pill">VS</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Away Team -->
+                        <td>
+                            <div class="d-flex align-items-center gap-1">
+                                <span class="fw-bold text-dark fs-7">{{ fixture.away_team.name|default:'Bye' }}</span>
+                                {% if fixture.away_team is None %}
+                                    <span class="ios-badge ios-badge-warning ms-1">Bye</span>
+                                {% endif %}
+                            </div>
+                        </td>
+
+                        <!-- Tournament Reference -->
+                        <td>
+                            <span class="ios-link-subtle fs-7">
+                                <i class="bi bi-trophy me-1 text-warning"></i>{{ fixture.tournament.name }}
+                            </span>
+                        </td>
+
+                        <!-- Round & Group -->
+                        <td>
+                            <div class="d-flex flex-column">
+                                <span class="ios-badge ios-badge-secondary w-auto align-self-start">
+                                    Round {{ fixture.round }}
+                                </span>
+                                {% if fixture.group %}
+                                <span class="ios-caption text-muted mt-1">{{ fixture.group.name }}</span>
+                                {% endif %}
+                            </div>
+                        </td>
+
+                        <!-- Status Badge -->
+                        <td>
+                            {% if fixture.is_played %}
+                                <span class="ios-badge ios-badge-success">
+                                    <i class="bi bi-check-circle-fill me-1"></i>Played
+                                </span>
+                            {% else %}
+                                <span class="ios-badge ios-badge-warning">
+                                    <i class="bi bi-clock-fill me-1"></i>Upcoming
+                                </span>
+                            {% endif %}
+                        </td>
+
+                        <!-- iOS Icon Action Buttons -->
+                        <td class="text-end pe-4">
+                            <div class="d-inline-flex gap-1">
+                                {% if not fixture.is_played %}
+                                <a href="{% url 'admin_result_enter' fixture.id %}"
+                                   class="btn btn-ios-icon btn-ios-icon-success"
+                                   data-bs-toggle="tooltip"
+                                   title="Enter Result">
+                                    <i class="bi bi-check-lg"></i>
+                                </a>
+                                {% endif %}
+                                <a href="{% url 'admin_fixture_edit' fixture.id %}"
+                                   class="btn btn-ios-icon"
+                                   data-bs-toggle="tooltip"
+                                   title="Edit Fixture">
+                                    <i class="bi bi-pencil-fill text-secondary"></i>
+                                </a>
+                                <a href="{% url 'admin_fixture_delete' fixture.id %}"
+                                   class="btn btn-ios-icon btn-ios-icon-danger"
+                                   data-bs-toggle="tooltip"
+                                   title="Delete Fixture">
+                                    <i class="bi bi-trash-fill"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" class="text-center py-5">
+                            <div class="py-4">
+                                <div class="ios-empty-icon mb-3">
+                                    <i class="bi bi-calendar-x"></i>
+                                </div>
+                                <h6 class="fw-bold text-dark mb-1">No Fixtures Found</h6>
+                                <p class="text-muted fs-7 mb-3">There are no fixtures generated under the selected filters.</p>
+                                <div class="d-flex gap-2 justify-content-center">
+                                    <a href="{% url 'admin_fixture_create' %}" class="btn btn-ios-primary btn-sm">
+                                        <i class="bi bi-plus-lg me-1"></i> Create Manually
+                                    </a>
+                                    <a href="{% url 'admin_fixture_generate' %}" class="btn btn-ios-secondary btn-sm">
+                                        <i class="bi bi-magic me-1 text-success"></i> Auto Generate
+                                    </a>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- iOS Pagination Bar -->
+        {% if fixtures.has_other_pages %}
+        <div class="p-3 border-top border-light d-flex justify-content-center">
+            <nav aria-label="Fixture pagination">
+                <ul class="pagination ios-pagination mb-0">
+                    {% if fixtures.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ fixtures.previous_page_number }}{% if selected_tournament %}&tournament={{ selected_tournament }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    {% for num in fixtures.paginator.page_range %}
+                    <li class="page-item {% if fixtures.number == num %}active{% endif %}">
+                        <a class="page-link" href="?page={{ num }}{% if selected_tournament %}&tournament={{ selected_tournament }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}">
+                            {{ num }}
+                        </a>
+                    </li>
+                    {% endfor %}
+
+                    {% if fixtures.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ fixtures.next_page_number }}{% if selected_tournament %}&tournament={{ selected_tournament }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+
+<!-- Native iOS Aesthetic Custom Styles -->
+<style>
+/* Card & Glassmorphism Container */
+.ios-container {
+    max-width: 1240px;
+    margin: 0 auto;
+}
+
+.ios-card {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+    border: 1px solid rgba(229, 231, 235, 0.8);
+}
+
+/* Typography & Subtleties */
+.ios-caption {
+    font-size: 0.75rem;
+    letter-spacing: -0.01em;
+}
+
+.fs-7 {
+    font-size: 0.8125rem;
+}
+
+.ios-link-subtle {
+    color: #1c1c1e;
+    font-weight: 500;
+    text-decoration: none;
+}
+
+/* Checkbox Override */
+.ios-checkbox {
+    border-radius: 6px;
+    border: 1px solid rgba(118, 118, 128, 0.4);
+    cursor: pointer;
+}
+.ios-checkbox:checked {
+    background-color: #007aff;
+    border-color: #007aff;
+}
+
+/* Custom Buttons (iOS Style) */
+.btn-ios-primary {
+    background-color: #007aff;
+    color: #ffffff;
+    border-radius: 10px;
+    font-weight: 600;
+    padding: 6px 14px;
+    border: none;
+    transition: all 0.15s ease;
+}
+.btn-ios-primary:hover {
+    background-color: #0062cc;
+    color: #ffffff;
+    transform: scale(0.98);
+}
+
+.btn-ios-secondary {
+    background-color: rgba(118, 118, 128, 0.12);
+    color: #000000;
+    border-radius: 10px;
+    font-weight: 500;
+    padding: 6px 14px;
+    border: none;
+    transition: all 0.15s ease;
+}
+.btn-ios-secondary:hover {
+    background-color: rgba(118, 118, 128, 0.2);
+    color: #000000;
+    transform: scale(0.98);
+}
+
+.btn-ios-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    background: rgba(118, 118, 128, 0.08);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    transition: all 0.15s ease;
+    text-decoration: none;
+}
+.btn-ios-icon:hover {
+    background: rgba(118, 118, 128, 0.18);
+    transform: scale(1.05);
+}
+.btn-ios-icon-success {
+    color: #34c759;
+}
+.btn-ios-icon-success:hover {
+    background: rgba(52, 199, 89, 0.15);
+    color: #34c759;
+}
+.btn-ios-icon-danger {
+    color: #ff3b30;
+}
+.btn-ios-icon-danger:hover {
+    background: rgba(255, 59, 48, 0.15);
+    color: #ff3b30;
+}
+
+/* Badges & Scores */
+.ios-badge {
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+}
+.ios-badge-secondary {
+    background: rgba(118, 118, 128, 0.12);
+    color: #48484a;
+}
+.ios-badge-success {
+    background: rgba(52, 199, 89, 0.12);
+    color: #248a3d;
+}
+.ios-badge-warning {
+    background: rgba(255, 149, 0, 0.12);
+    color: #c67d00;
+}
+
+.ios-vs-pill {
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    background: rgba(118, 118, 128, 0.08);
+    color: #8e8e93;
+}
+
+.ios-score-pill {
+    padding: 3px 10px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    display: inline-block;
+}
+.ios-score-win { background: rgba(52, 199, 89, 0.15); color: #248a3d; }
+.ios-score-draw { background: rgba(255, 149, 0, 0.15); color: #c67d00; }
+.ios-score-loss { background: rgba(255, 59, 48, 0.15); color: #d70015; }
+
+/* Table Styling */
+.ios-table th {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+    color: #8e8e93;
+    background: rgba(249, 249, 251, 0.7);
+    padding-top: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(229, 231, 235, 0.8);
+}
+.ios-table-row {
+    transition: background-color 0.15s ease;
+}
+.ios-table-row:hover {
+    background-color: rgba(0, 122, 255, 0.02);
+}
+.ios-table td {
+    padding-top: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(242, 242, 247, 0.8);
+}
+
+/* Dropdown Menu iOS Style */
+.ios-dropdown-menu {
+    border-radius: 12px;
+    padding: 6px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(25px);
+}
+.ios-dropdown-menu .dropdown-item {
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 0.8125rem;
+    font-weight: 500;
+}
+.ios-dropdown-menu .dropdown-item.active,
+.ios-dropdown-menu .dropdown-item:active {
+    background-color: #007aff;
+    color: #ffffff;
+}
+
+/* Pagination iOS Style */
+.ios-pagination .page-link {
+    border: none;
+    background: transparent;
+    color: #007aff;
+    font-weight: 600;
+    border-radius: 8px;
+    margin: 0 2px;
+    padding: 6px 12px;
+}
+.ios-pagination .page-item.active .page-link {
+    background-color: #007aff;
+    color: #ffffff;
+}
+
+/* Empty State Styling */
+.ios-empty-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: rgba(118, 118, 128, 0.08);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    color: #8e8e93;
+}
+</style>
+
+<script>
+document.getElementById('selectAll').addEventListener('change', function() {
+    document.querySelectorAll('.fixture-checkbox').forEach(cb => cb.checked = this.checked);
+});
+
+function confirmDeleteSelected() {
+    const selected = document.querySelectorAll('.fixture-checkbox:checked');
+    if (selected.length === 0) {
+        alert('Please select at least one fixture to delete.');
+        return;
+    }
+    if (confirm(`Are you sure you want to delete ${selected.length} fixture(s)?`)) {
+        const ids = Array.from(selected).map(cb => cb.value);
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{% url "admin_fixture_delete_all" %}';
+        form.innerHTML = `
+            {% csrf_token %}
+            <input type="hidden" name="fixture_ids" value="${ids.join(',')}">
+        `;
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
+{% endblock %}

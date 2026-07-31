@@ -1,0 +1,445 @@
+{% extends 'superadmin/base.html' %}
+
+{% block title %}Teams - Tournament Manager{% endblock %}
+{% block page_title %}Teams{% endblock %}
+{% block page_subtitle %}Manage all registered teams and players across tournaments{% endblock %}
+
+{% block content %}
+<div class="ios-container">
+
+    <!-- Header Actions Toolbar -->
+    <div class="ios-card mb-4 p-3 border-0">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+
+            <!-- Left: Counter & Search Filter -->
+            <div class="d-flex align-items-center gap-3 flex-wrap">
+                <div>
+                    <h5 class="fw-bold text-dark mb-0 fs-5">All Teams</h5>
+                    <span class="ios-caption text-muted">{{ team_count }} team{{ team_count|pluralize }} registered</span>
+                </div>
+
+                <!-- Tournament Filter Dropdown -->
+                <div class="dropdown ms-md-2">
+                    <button class="btn btn-ios-secondary dropdown-toggle btn-sm d-flex align-items-center gap-2"
+                            type="button"
+                            data-bs-toggle="dropdown"
+                            aria-expanded="false">
+                        <i class="bi bi-funnel-fill text-primary"></i>
+                        <span>
+                            {% if selected_tournament %}
+                                {% for t in tournaments %}
+                                    {% if t.id|stringformat:'s' == selected_tournament %}{{ t.name }}{% endif %}
+                                {% endfor %}
+                            {% else %}
+                                All Tournaments
+                            {% endif %}
+                        </span>
+                    </button>
+                    <ul class="dropdown-menu ios-dropdown-menu shadow-lg border-0">
+                        <li>
+                            <a class="dropdown-item {% if not selected_tournament %}active{% endif %}" href="?">
+                                All Tournaments
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        {% for tournament in tournaments %}
+                        <li>
+                            <a class="dropdown-item {% if selected_tournament == tournament.id|stringformat:'s' %}active{% endif %}"
+                               href="?tournament={{ tournament.id }}">
+                                {{ tournament.name }}
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Right: Action Buttons Group -->
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <a href="{% url 'admin_team_create' %}" class="btn btn-ios-primary btn-sm">
+                    <i class="bi bi-plus-lg me-1"></i> Add Team
+                </a>
+                <a href="{% url 'admin_team_bulk_create' %}" class="btn btn-ios-secondary btn-sm">
+                    <i class="bi bi-layers me-1 text-success"></i> Bulk Create
+                </a>
+                <a href="{% url 'admin_team_import' %}" class="btn btn-ios-secondary btn-sm">
+                    <i class="bi bi-file-earmark-arrow-up me-1 text-info"></i> Import
+                </a>
+                <a href="{% url 'admin_team_export' %}{% if selected_tournament %}?tournament={{ selected_tournament }}{% endif %}"
+                   class="btn btn-ios-secondary btn-sm">
+                    <i class="bi bi-square-and-arrow-up me-1 text-muted"></i> Export
+                </a>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Table Container Card -->
+    <div class="ios-card p-0 border-0 overflow-hidden shadow-sm">
+        <div class="table-responsive">
+            <table class="table ios-table align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th class="ps-4" style="width: 50px;">#</th>
+                        <th>Team & Player</th>
+                        <th>Tournament</th>
+                        <th>Format</th>
+                        <th>Form / Stats</th>
+                        <th class="text-end pe-4">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for team in teams %}
+                    <tr class="ios-table-row">
+                        <!-- Index -->
+                        <td class="ps-4 text-muted fw-semibold fs-7">
+                            {{ forloop.counter }}
+                        </td>
+
+                        <!-- Team & Player Details -->
+                        <td>
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="ios-avatar-badge">
+                                    {{ team.name|slice:":2"|upper }}
+                                </div>
+                                <div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="fw-bold text-dark fs-6">{{ team.name }}</span>
+                                        {% if team.bye_count > 0 %}
+                                            <span class="ios-badge ios-badge-warning" title="{{ team.bye_count }} Bye Round(s)">
+                                                <i class="bi bi-pause-circle me-1"></i>{{ team.bye_count }} Bye
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                    <span class="ios-caption text-muted">
+                                        <i class="bi bi-person me-1"></i>{{ team.player_name|default:'Unassigned' }}
+                                    </span>
+                                </div>
+                            </div>
+                        </td>
+
+                        <!-- Tournament Reference -->
+                        <td>
+                            <a href="{% url 'admin_tournament_edit' team.tournament.id %}" class="ios-link-subtle">
+                                <i class="bi bi-trophy me-1 text-warning"></i>{{ team.tournament.name }}
+                            </a>
+                        </td>
+
+                        <!-- Format -->
+                        <td>
+                            <span class="ios-badge ios-badge-secondary">
+                                {{ team.tournament.get_tournament_format_display }}
+                            </span>
+                        </td>
+
+                        <!-- Compact iOS Pills for Stats -->
+                        <td>
+                            <div class="d-flex align-items-center gap-1 flex-wrap">
+                                <span class="ios-stat-pill ios-stat-points" title="Points">
+                                    <strong>{{ team.points }}</strong> PTS
+                                </span>
+                                <span class="ios-stat-pill text-muted" title="Matches Played">
+                                    {{ team.played }} P
+                                </span>
+                                <span class="ios-stat-pill ios-stat-win" title="Wins">
+                                    {{ team.wins }}W
+                                </span>
+                                <span class="ios-stat-pill ios-stat-draw" title="Draws">
+                                    {{ team.draws }}D
+                                </span>
+                                <span class="ios-stat-pill ios-stat-loss" title="Losses">
+                                    {{ team.losses }}L
+                                </span>
+                            </div>
+                        </td>
+
+                        <!-- iOS Action Buttons -->
+                        <td class="text-end pe-4">
+                            <div class="d-inline-flex gap-1">
+                                <a href="{% url 'admin_team_stats' team.id %}"
+                                   class="btn btn-ios-icon"
+                                   data-bs-toggle="tooltip"
+                                   title="View Analytics">
+                                    <i class="bi bi-chart-bar-fill text-primary"></i>
+                                </a>
+                                <a href="{% url 'admin_team_edit' team.id %}"
+                                   class="btn btn-ios-icon"
+                                   data-bs-toggle="tooltip"
+                                   title="Edit Team">
+                                    <i class="bi bi-pencil-fill text-secondary"></i>
+                                </a>
+                                <a href="{% url 'admin_team_delete' team.id %}"
+                                   class="btn btn-ios-icon btn-ios-icon-danger"
+                                   data-bs-toggle="tooltip"
+                                   title="Delete Team">
+                                    <i class="bi bi-trash-fill"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5">
+                            <div class="py-4">
+                                <div class="ios-empty-icon mb-3">
+                                    <i class="bi bi-shield-slash"></i>
+                                </div>
+                                <h6 class="fw-bold text-dark mb-1">No Teams Found</h6>
+                                <p class="text-muted fs-7 mb-3">There are no teams registered under the selected filters.</p>
+                                <a href="{% url 'admin_team_create' %}" class="btn btn-ios-primary btn-sm">
+                                    <i class="bi bi-plus-lg me-1"></i> Register New Team
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- iOS Pagination Bar -->
+        {% if teams.has_other_pages %}
+        <div class="p-3 border-top border-light d-flex justify-content-center">
+            <nav aria-label="Team pagination">
+                <ul class="pagination ios-pagination mb-0">
+                    {% if teams.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ teams.previous_page_number }}{% if selected_tournament %}&tournament={{ selected_tournament }}{% endif %}">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    {% for num in teams.paginator.page_range %}
+                    <li class="page-item {% if teams.number == num %}active{% endif %}">
+                        <a class="page-link" href="?page={{ num }}{% if selected_tournament %}&tournament={{ selected_tournament }}{% endif %}">
+                            {{ num }}
+                        </a>
+                    </li>
+                    {% endfor %}
+
+                    {% if teams.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ teams.next_page_number }}{% if selected_tournament %}&tournament={{ selected_tournament }}{% endif %}">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+
+<!-- Native iOS Aesthetic Custom Styles -->
+<style>
+/* Card & Glassmorphism Container */
+.ios-container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.ios-card {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+    border: 1px solid rgba(229, 231, 235, 0.8);
+}
+
+/* Typography & Subtleties */
+.ios-caption {
+    font-size: 0.78rem;
+    letter-spacing: -0.01em;
+}
+
+.ios-link-subtle {
+    color: #1c1c1e;
+    font-weight: 500;
+    text-decoration: none;
+    transition: opacity 0.15s ease;
+}
+.ios-link-subtle:hover {
+    opacity: 0.7;
+}
+
+/* iOS Avatars */
+.ios-avatar-badge {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #007aff 0%, #5856d6 100%);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.85rem;
+    box-shadow: 0 2px 8px rgba(0, 122, 255, 0.25);
+}
+
+/* Custom Buttons (iOS Style) */
+.btn-ios-primary {
+    background-color: #007aff;
+    color: #ffffff;
+    border-radius: 10px;
+    font-weight: 600;
+    padding: 6px 14px;
+    border: none;
+    transition: all 0.15s ease;
+}
+.btn-ios-primary:hover {
+    background-color: #0062cc;
+    color: #ffffff;
+    transform: scale(0.98);
+}
+
+.btn-ios-secondary {
+    background-color: rgba(118, 118, 128, 0.12);
+    color: #000000;
+    border-radius: 10px;
+    font-weight: 500;
+    padding: 6px 14px;
+    border: none;
+    transition: all 0.15s ease;
+}
+.btn-ios-secondary:hover {
+    background-color: rgba(118, 118, 128, 0.2);
+    color: #000000;
+    transform: scale(0.98);
+}
+
+.btn-ios-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: rgba(118, 118, 128, 0.08);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    transition: all 0.15s ease;
+    text-decoration: none;
+}
+.btn-ios-icon:hover {
+    background: rgba(118, 118, 128, 0.18);
+    transform: scale(1.05);
+}
+.btn-ios-icon-danger {
+    color: #ff3b30;
+}
+.btn-ios-icon-danger:hover {
+    background: rgba(255, 59, 48, 0.15);
+    color: #ff3b30;
+}
+
+/* iOS Badges & Stat Pills */
+.ios-badge {
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+}
+.ios-badge-secondary {
+    background: rgba(118, 118, 128, 0.12);
+    color: #48484a;
+}
+.ios-badge-warning {
+    background: rgba(255, 149, 0, 0.15);
+    color: #c67d00;
+}
+
+.ios-stat-pill {
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    background: rgba(242, 242, 247, 0.8);
+    border: 1px solid rgba(229, 231, 235, 0.6);
+}
+.ios-stat-points {
+    background: rgba(0, 122, 255, 0.1);
+    color: #007aff;
+    border-color: rgba(0, 122, 255, 0.2);
+}
+.ios-stat-win { color: #34c759; }
+.ios-stat-draw { color: #ff9500; }
+.ios-stat-loss { color: #ff3b30; }
+
+/* Table Styling */
+.ios-table th {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+    color: #8e8e93;
+    background: rgba(249, 249, 251, 0.7);
+    padding-top: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(229, 231, 235, 0.8);
+}
+.ios-table-row {
+    transition: background-color 0.15s ease;
+}
+.ios-table-row:hover {
+    background-color: rgba(0, 122, 255, 0.02);
+}
+.ios-table td {
+    padding-top: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(242, 242, 247, 0.8);
+}
+
+/* Dropdown Menu iOS Style */
+.ios-dropdown-menu {
+    border-radius: 12px;
+    padding: 6px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(25px);
+}
+.ios-dropdown-menu .dropdown-item {
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+.ios-dropdown-menu .dropdown-item.active,
+.ios-dropdown-menu .dropdown-item:active {
+    background-color: #007aff;
+    color: #ffffff;
+}
+
+/* Pagination iOS Style */
+.ios-pagination .page-link {
+    border: none;
+    background: transparent;
+    color: #007aff;
+    font-weight: 600;
+    border-radius: 8px;
+    margin: 0 2px;
+    padding: 6px 12px;
+}
+.ios-pagination .page-item.active .page-link {
+    background-color: #007aff;
+    color: #ffffff;
+}
+
+/* Empty State Styling */
+.ios-empty-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: rgba(118, 118, 128, 0.08);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    color: #8e8e93;
+}
+</style>
+{% endblock %}

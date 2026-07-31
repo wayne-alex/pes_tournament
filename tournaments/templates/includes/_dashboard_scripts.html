@@ -1,0 +1,297 @@
+<script>
+let currentPage = 1;
+const itemsPerPage = 5;
+let filteredTeams = [...ALL_TEAMS_DATA];
+let activeModalTeamId = null;
+
+/* LocalStorage Favorites Engine */
+function getFavorites() {
+    const favs = localStorage.getItem('fav_teams_ids');
+    return favs ? JSON.parse(favs) : [];
+}
+
+function saveFavorites(favArray) {
+    localStorage.setItem('fav_teams_ids', JSON.stringify(favArray));
+    syncFavoritesUI();
+}
+
+function toggleFavorite(teamId) {
+    let favs = getFavorites();
+    if (favs.includes(teamId)) {
+        favs = favs.filter(id => id !== teamId);
+    } else {
+        favs.push(teamId);
+    }
+    saveFavorites(favs);
+}
+
+function toggleFavoriteCurrentModal() {
+    if (activeModalTeamId) {
+        toggleFavorite(activeModalTeamId);
+        updateModalFavButtonState();
+    }
+}
+
+function updateModalFavButtonState() {
+    const btn = document.getElementById('modalFavStarBtn');
+    if (!btn || !activeModalTeamId) return;
+    const isFav = getFavorites().includes(activeModalTeamId);
+    if (isFav) {
+        btn.classList.add('active');
+        btn.innerText = '★ FAVORITED';
+    } else {
+        btn.classList.remove('active');
+        btn.innerText = '☆ FAVORITE';
+    }
+}
+
+/* Synchronize All Favorites UI Elements Across App */
+function syncFavoritesUI() {
+    const favs = getFavorites();
+
+    // Update Header Count Badge
+    const badge = document.getElementById('heroFavBadgeCount');
+    if (badge) badge.innerText = favs.length;
+
+    // Synchronize Star Corner Buttons
+    ALL_TEAMS_DATA.forEach(t => {
+        const starBtn = document.getElementById(`star-btn-${t.id}`);
+        if (starBtn) {
+            if (favs.includes(t.id)) starBtn.classList.add('active');
+            else starBtn.classList.remove('active');
+        }
+
+        const inlineStars = document.querySelectorAll(`#inline-star-${t.id}`);
+        inlineStars.forEach(s => {
+            if (favs.includes(t.id)) s.classList.add('active');
+            else s.classList.remove('active');
+        });
+    });
+
+    // Priority Today Action Alert Check
+    checkFavoritesTodayAlert(favs);
+}
+
+function checkFavoritesTodayAlert(favs) {
+    const alertBox = document.getElementById('favoriteTodayAlert');
+    const alertText = document.getElementById('favTodayText');
+    if (!alertBox) return;
+
+    if (!favs || favs.length === 0) {
+        alertBox.style.display = 'none';
+        return;
+    }
+
+    const todayMatch = TODAY_FIXTURE_TEAMS.find(f => favs.includes(f.home) || favs.includes(f.away));
+    if (todayMatch) {
+        alertText.innerText = `${todayMatch.home_name} vs ${todayMatch.away_name} is scheduled for today!`;
+        alertBox.style.display = 'flex';
+    } else {
+        alertBox.style.display = 'none';
+    }
+}
+
+/* Tab Switching Logic */
+function switchMainTab(tabName, element) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-item').forEach(el => el.classList.remove('active'));
+
+    document.getElementById(`tab-${tabName}`).classList.add('active');
+    element.classList.add('active');
+}
+
+function switchMatchSubTab(subTabName, element) {
+    document.querySelectorAll('.subtab-content').forEach(el => el.classList.remove('active'));
+    element.parentElement.querySelectorAll('.seg-btn').forEach(btn => btn.classList.remove('active'));
+
+    document.getElementById(`subtab-${subTabName}`).classList.add('active');
+    element.classList.add('active');
+}
+
+function switchLeaderboard(lbName, element) {
+    document.querySelectorAll('.lb-view').forEach(el => el.classList.remove('active'));
+    element.parentElement.querySelectorAll('.seg-btn').forEach(btn => btn.classList.remove('active'));
+
+    document.getElementById(`lb-${lbName}`).classList.add('active');
+    element.classList.add('active');
+}
+
+/* Date Pills & Favorites Filter for Fixtures */
+function filterFixturesByDate(filterType, btnElement) {
+    document.querySelectorAll('.date-pill').forEach(btn => btn.classList.remove('active'));
+    if (btnElement) btnElement.classList.add('active');
+
+    const rows = document.querySelectorAll('.fixture-card-row');
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    let tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+    const favs = getFavorites();
+
+    rows.forEach(row => {
+        const rowDate = row.getAttribute('data-date');
+        const homeId = parseInt(row.getAttribute('data-home-id'));
+        const awayId = parseInt(row.getAttribute('data-away-id'));
+
+        if (filterType === 'all') {
+            row.style.display = 'flex';
+        } else if (filterType === 'favs') {
+            row.style.display = (favs.includes(homeId) || favs.includes(awayId)) ? 'flex' : 'none';
+        } else if (filterType === 'today') {
+            row.style.display = (rowDate === todayStr) ? 'flex' : 'none';
+        } else if (filterType === 'tomorrow') {
+            row.style.display = (rowDate === tomorrowStr) ? 'flex' : 'none';
+        }
+    });
+}
+
+/* Interactive Match Prediction Poll Engine */
+let pollVotes = { home: 54, draw: 22, away: 52 };
+function castPollVote(choice) {
+    const hasVoted = localStorage.getItem('hero_poll_voted');
+    if (hasVoted) {
+        alert("You have already voted in this match poll!");
+        return;
+    }
+
+    pollVotes[choice] += 1;
+    localStorage.setItem('hero_poll_voted', choice);
+    renderPollResults();
+}
+
+function renderPollResults() {
+    const total = pollVotes.home + pollVotes.draw + pollVotes.away;
+    document.getElementById('pollVoteCount').innerText = `${total} votes`;
+
+    const hPct = Math.round((pollVotes.home / total) * 100);
+    const dPct = Math.round((pollVotes.draw / total) * 100);
+    const aPct = Math.round((pollVotes.away / total) * 100);
+
+    document.getElementById('barHome').style.width = `${hPct}%`;
+    document.getElementById('pctHome').innerText = `${hPct}%`;
+
+    document.getElementById('barDraw').style.width = `${dPct}%`;
+    document.getElementById('pctDraw').innerText = `${dPct}%`;
+
+    document.getElementById('barAway').style.width = `${aPct}%`;
+    document.getElementById('pctAway').innerText = `${aPct}%`;
+}
+
+/* Interactive Team Drawer Modal */
+function openTeamModal(teamId) {
+    activeModalTeamId = teamId;
+    const team = ALL_TEAMS_DATA.find(t => t.id == teamId);
+    if (!team) return;
+
+    document.getElementById('modalTeamTitle').innerText = team.name;
+    document.getElementById('modalTeamBadge').innerText = `${team.points} PTS`;
+    updateModalFavButtonState();
+
+    const winRate = team.played > 0 ? Math.round((team.wins / team.played) * 100) : 0;
+    const gd = team.goals_for - team.goals_against;
+
+    const teamResults = ALL_RESULTS_DATA.filter(r => r.home_team === team.name || r.away_team === team.name).slice(0, 5);
+    const formBadges = teamResults.map(r => {
+        const isHome = r.home_team === team.name;
+        const myScore = isHome ? r.home_score : r.away_score;
+        const oppScore = isHome ? r.away_score : r.home_score;
+        const res = myScore > oppScore ? 'W' : (myScore === oppScore ? 'D' : 'L');
+        return `<span class="form-dot form-${res}">${res}</span>`;
+    }).join('') || '<span style="font-size:11px; color:var(--ios-subtext)">No form history</span>';
+
+    const contentHtml = `
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:14px;">
+            <div class="kpi-card">
+                <span class="kpi-value" style="color:var(--ios-blue);">${winRate}%</span>
+                <span class="kpi-label">Win Rate</span>
+            </div>
+            <div class="kpi-card">
+                <span class="kpi-value">${gd >= 0 ? '+' : ''}${gd}</span>
+                <span class="kpi-label">Goal Difference</span>
+            </div>
+        </div>
+
+        <div style="margin-bottom:14px;">
+            <div class="ios-card-header">Recent Form</div>
+            <div style="display:flex; gap:4px;">${formBadges}</div>
+        </div>
+
+        <div class="ios-card" style="padding:10px; margin-bottom:0;">
+            <div class="ios-card-header">Overall Record</div>
+            <div style="font-size:12px; display:flex; justify-content:space-between; padding:4px 0;">
+                <span>Played</span><strong>${team.played}</strong>
+            </div>
+            <div style="font-size:12px; display:flex; justify-content:space-between; padding:4px 0;">
+                <span>Wins / Draws / Losses</span><strong>${team.wins}W - ${team.draws}D - ${team.losses}L</strong>
+            </div>
+            <div style="font-size:12px; display:flex; justify-content:space-between; padding:4px 0;">
+                <span>Goals Scored / Conceded</span><strong>${team.goals_for} / ${team.goals_against}</strong>
+            </div>
+        </div>
+    `;
+
+    document.getElementById('modalTeamContent').innerHTML = contentHtml;
+    document.getElementById('teamDrawerBackdrop').classList.add('active');
+    document.getElementById('teamDrawerModal').classList.add('active');
+}
+
+function closeTeamModal() {
+    activeModalTeamId = null;
+    document.getElementById('teamDrawerBackdrop').classList.remove('active');
+    document.getElementById('teamDrawerModal').classList.remove('active');
+}
+
+/* Team Directory Pagination */
+function filterTeams() {
+    const query = document.getElementById('teamSearchInput').value.toLowerCase();
+    filteredTeams = ALL_TEAMS_DATA.filter(t => t.name.toLowerCase().includes(query));
+    currentPage = 1;
+    renderTeamDirectory();
+}
+
+function renderTeamDirectory() {
+    const container = document.getElementById('teamListContainer');
+    const pagBar = document.getElementById('teamPagination');
+    if (!container) return;
+
+    const startIdx = (currentPage - 1) * itemsPerPage;
+    const paginated = filteredTeams.slice(startIdx, startIdx + itemsPerPage);
+
+    if (paginated.length === 0) {
+        container.innerHTML = `<p class="empty-state">No matching teams found</p>`;
+        pagBar.innerHTML = '';
+        return;
+    }
+
+    container.innerHTML = paginated.map(t => `
+        <div class="fixture-item clickable" onclick="openTeamModal(${t.id})">
+            <span>
+                <span class="fav-inline-star" id="inline-star-${t.id}">★</span>
+                <strong>${t.name}</strong>
+            </span>
+            <span style="color:var(--ios-subtext); font-size:11px;">${t.played} GP • <strong>${t.points} Pts</strong></span>
+        </div>
+    `).join('');
+
+    const totalPages = Math.ceil(filteredTeams.length / itemsPerPage);
+    pagBar.innerHTML = `
+        <button class="pg-btn" ${currentPage === 1 ? 'disabled style="opacity:0.4"' : ''} onclick="changePage(-1)">Prev</button>
+        <span style="font-size:10px; color:var(--ios-subtext)">Page ${currentPage} of ${totalPages || 1}</span>
+        <button class="pg-btn" ${currentPage >= totalPages ? 'disabled style="opacity:0.4"' : ''} onclick="changePage(1)">Next</button>
+    `;
+
+    syncFavoritesUI();
+}
+
+function changePage(direction) {
+    currentPage += direction;
+    renderTeamDirectory();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    renderTeamDirectory();
+    renderPollResults();
+    syncFavoritesUI();
+});
+</script>

@@ -1,0 +1,410 @@
+{% extends 'superadmin/base.html' %}
+{% load static %}
+
+{% block title %}Tournaments - Tournament Manager{% endblock %}
+{% block page_title %}Tournament Management{% endblock %}
+{% block page_subtitle %}Manage all tournaments and their settings{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+        <div>
+            <h5 class="form-title mb-0">All Tournaments</h5>
+            <small class="text-muted">{{ tournament_count }} tournaments total</small>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <div class="btn-group">
+                <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown">
+                    <i class="bi bi-funnel"></i> Filter
+                </button>
+                <ul class="dropdown-menu">
+                    <li><h6 class="dropdown-header">Format</h6></li>
+                    <li><a class="dropdown-item" href="?format=league">League</a></li>
+                    <li><a class="dropdown-item" href="?format=knockout">Knockout</a></li>
+                    <li><a class="dropdown-item" href="?format=group_knockout">Group + Knockout</a></li>
+                    <li><a class="dropdown-item" href="?format=swiss">Swiss</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><h6 class="dropdown-header">Status</h6></li>
+                    <li><a class="dropdown-item" href="?is_open=true">Open</a></li>
+                    <li><a class="dropdown-item" href="?is_open=false">Closed</a></li>
+                </ul>
+            </div>
+            <a href="{% url 'admin_tournament_create' %}" class="btn btn-primary btn-sm">
+                <i class="bi bi-plus-circle"></i> Create Tournament
+            </a>
+
+        </div>
+    </div>
+    
+    <!-- Search and Quick Filter -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                <input type="text" class="form-control" id="tournamentSearch" placeholder="Search tournaments...">
+                <button class="btn btn-outline-secondary" type="button" onclick="clearSearch()">
+                    <i class="bi bi-x-circle"></i>
+                </button>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="d-flex gap-2 justify-content-md-end">
+                <div class="btn-group" id="viewToggleGroup">
+                    <button type="button" id="gridBtn" class="btn btn-outline-secondary btn-sm" onclick="setView('card')">
+                        <i class="bi bi-grid"></i>
+                    </button>
+                    <button type="button" id="listBtn" class="btn btn-outline-secondary btn-sm active" onclick="setView('table')">
+                        <i class="bi bi-list"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Card View (Grid) -->
+    <div id="cardView" class="row g-4 d-none">
+        {% for tournament in tournaments %}
+        <div class="col-xl-4 col-lg-6 col-md-6 tournament-card" data-name="{{ tournament.name|lower }}">
+            <div class="card h-100 tournament-card-item">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <h5 class="card-title mb-1">{{ tournament.name }}</h5>
+                            <span class="badge bg-secondary">{{ tournament.get_tournament_format_display }}</span>
+                            {% if tournament.is_open %}
+                            <span class="badge bg-success">Open</span>
+                            {% else %}
+                            <span class="badge bg-warning">Closed</span>
+                            {% endif %}
+                        </div>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="dropdown">
+                                <i class="bi bi-three-dots-vertical"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'admin_tournament_edit' tournament.id %}">
+                                        <i class="bi bi-pencil"></i> Edit
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'admin_tournament_delete' tournament.id %}">
+                                        <i class="bi bi-trash text-danger"></i> Delete
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'admin_standings' tournament.id %}">
+                                        <i class="bi bi-trophy"></i> View Standings
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'admin_fixture_list' %}?tournament={{ tournament.id }}">
+                                        <i class="bi bi-calendar"></i> View Fixtures
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'admin_fixture_generate' %}">
+                                        <i class="bi bi-magic"></i> Generate Fixtures
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="tournament-stats mb-3">
+                        <div class="row text-center g-2">
+                            <div class="col-4">
+                                <div class="stat-item">
+                                    <span class="stat-number">{{ tournament.teams.count }}</span>
+                                    <span class="stat-label">Teams</span>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="stat-item">
+                                    <span class="stat-number">{{ tournament.fixtures.count }}</span>
+                                    <span class="stat-label">Fixtures</span>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="stat-item">
+                                    <span class="stat-number">
+                                        {% if tournament.played_fixtures_count != None %}
+                                            {{ tournament.played_fixtures_count }}
+                                        {% else %}
+                                            0
+                                        {% endif %}
+                                    </span>
+                                    <span class="stat-label">Played</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="tournament-meta">
+                        <div class="d-flex justify-content-between">
+                            <small class="text-muted">
+                                <i class="bi bi-calendar3"></i> {{ tournament.created_at|date:'M d, Y' }}
+                            </small>
+                            <small class="text-muted">
+                                <i class="bi bi-clock"></i> {{ tournament.created_at|timesince }} ago
+                            </small>
+                        </div>
+                        {% if tournament.swiss_total_rounds %}
+                        <div class="mt-1">
+                            <small class="text-muted">
+                                <i class="bi bi-arrows-repeat"></i> {{ tournament.swiss_total_rounds }} rounds
+                            </small>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="text-center py-5">
+                <i class="bi bi-trophy" style="font-size: 3rem; color: #d1d5db;"></i>
+                <p class="text-muted mt-2">No tournaments found</p>
+                <a href="{% url 'admin_tournament_create' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> Create your first tournament
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <!-- Table View (List) -->
+    <div id="tableView" class="table-responsive">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Tournament Name</th>
+                    <th>Format</th>
+                    <th>Mode</th>
+                    <th>Teams</th>
+                    <th>Status</th>
+                    <th>Created</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for tournament in tournaments %}
+                <tr class="tournament-row" data-name="{{ tournament.name|lower }}">
+                    <td>{{ forloop.counter }}</td>
+                    <td>
+                        <strong>{{ tournament.name }}</strong>
+                        {% if tournament.swiss_total_rounds %}
+                        <br><small class="text-muted">{{ tournament.swiss_total_rounds }} rounds</small>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="badge bg-info">{{ tournament.get_tournament_format_display }}</span>
+                    </td>
+                    <td>
+                        <span class="badge bg-secondary">{{ tournament.get_mode_display }}</span>
+                    </td>
+                    <td>
+                        <span class="badge bg-primary">{{ tournament.teams.count }}</span>
+                    </td>
+                    <td>
+                        {% if tournament.is_open %}
+                        <span class="badge bg-success">Open</span>
+                        {% else %}
+                        <span class="badge bg-warning">Closed</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <small>{{ tournament.created_at|date:'M d, Y' }}</small>
+                        <br><small class="text-muted">{{ tournament.created_at|timesince }} ago</small>
+                    </td>
+                    <td>
+                        <div class="btn-group btn-group-sm">
+                            <a href="{% url 'admin_tournament_edit' tournament.id %}" class="btn btn-outline-primary" title="Edit">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <a href="{% url 'admin_tournament_delete' tournament.id %}" class="btn btn-outline-danger" title="Delete">
+                                <i class="bi bi-trash"></i>
+                            </a>
+                            <button type="button" class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                                <span class="visually-hidden">Toggle Dropdown</span>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'admin_standings' tournament.id %}">
+                                        <i class="bi bi-trophy"></i> Standings
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'admin_fixture_list' %}?tournament={{ tournament.id }}">
+                                        <i class="bi bi-calendar"></i> Fixtures
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'admin_result_list' %}?tournament={{ tournament.id }}">
+                                        <i class="bi bi-clipboard-check"></i> Results
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'admin_fixture_generate' %}">
+                                        <i class="bi bi-magic"></i> Generate Fixtures
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'admin_result_export' %}?tournament={{ tournament.id }}">
+                                        <i class="bi bi-download"></i> Export Results
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="text-center py-5">
+                        <i class="bi bi-trophy" style="font-size: 3rem; color: #d1d5db;"></i>
+                        <p class="text-muted mt-2">No tournaments found</p>
+                        <a href="{% url 'admin_tournament_create' %}" class="btn btn-primary">
+                            <i class="bi bi-plus-circle"></i> Create your first tournament
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    {% if tournaments.has_other_pages %}
+    <nav>
+        <ul class="pagination justify-content-center">
+            {% if tournaments.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ tournaments.previous_page_number }}{% if request.GET.format %}&format={{ request.GET.format }}{% endif %}{% if request.GET.is_open %}&is_open={{ request.GET.is_open }}{% endif %}">
+                    Previous
+                </a>
+            </li>
+            {% endif %}
+            {% for num in tournaments.paginator.page_range %}
+            <li class="page-item {% if tournaments.number == num %}active{% endif %}">
+                <a class="page-link" href="?page={{ num }}{% if request.GET.format %}&format={{ request.GET.format }}{% endif %}{% if request.GET.is_open %}&is_open={{ request.GET.is_open }}{% endif %}">
+                    {{ num }}
+                </a>
+            </li>
+            {% endfor %}
+            {% if tournaments.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ tournaments.next_page_number }}{% if request.GET.format %}&format={{ request.GET.format }}{% endif %}{% if request.GET.is_open %}&is_open={{ request.GET.is_open }}{% endif %}">
+                    Next
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+
+<style>
+.tournament-card-item {
+    transition: all 0.3s ease;
+    border: 1px solid #e5e7eb;
+}
+
+.tournament-card-item:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+.stat-item {
+    background: #f8fafc;
+    border-radius: 0.5rem;
+    padding: 0.5rem;
+}
+
+.stat-item .stat-number {
+    font-size: 1.25rem;
+    font-weight: 700;
+    display: block;
+    color: #1F2937;
+}
+
+.stat-item .stat-label {
+    font-size: 0.65rem;
+    color: #6B7280;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.tournament-meta {
+    border-top: 1px solid #e5e7eb;
+    padding-top: 0.75rem;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('tournamentSearch');
+    const tournamentRows = document.querySelectorAll('.tournament-row');
+    const tournamentCards = document.querySelectorAll('.tournament-card');
+    
+    // Client-side search logic
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase().trim();
+            
+            tournamentRows.forEach(row => {
+                const name = row.dataset.name || '';
+                row.style.display = name.includes(searchTerm) ? '' : 'none';
+            });
+            
+            tournamentCards.forEach(card => {
+                const name = card.dataset.name || '';
+                card.style.display = name.includes(searchTerm) ? '' : 'none';
+            });
+        });
+    }
+    
+    // Dedicated view switcher
+    window.setView = function(mode) {
+        const cardView = document.getElementById('cardView');
+        const tableView = document.getElementById('tableView');
+        const gridBtn = document.getElementById('gridBtn');
+        const listBtn = document.getElementById('listBtn');
+        
+        if (mode === 'card') {
+            cardView.classList.remove('d-none');
+            tableView.classList.add('d-none');
+            gridBtn.classList.add('active');
+            listBtn.classList.remove('active');
+        } else {
+            tableView.classList.remove('d-none');
+            cardView.classList.add('d-none');
+            listBtn.classList.add('active');
+            gridBtn.classList.remove('active');
+        }
+    };
+    
+    window.clearSearch = function() {
+        if (searchInput) {
+            searchInput.value = '';
+            searchInput.dispatchEvent(new Event('input'));
+        }
+    };
+    
+    // Keyboard shortcuts (Ctrl+F, Esc)
+    document.addEventListener('keydown', function(e) {
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
+            e.preventDefault();
+            searchInput.focus();
+        }
+        if (e.key === 'Escape' && document.activeElement === searchInput) {
+            clearSearch();
+            searchInput.blur();
+        }
+    });
+});
+</script>
+{% endblock %}

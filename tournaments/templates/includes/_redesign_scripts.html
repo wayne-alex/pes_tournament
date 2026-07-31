@@ -1,0 +1,967 @@
+<script>
+// ============================================================
+// STATE MANAGEMENT
+// ============================================================
+let currentPage = 1;
+const itemsPerPage = 5;
+let filteredTeams = [...ALL_TEAMS_DATA];
+let activeModalTeamId = null;
+let selectedDateFilter = null;
+let currentDateStripOffset = 0;
+let pollUpdateInterval = null;
+
+// ============================================================
+// FAVORITES ENGINE
+// ============================================================
+function getFavorites() {
+    const favs = localStorage.getItem('fav_teams_ids');
+    return favs ? JSON.parse(favs) : [];
+}
+
+function saveFavorites(favArray) {
+    localStorage.setItem('fav_teams_ids', JSON.stringify(favArray));
+    syncAllFavoritesUI();
+}
+
+function toggleFavorite(teamId) {
+    let favs = getFavorites();
+    if (favs.includes(teamId)) {
+        favs = favs.filter(id => id !== teamId);
+    } else {
+        favs.push(teamId);
+    }
+    saveFavorites(favs);
+}
+
+// ============================================================
+// COMPACT FAVORITE TEAMS CAROUSEL
+// ============================================================
+function renderFavoritesCarousel() {
+    const track = document.getElementById('favCarouselTrack');
+    const favs = getFavorites();
+
+    if (!track) return;
+
+    if (favs.length === 0) {
+        track.innerHTML = `
+            <div class="fav-team-card" onclick="openFavSelector()" style="min-width: 120px;">
+                <div class="fav-crest" style="background: linear-gradient(135deg, #CCC, #AAA);">+</div>
+                <div class="fav-team-name">Add Favorites</div>
+            </div>
+        `;
+        return;
+    }
+
+    const favTeams = ALL_TEAMS_DATA.filter(t => favs.includes(t.id));
+    const today = new Date().toISOString().split('T')[0];
+
+    // Sort: Playing today first, then alphabetically
+    favTeams.sort((a, b) => {
+        const aPlaying = isTeamPlayingToday(a.id, today);
+        const bPlaying = isTeamPlayingToday(b.id, today);
+        if (aPlaying && !bPlaying) return -1;
+        if (!aPlaying && bPlaying) return 1;
+        return a.name.localeCompare(b.name);
+    });
+
+    track.innerHTML = favTeams.map(team => {
+        const form = getTeamFormGuide(team.name);
+        const formHtml = form.slice(0, 3).map(r =>
+            `<span class="form-indicator form-${r}">${r}</span>`
+        ).join('');
+
+        const isPlayingToday = isTeamPlayingToday(team.id, today);
+        const nextMatch = findNextMatch(team.id);
+
+        return `
+            <div class="fav-team-card favorite ${isPlayingToday ? 'playing-today' : ''}"
+                 onclick="openTeamModal(${team.id})">
+                ${isPlayingToday ? '<span class="playing-badge">TODAY</span>' : ''}
+                <div class="fav-crest">${team.name.charAt(0)}</div>
+                <div class="fav-team-name">${team.name}</div>
+                <div class="fav-form-guide">${formHtml || '<span style="font-size:8px;color:var(--ios-subtext)">-</span>'}</div>
+                ${nextMatch ? `<div class="fav-next-match">${isPlayingToday ? '\ud83d\udd34 Today' : formatMatchDate(nextMatch.match_date)}</div>` : ''}
+            </div>
+        `;
+    }).join('');
+}
+
+function isTeamPlayingToday(teamId, today) {
+    if (!window.ALL_FIXTURES_DATA) return false;
+    return ALL_FIXTURES_DATA.some(f =>
+        f.match_date === today && (f.home_team_id === teamId || f.away_team_id === teamId)
+    );
+}
+
+function getTeamFormGuide(teamName) {
+    if (!window.ALL_RESULTS_DATA || ALL_RESULTS_DATA.length === 0) {
+        return [];
+    }
+
+    const results = ALL_RESULTS_DATA.filter(r =>
+        r.home_team === teamName || r.away_team === teamName
+    ).slice(-3);
+
+    return results.map(r => {
+        const isHome = r.home_team === teamName;
+        const myScore = isHome ? r.home_score : r.away_score;
+        const oppScore = isHome ? r.away_score : r.home_score;
+        return myScore > oppScore ? 'W' : (myScore === oppScore ? 'D' : 'L');
+    });
+}
+
+function findNextMatch(teamId) {
+    if (!window.ALL_FIXTURES_DATA) return null;
+    return ALL_FIXTURES_DATA.find(f =>
+        f.home_team_id === teamId || f.away_team_id === teamId
+    );
+}
+
+function openFavSelector() {
+    const backdrop = document.getElementById('favSelectorBackdrop');
+    const modal = document.getElementById('favSelectorModal');
+    const list = document.getElementById('favSelectorList');
+    const favs = getFavorites();
+
+    if (!backdrop || !modal || !list) return;
+
+    list.innerHTML = ALL_TEAMS_DATA.map(team => {
+        const isFav = favs.includes(team.id);
+        return `
+            <div class="fav-selector-item ${isFav ? 'selected' : ''}"
+                 onclick="toggleFavorite(${team.id}); this.classList.toggle('selected');">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <div class="team-mini-crest">${team.name.charAt(0)}</div>
+                    <span style="font-weight:700;font-size:13px;">${team.name}</span>
+                </div>
+                <span style="font-size:18px;">${isFav ? '\u2b50' : '\u2606'}</span>
+            </div>
+        `;
+    }).join('');
+
+    backdrop.classList.add('active');
+    modal.classList.add('active');
+}
+
+function closeFavSelector() {
+    const backdrop = document.getElementById('favSelectorBackdrop');
+    const modal = document.getElementById('favSelectorModal');
+    if (backdrop) backdrop.classList.remove('active');
+    if (modal) modal.classList.remove('active');
+    syncAllFavoritesUI();
+}
+
+// ============================================================
+// FREE-SCROLLING DATE STRIP (FEATURE 1)
+// ============================================================
+
+function buildDateStrip() {
+    const track = document.getElementById('dateStripTrack');
+    const viewport = document.getElementById('dateStripViewport');
+
+    if (!track || !viewport || !window.ALL_FIXTURES_DATA) return;
+
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+
+    // Generate 30 days: 7 days before today, 22 after
+    const chips = [];
+    for (let i = -7; i < 23; i++) {
+        const d = new Date(today);
+        d.setDate(d.getDate() + i);
+        const dateStr = d.toISOString().split('T')[0];
+        const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
+        const dayNum = d.getDate();
+        const monthName = d.toLocaleDateString('en-US', { month: 'short' });
+        const isToday = dateStr === todayStr;
+
+        // Count matches on this date
+        const matchCount = ALL_FIXTURES_DATA.filter(f => f.match_date === dateStr).length;
+
+        chips.push({
+            dateStr,
+            dayName,
+            dayNum,
+            monthName,
+            isToday,
+            matchCount
+        });
+    }
+
+    // Build HTML
+    track.innerHTML = chips.map(chip => `
+        <div class="date-chip ${chip.isToday ? 'today' : ''} ${selectedDateFilter === chip.dateStr ? 'selected' : ''}"
+             data-date="${chip.dateStr}"
+             data-is-today="${chip.isToday}"
+             onclick="selectDate('${chip.dateStr}', this)">
+            <span class="date-chip-day">${chip.dayName}</span>
+            <span class="date-chip-date">${chip.dayNum}</span>
+            <span class="date-chip-month">${chip.monthName}</span>
+            ${chip.matchCount > 0 ? `<span class="date-chip-count">${chip.matchCount}</span>` : ''}
+        </div>
+    `).join('');
+
+    // Add momentum/inertia scrolling
+    enableMomentumScroll(viewport);
+
+    // Auto-scroll to today but don't lock it
+    setTimeout(() => scrollToToday(false), 200);
+
+    // Select today by default
+    selectDate(todayStr, track.querySelector('[data-is-today="true"]'));
+}
+
+function enableMomentumScroll(viewport) {
+    // Add smooth momentum scrolling
+    let isDown = false;
+    let startX;
+    let scrollLeft;
+    let velocity = 0;
+    let momentumID;
+
+    viewport.addEventListener('mousedown', (e) => {
+        isDown = true;
+        viewport.style.cursor = 'grabbing';
+        startX = e.pageX - viewport.offsetLeft;
+        scrollLeft = viewport.scrollLeft;
+        cancelMomentum();
+    });
+
+    viewport.addEventListener('mouseleave', () => {
+        isDown = false;
+        viewport.style.cursor = 'grab';
+        startMomentum();
+    });
+
+    viewport.addEventListener('mouseup', () => {
+        isDown = false;
+        viewport.style.cursor = 'grab';
+        startMomentum();
+    });
+
+    viewport.addEventListener('mousemove', (e) => {
+        if (!isDown) return;
+        e.preventDefault();
+        const x = e.pageX - viewport.offsetLeft;
+        const walk = (x - startX) * 1.5;
+        velocity = walk;
+        viewport.scrollLeft = scrollLeft - walk;
+    });
+
+    // Touch events for mobile
+    viewport.addEventListener('touchstart', (e) => {
+        startX = e.touches[0].pageX - viewport.offsetLeft;
+        scrollLeft = viewport.scrollLeft;
+        cancelMomentum();
+    });
+
+    viewport.addEventListener('touchend', () => {
+        startMomentum();
+    });
+
+    viewport.addEventListener('touchmove', (e) => {
+        const x = e.touches[0].pageX - viewport.offsetLeft;
+        const walk = (x - startX) * 1.5;
+        velocity = walk;
+        viewport.scrollLeft = scrollLeft - walk;
+    });
+
+    function startMomentum() {
+        cancelMomentum();
+        if (Math.abs(velocity) < 2) return;
+
+        momentumID = requestAnimationFrame(animateMomentum);
+    }
+
+    function animateMomentum() {
+        velocity *= 0.95; // Friction
+        viewport.scrollLeft -= velocity;
+
+        if (Math.abs(velocity) > 0.5) {
+            momentumID = requestAnimationFrame(animateMomentum);
+        }
+    }
+
+    function cancelMomentum() {
+        if (momentumID) {
+            cancelAnimationFrame(momentumID);
+            momentumID = null;
+        }
+        velocity = 0;
+    }
+}
+
+function scrollToToday(animate = true) {
+    const track = document.getElementById('dateStripTrack');
+    const viewport = document.getElementById('dateStripViewport');
+    if (!track || !viewport) return;
+
+    const todayChip = track.querySelector('[data-is-today="true"]');
+    if (todayChip) {
+        const scrollTo = todayChip.offsetLeft - (viewport.offsetWidth / 2) + (todayChip.offsetWidth / 2);
+
+        if (animate) {
+            viewport.scrollTo({
+                left: Math.max(0, scrollTo),
+                behavior: 'smooth'
+            });
+        } else {
+            viewport.scrollLeft = Math.max(0, scrollTo);
+        }
+
+        // Select today
+        selectDate(todayChip.dataset.date, todayChip);
+    }
+}
+
+function slideDateStrip(direction) {
+    const viewport = document.getElementById('dateStripViewport');
+    if (!viewport) return;
+
+    const scrollAmount = 180; // Scroll by ~3 chips
+    viewport.scrollBy({
+        left: direction * scrollAmount,
+        behavior: 'smooth'
+    });
+}
+
+function selectDate(dateStr, element) {
+    selectedDateFilter = dateStr;
+
+    // Update chip states
+    document.querySelectorAll('.date-chip').forEach(chip => {
+        chip.classList.remove('selected');
+        if (chip.dataset.date === dateStr) {
+            chip.classList.add('selected');
+        }
+    });
+
+    // Update display text
+    const display = document.getElementById('selectedDateDisplay');
+    if (display) {
+        const d = new Date(dateStr + 'T00:00:00');
+        const today = new Date();
+        const todayStr = today.toISOString().split('T')[0];
+
+        let formatted;
+        if (dateStr === todayStr) {
+            formatted = "Today's Matches";
+        } else {
+            formatted = d.toLocaleDateString('en-US', {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'long'
+            });
+        }
+
+        const matches = ALL_FIXTURES_DATA.filter(f => f.match_date === dateStr);
+        display.querySelector('.selected-date-text').textContent = formatted;
+        display.querySelector('.match-count-badge').textContent = `${matches.length} matches`;
+    }
+
+    // Filter fixtures list
+    filterFixturesBySelectedDate(dateStr);
+}
+
+// Also update centerOnToday to use the new scrollToToday function
+function centerOnToday() {
+    scrollToToday(true);
+}
+
+function filterFixturesBySelectedDate(dateStr) {
+    const rows = document.querySelectorAll('.fixture-card-row');
+    let visibleCount = 0;
+
+    // Sort: favorites first
+    const favs = getFavorites();
+    const container = document.getElementById('fixturesContainer');
+
+    rows.forEach(row => {
+        const rowDate = row.getAttribute('data-date');
+        if (rowDate === dateStr) {
+            row.style.display = 'flex';
+            visibleCount++;
+
+            // Highlight favorite team matches
+            const homeId = parseInt(row.getAttribute('data-home-id'));
+            const awayId = parseInt(row.getAttribute('data-away-id'));
+            if (favs.includes(homeId) || favs.includes(awayId)) {
+                row.style.order = '-1';
+                row.style.background = 'rgba(255, 215, 0, 0.05)';
+            } else {
+                row.style.order = '0';
+                row.style.background = '';
+            }
+        } else {
+            row.style.display = 'none';
+        }
+    });
+
+    const badge = document.getElementById('matchCountBadge');
+    if (badge) {
+        badge.textContent = `${visibleCount} matches`;
+    }
+}
+
+// ============================================================
+// REAL-TIME POLL WITH BACKEND
+// ============================================================
+let currentFixtureId = null;
+
+function initializePoll() {
+    const pollWidget = document.getElementById('matchPollWidget');
+    if (pollWidget) {
+        currentFixtureId = pollWidget.getAttribute('data-fixture-id');
+        fetchPollResults();
+
+        // Poll every 10 seconds for real-time updates
+        if (pollUpdateInterval) clearInterval(pollUpdateInterval);
+        pollUpdateInterval = setInterval(fetchPollResults, 10000);
+    }
+
+    // Check if user already voted
+    const voted = localStorage.getItem(`poll_voted_${currentFixtureId}`);
+    if (voted) {
+        highlightVotedOption(voted);
+    }
+}
+
+async function fetchPollResults() {
+    if (!currentFixtureId) return;
+
+    try {
+        const response = await fetch(`/api/poll/${currentFixtureId}/results/`);
+        const data = await response.json();
+        renderPollFromData(data);
+    } catch (e) {
+        // Fallback to local data if API fails
+        console.log('Using local poll data');
+    }
+}
+
+function renderPollFromData(data) {
+    const total = data.total || 1;
+
+    const hPct = data.home_pct || 0;
+    const dPct = data.draw_pct || 0;
+    const aPct = data.away_pct || 0;
+
+    document.getElementById('pollVoteCount').innerText = `${data.total || 0} votes`;
+    document.getElementById('barHome').style.width = `${hPct}%`;
+    document.getElementById('pctHome').innerText = `${hPct}%`;
+    document.getElementById('barDraw').style.width = `${dPct}%`;
+    document.getElementById('pctDraw').innerText = `${dPct}%`;
+    document.getElementById('barAway').style.width = `${aPct}%`;
+    document.getElementById('pctAway').innerText = `${aPct}%`;
+
+    // Highlight winner
+    const maxPct = Math.max(hPct, dPct, aPct);
+    ['barHome', 'barDraw', 'barAway'].forEach(id => {
+        const bar = document.getElementById(id);
+        if (bar) {
+            const pct = parseInt(bar.style.width);
+            bar.style.background = pct === maxPct ?
+                'rgba(0, 122, 255, 0.25)' : 'rgba(0, 122, 255, 0.1)';
+        }
+    });
+}
+
+async function castPollVote(choice) {
+    const hasVoted = localStorage.getItem(`poll_voted_${currentFixtureId}`);
+    if (hasVoted) {
+        showPollMessage('You have already voted! \ud83d\uddf3\ufe0f');
+        return;
+    }
+
+    if (!currentFixtureId) {
+        showPollMessage('No active poll');
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/poll/${currentFixtureId}/vote/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken(),
+            },
+            body: JSON.stringify({ choice: choice })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            localStorage.setItem(`poll_voted_${currentFixtureId}`, choice);
+            renderPollFromData(data.current);
+            highlightVotedOption(choice);
+            showPollMessage('Vote recorded! \u2705');
+        } else if (response.status === 409) {
+            // Already voted
+            localStorage.setItem(`poll_voted_${currentFixtureId}`, choice);
+            renderPollFromData(data.current);
+            highlightVotedOption(choice);
+            showPollMessage('Already voted! Showing results \ud83d\udcca');
+        } else {
+            showPollMessage('Error recording vote. Try again.');
+        }
+    } catch (e) {
+        showPollMessage('Network error. Try again.');
+        console.error('Poll vote error:', e);
+    }
+}
+
+function getCsrfToken() {
+    const cookie = document.cookie.split('; ').find(row => row.startsWith('csrftoken='));
+    return cookie ? cookie.split('=')[1] : '';
+}
+
+function highlightVotedOption(choice) {
+    const buttons = document.querySelectorAll('.poll-btn');
+    buttons.forEach(btn => btn.classList.remove('voted'));
+
+    const choiceMap = { home: 0, draw: 1, away: 2 };
+    if (choiceMap[choice] !== undefined && buttons[choiceMap[choice]]) {
+        buttons[choiceMap[choice]].classList.add('voted');
+    }
+}
+
+function showPollMessage(msg) {
+    const el = document.getElementById('pollVoterMessage');
+    if (el) {
+        el.textContent = msg;
+        setTimeout(() => { el.textContent = ''; }, 3000);
+    }
+}
+
+// ============================================================
+// TAB NAVIGATION
+// ============================================================
+function switchMainTab(tabName, element) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-item').forEach(el => el.classList.remove('active'));
+
+    const tab = document.getElementById(`tab-${tabName}`);
+    if (tab) tab.classList.add('active');
+    if (element) element.classList.add('active');
+}
+
+function switchMatchSubTab(subTabName, element) {
+    document.querySelectorAll('.subtab-content').forEach(el => el.classList.remove('active'));
+    element.parentElement.querySelectorAll('.seg-btn').forEach(btn => btn.classList.remove('active'));
+
+    const subTab = document.getElementById(`subtab-${subTabName}`);
+    if (subTab) subTab.classList.add('active');
+    element.classList.add('active');
+}
+
+function switchLeaderboard(lbName, element) {
+    document.querySelectorAll('.lb-view').forEach(el => el.classList.remove('active'));
+    element.parentElement.querySelectorAll('.seg-btn').forEach(btn => btn.classList.remove('active'));
+
+    const lb = document.getElementById(`lb-${lbName}`);
+    if (lb) lb.classList.add('active');
+    element.classList.add('active');
+}
+
+// ============================================================
+// TEAM MODAL
+// ============================================================
+function getTeamFixtures(teamId) {
+    if (!window.ALL_FIXTURES_DATA) return [];
+    return ALL_FIXTURES_DATA
+        .filter(f => f.home_team_id === teamId || f.away_team_id === teamId)
+        .slice()
+        .sort((a, b) => (a.match_date || '9999-99-99').localeCompare(b.match_date || '9999-99-99'));
+}
+
+function findTeamIdByName(name) {
+    const t = ALL_TEAMS_DATA.find(t => t.name === name);
+    return t ? t.id : null;
+}
+
+function buildTeamFixturesHtml(team) {
+    const fixtures = getTeamFixtures(team.id);
+    if (fixtures.length === 0) {
+        return '<p class="empty-state">No upcoming fixtures scheduled</p>';
+    }
+    return fixtures.map(f => {
+        const isHome = f.home_team_id === team.id;
+        const oppName = isHome ? f.away_team_name : f.home_team_name;
+        const oppId = isHome ? f.away_team_id : f.home_team_id;
+        const dateLabel = f.match_date ? formatMatchDate(f.match_date) : 'TBD';
+        const timeLabel = (f.match_time && f.match_time !== 'TBD') ? f.match_time : '';
+        return `
+            <div class="modal-list-row clickable" onclick="openTeamModal(${oppId})">
+                <div class="modal-list-main">
+                    <span class="modal-list-tag">${isHome ? 'HOME' : 'AWAY'}</span>
+                    <span class="modal-list-opponent">vs ${oppName}</span>
+                    ${f.group ? `<span class="group-badge">${f.group}</span>` : ''}
+                </div>
+                <div class="modal-list-meta">${dateLabel}${timeLabel ? ' \u00b7 ' + timeLabel : ''}</div>
+            </div>
+        `;
+    }).join('');
+}
+
+function buildTeamResultsHtml(team) {
+    if (!window.ALL_RESULTS_DATA) return '<p class="empty-state">No results recorded yet</p>';
+    const rows = ALL_RESULTS_DATA.filter(r => r.home_team === team.name || r.away_team === team.name);
+    if (rows.length === 0) {
+        return '<p class="empty-state">No results recorded yet</p>';
+    }
+    return rows.map(r => {
+        const isHome = r.home_team === team.name;
+        const oppName = isHome ? r.away_team : r.home_team;
+        const myScore = isHome ? r.home_score : r.away_score;
+        const oppScore = isHome ? r.away_score : r.home_score;
+        const outcome = myScore > oppScore ? 'W' : (myScore === oppScore ? 'D' : 'L');
+        const oppId = findTeamIdByName(oppName);
+        return `
+            <div class="modal-list-row ${oppId ? 'clickable' : ''}" ${oppId ? `onclick="openTeamModal(${oppId})"` : ''}>
+                <div class="modal-list-main">
+                    <span class="form-indicator form-${outcome}">${outcome}</span>
+                    <span class="modal-list-opponent">${isHome ? 'vs' : '@'} ${oppName}</span>
+                </div>
+                <div class="modal-list-meta"><strong>${r.home_score} - ${r.away_score}</strong></div>
+            </div>
+        `;
+    }).join('');
+}
+
+function openTeamModal(teamId) {
+    activeModalTeamId = teamId;
+    const team = ALL_TEAMS_DATA.find(t => t.id == teamId);
+    if (!team) return;
+
+    document.getElementById('modalTeamTitle').innerText = team.name;
+    document.getElementById('modalTeamBadge').innerText = `${team.points} PTS`;
+    updateModalFavButtonState();
+
+    const winRate = team.played > 0 ? Math.round((team.wins / team.played) * 100) : 0;
+    const gd = team.goals_for - team.goals_against;
+
+    const form = getTeamFormGuide(team.name);
+    const formBadges = form.map(r =>
+        `<span class="form-indicator form-${r}">${r}</span>`
+    ).join('') || '<span style="font-size:11px;color:var(--ios-subtext)">No form history</span>';
+
+    const fixturesHtml = buildTeamFixturesHtml(team);
+    const resultsHtml = buildTeamResultsHtml(team);
+    const fixtureCount = getTeamFixtures(team.id).length;
+    const resultCount = window.ALL_RESULTS_DATA
+        ? ALL_RESULTS_DATA.filter(r => r.home_team === team.name || r.away_team === team.name).length
+        : 0;
+
+    document.getElementById('modalTeamContent').innerHTML = `
+        <div class="ios-segmented-control mini-seg team-modal-tabs">
+            <button class="seg-btn active" onclick="switchTeamModalTab('overview', this)">Overview</button>
+            <button class="seg-btn" onclick="switchTeamModalTab('fixtures', this)">Fixtures${fixtureCount ? ` (${fixtureCount})` : ''}</button>
+            <button class="seg-btn" onclick="switchTeamModalTab('results', this)">Results${resultCount ? ` (${resultCount})` : ''}</button>
+        </div>
+
+        <div id="teamModalOverview" class="team-modal-tab active">
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:14px;">
+                <div class="kpi-card">
+                    <span class="kpi-value" style="color:var(--ios-blue);">${winRate}%</span>
+                    <span class="kpi-label">Win Rate</span>
+                </div>
+                <div class="kpi-card">
+                    <span class="kpi-value">${gd >= 0 ? '+' : ''}${gd}</span>
+                    <span class="kpi-label">Goal Difference</span>
+                </div>
+            </div>
+
+            <div style="margin-bottom:14px;">
+                <div class="ios-card-header">Recent Form</div>
+                <div class="fav-form-guide">${formBadges}</div>
+            </div>
+
+            <div class="ios-card" style="padding:10px; margin-bottom:0;">
+                <div class="ios-card-header">Overall Record</div>
+                <div style="font-size:12px; display:flex; justify-content:space-between; padding:4px 0;">
+                    <span>Played</span><strong>${team.played}</strong>
+                </div>
+                <div style="font-size:12px; display:flex; justify-content:space-between; padding:4px 0;">
+                    <span>W-D-L</span><strong>${team.wins}W-${team.draws}D-${team.losses}L</strong>
+                </div>
+                <div style="font-size:12px; display:flex; justify-content:space-between; padding:4px 0;">
+                    <span>GF/GA</span><strong>${team.goals_for}/${team.goals_against}</strong>
+                </div>
+            </div>
+        </div>
+
+        <div id="teamModalFixtures" class="team-modal-tab">
+            <div class="ios-card-header" style="margin-bottom:6px;">Upcoming Fixtures</div>
+            <div class="ios-card" style="padding:4px 10px; margin-bottom:0;">${fixturesHtml}</div>
+        </div>
+
+        <div id="teamModalResults" class="team-modal-tab">
+            <div class="ios-card-header" style="margin-bottom:6px;">Match History</div>
+            <div class="ios-card" style="padding:4px 10px; margin-bottom:0;">${resultsHtml}</div>
+        </div>
+    `;
+
+    document.getElementById('teamDrawerBackdrop').classList.add('active');
+    document.getElementById('teamDrawerModal').classList.add('active');
+}
+
+function switchTeamModalTab(tabName, element) {
+    const targetId = 'teamModal' + tabName.charAt(0).toUpperCase() + tabName.slice(1);
+    document.querySelectorAll('.team-modal-tab').forEach(el => el.classList.remove('active'));
+    element.parentElement.querySelectorAll('.seg-btn').forEach(btn => btn.classList.remove('active'));
+
+    const tab = document.getElementById(targetId);
+    if (tab) tab.classList.add('active');
+    element.classList.add('active');
+
+    // scroll the drawer body back to the top when switching tabs
+    const drawer = document.getElementById('teamDrawerModal');
+    if (drawer) drawer.scrollTop = 0;
+}
+
+function closeTeamModal() {
+    activeModalTeamId = null;
+    document.getElementById('teamDrawerBackdrop').classList.remove('active');
+    document.getElementById('teamDrawerModal').classList.remove('active');
+}
+
+function toggleFavoriteCurrentModal() {
+    if (activeModalTeamId) {
+        toggleFavorite(activeModalTeamId);
+        updateModalFavButtonState();
+    }
+}
+
+function updateModalFavButtonState() {
+    const btn = document.getElementById('modalFavStarBtn');
+    if (!btn || !activeModalTeamId) return;
+    const isFav = getFavorites().includes(activeModalTeamId);
+    btn.classList.toggle('active', isFav);
+    btn.innerText = isFav ? '\u2b50 FAVORITED' : '\u2b50 FAVORITE';
+}
+
+// ============================================================
+// TEAM DIRECTORY
+// ============================================================
+function filterTeams() {
+    const query = document.getElementById('teamSearchInput').value.toLowerCase();
+    filteredTeams = ALL_TEAMS_DATA.filter(t => t.name.toLowerCase().includes(query));
+    currentPage = 1;
+    renderTeamDirectory();
+}
+
+function renderTeamDirectory() {
+    const container = document.getElementById('teamListContainer');
+    const pagBar = document.getElementById('teamPagination');
+    if (!container) return;
+
+    const startIdx = (currentPage - 1) * itemsPerPage;
+    const paginated = filteredTeams.slice(startIdx, startIdx + itemsPerPage);
+
+    if (paginated.length === 0) {
+        container.innerHTML = `<p class="empty-state">No matching teams found</p>`;
+        pagBar.innerHTML = '';
+        return;
+    }
+
+    container.innerHTML = paginated.map(t => `
+        <div class="fixture-card-row clickable" onclick="openTeamModal(${t.id})">
+            <div class="f-info">
+                <div class="f-teams">
+                    <div class="team-side">
+                        <div class="team-mini-crest">${t.name.charAt(0)}</div>
+                        <span class="team-label"><strong>${t.name}</strong></span>
+                    </div>
+                </div>
+            </div>
+            <span style="color:var(--ios-subtext); font-size:11px;">
+                ${t.played} GP \u2022 <strong>${t.points} Pts</strong>
+            </span>
+        </div>
+    `).join('');
+
+    const totalPages = Math.ceil(filteredTeams.length / itemsPerPage);
+    pagBar.innerHTML = `
+        <button class="pg-btn" ${currentPage === 1 ? 'disabled style="opacity:0.4"' : ''}
+                onclick="changePage(-1)">\u2039</button>
+        <span style="font-size:10px; color:var(--ios-subtext);">${currentPage}/${totalPages || 1}</span>
+        <button class="pg-btn" ${currentPage >= totalPages ? 'disabled style="opacity:0.4"' : ''}
+                onclick="changePage(1)">\u203a</button>
+    `;
+}
+
+function changePage(direction) {
+    currentPage += direction;
+    renderTeamDirectory();
+}
+
+// ============================================================
+// UTILITY
+// ============================================================
+function formatMatchDate(dateStr) {
+    if (!dateStr) return 'TBD';
+    const d = new Date(dateStr + 'T00:00:00');
+    return d.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+}
+
+function syncAllFavoritesUI() {
+    const favs = getFavorites();
+
+    const badge = document.getElementById('heroFavBadgeCount');
+    if (badge) badge.innerText = favs.length;
+
+    renderFavoritesCarousel();
+    checkFavoritesTodayAlert(favs);
+}
+
+function checkFavoritesTodayAlert(favs) {
+    const alertBox = document.getElementById('favoriteTodayAlert');
+    const alertText = document.getElementById('favTodayText');
+    if (!alertBox || !window.ALL_FIXTURES_DATA) return;
+
+    if (favs.length === 0) {
+        alertBox.style.display = 'none';
+        return;
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+    const todayMatch = ALL_FIXTURES_DATA.find(f =>
+        f.match_date === today && (favs.includes(f.home_team_id) || favs.includes(f.away_team_id))
+    );
+
+    if (todayMatch) {
+        alertText.innerText = `${todayMatch.home_team_name} vs ${todayMatch.away_team_name} is today!`;
+        alertBox.style.display = 'flex';
+    } else {
+        alertBox.style.display = 'none';
+    }
+}
+
+function scrollToTodayFixtures() {
+    switchMainTab('matches', document.querySelectorAll('.tab-item')[1]);
+    centerOnToday();
+}
+
+// ============================================================
+// INITIALIZATION
+// ============================================================
+document.addEventListener('DOMContentLoaded', () => {
+    window.ALL_RESULTS_DATA = ALL_RESULTS_DATA;
+    window.ALL_FIXTURES_DATA = ALL_FIXTURES_DATA;
+
+    renderTeamDirectory();
+    renderFavoritesCarousel();
+    buildDateStrip();
+    initializePoll();
+    syncAllFavoritesUI();
+
+    const voted = localStorage.getItem(`poll_voted_${currentFixtureId}`);
+    if (voted) {
+        highlightVotedOption(voted);
+    }
+});
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', () => {
+    if (pollUpdateInterval) clearInterval(pollUpdateInterval);
+});
+
+// ============================================================
+// THE "CAVE" ENGINE
+// Turns the flat date strip into a 3D coverflow tunnel: chips
+// shrink, tilt away and dim the further they sit from dead-centre.
+// Runs purely off scroll position, so it works for drag, momentum
+// flicks, the nav arrows and the programmatic "Today" jump alike.
+// ============================================================
+
+function setupCylinderPadding() {
+    const viewport = document.getElementById('dateStripViewport');
+    const track = document.getElementById('dateStripTrack');
+    if (!viewport || !track) return;
+    const firstChip = track.querySelector('.date-chip');
+    if (!firstChip) return;
+    const chipWidth = firstChip.getBoundingClientRect().width;
+    const pad = Math.max(0, (viewport.clientWidth / 2) - (chipWidth / 2));
+    track.style.paddingLeft = pad + 'px';
+    track.style.paddingRight = pad + 'px';
+}
+
+function applyCylinderEffect() {
+    const viewport = document.getElementById('dateStripViewport');
+    const track = document.getElementById('dateStripTrack');
+    if (!viewport || !track) return;
+
+    const chips = track.querySelectorAll('.date-chip');
+    const viewportRect = viewport.getBoundingClientRect();
+    const centerX = viewportRect.left + viewportRect.width / 2;
+
+    let focalChip = null;
+    let focalDist = Infinity;
+
+    chips.forEach(chip => {
+        const rect = chip.getBoundingClientRect();
+        const chipCenter = rect.left + rect.width / 2;
+
+        // normalized distance from the centre of the tunnel mouth
+        const raw = (chipCenter - centerX) / (viewportRect.width / 2 || 1);
+        const clamped = Math.max(-1.7, Math.min(1.7, raw));
+        const absD = Math.abs(clamped);
+
+        const scale = Math.max(0.6, 1 - absD * 0.32);
+        const rotateY = clamped * -30; // curvature of the tunnel wall
+        const translateZ = -absD * 90; // recede into the cave
+        const translateY = absD * 6;   // slight sink, like a curved floor
+        const opacity = Math.max(0.32, 1 - absD * 0.58);
+        const blur = absD > 0.85 ? Math.min(2.2, (absD - 0.85) * 6) : 0;
+
+        chip.style.transform =
+            `translateY(${translateY}px) translateZ(${translateZ}px) rotateY(${rotateY}deg) scale(${scale})`;
+        chip.style.opacity = opacity;
+        chip.style.filter = blur > 0 ? `blur(${blur}px)` : 'none';
+        chip.style.zIndex = Math.round((1 - absD) * 100);
+
+        if (absD < focalDist) {
+            focalDist = absD;
+            focalChip = chip;
+        }
+    });
+
+    chips.forEach(chip => chip.classList.remove('cyl-focal'));
+    if (focalChip && focalDist < 0.22) {
+        focalChip.classList.add('cyl-focal');
+    }
+}
+
+(function initCaveEffect() {
+    document.addEventListener('DOMContentLoaded', () => {
+        setupCylinderPadding();
+
+        // Re-centre and apply the effect once the initial smooth
+        // scroll-to-today (scheduled inside buildDateStrip) has room
+        // to work with the new tunnel padding.
+        setTimeout(() => {
+            scrollToToday(false);
+            applyCylinderEffect();
+        }, 240);
+
+        const viewport = document.getElementById('dateStripViewport');
+        if (!viewport) return;
+
+        let cylRAF = null;
+        const scheduleCylinderUpdate = () => {
+            if (cylRAF) return;
+            cylRAF = requestAnimationFrame(() => {
+                applyCylinderEffect();
+                cylRAF = null;
+            });
+        };
+
+        viewport.addEventListener('scroll', scheduleCylinderUpdate, { passive: true });
+
+        window.addEventListener('resize', () => {
+            setupCylinderPadding();
+            applyCylinderEffect();
+        });
+    });
+})();
+</script>

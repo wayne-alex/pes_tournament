@@ -1,0 +1,288 @@
+{% extends 'superadmin/base.html' %}
+{% load static %}
+
+{% block title %}Generate Fixtures - Tournament Manager{% endblock %}
+{% block page_title %}Generate Fixtures{% endblock %}
+{% block page_subtitle %}Automatically generate fixtures for a tournament{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8 col-md-10">
+        <!-- iOS Form Container Card -->
+        <div class="ios-card border-0 p-4 shadow-sm">
+
+            <!-- Header Block -->
+            <div class="d-flex align-items-center gap-2 mb-4 pb-3 border-bottom border-light">
+                <div class="ios-avatar-badge">
+                    <i class="bi bi-magic"></i>
+                </div>
+                <div>
+                    <h6 class="fw-bold text-dark mb-0 fs-6">Auto-Generate Schedule</h6>
+                    <span class="ios-caption text-muted">Generate algorithmic match schedules based on tournament format</span>
+                </div>
+            </div>
+
+            <!-- Info Callout -->
+            <div class="ios-alert-info p-3 mb-4">
+                <div class="d-flex align-items-start gap-2 fs-7">
+                    <i class="bi bi-info-circle-fill flex-shrink-0 mt-1"></i>
+                    <div>
+                        <strong class="d-block mb-1 fw-semibold">Before you proceed</strong>
+                        <span class="ios-caption d-block">Generating fixtures will overwrite and replace any existing fixture structure for the target tournament. Ensure all pending results are saved.</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form -->
+            <form method="post" class="ios-form">
+                {% csrf_token %}
+
+                <!-- Tournament Selector -->
+                <div class="mb-3">
+                    <label for="tournament" class="ios-form-label">
+                        Select Tournament <span class="text-danger">*</span>
+                    </label>
+                    <select name="tournament" id="tournament" class="form-select" required onchange="updateFormatOptions()">
+                        <option value="">Select a tournament...</option>
+                        {% for tournament in tournaments %}
+                        <option value="{{ tournament.id }}" data-format="{{ tournament.tournament_format }}">
+                            {{ tournament.name }} ({{ tournament.get_tournament_format_display }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <div class="ios-caption text-muted mt-1">
+                        <i class="bi bi-people me-1"></i>Tournament must have at least 2 participating teams
+                    </div>
+                </div>
+
+                <!-- Date Range -->
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label for="start_date" class="ios-form-label">
+                            Start Date <span class="text-danger">*</span>
+                        </label>
+                        <input type="date" name="start_date" id="start_date" class="form-control" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="end_date" class="ios-form-label">
+                            End Date <span class="text-danger">*</span>
+                        </label>
+                        <input type="date" name="end_date" id="end_date" class="form-control" required>
+                    </div>
+                </div>
+
+                <!-- Conditional Group Stage Options -->
+                <div id="groupOptions" class="d-none mb-3">
+                    <div class="ios-section-card p-3">
+                        <div class="ios-caption text-primary fw-semibold mb-2">
+                            <i class="bi bi-diagram-3-fill me-1"></i>Group Stage Configuration
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="groups" class="ios-form-label">Number of Groups</label>
+                                <input type="number" name="groups" id="groups" class="form-control" value="2" min="2" max="10">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="qualify_per_group" class="ios-form-label">Qualifying Teams Per Group</label>
+                                <input type="number" name="qualify_per_group" id="qualify_per_group" class="form-control" value="2" min="1">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Conditional Swiss Format Options -->
+                <div id="swissOptions" class="d-none mb-3">
+                    <div class="ios-section-card p-3">
+                        <div class="ios-caption text-primary fw-semibold mb-2">
+                            <i class="bi bi-shuffle me-1"></i>Swiss System Configuration
+                        </div>
+                        <div>
+                            <label for="num_rounds" class="ios-form-label">Number of Rounds <span class="text-muted font-normal">(Optional)</span></label>
+                            <input type="number" name="num_rounds" id="num_rounds" class="form-control" placeholder="Auto-calculated if empty">
+                            <div class="ios-caption text-muted mt-1">Optimal round counts will automatically adjust based on registered team totals</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Destructive Action Warning -->
+                <div class="ios-alert-warning p-3 mb-4">
+                    <div class="d-flex align-items-start gap-2 fs-7">
+                        <i class="bi bi-exclamation-triangle-fill flex-shrink-0 mt-1"></i>
+                        <div>
+                            <strong class="d-block mb-1 fw-semibold">Destructive Action Notice</strong>
+                            <span class="ios-caption d-block">Existing fixture records for this tournament will be permanently deleted upon generation.</span>
+                            {% if selected_tournament %}
+                            <span class="ios-caption text-dark fw-medium d-block mt-1">Current Fixtures Recorded: {{ fixture_count }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions Bar -->
+                <div class="d-flex align-items-center justify-content-end gap-2 pt-2 border-top border-light">
+                    <a href="{% url 'admin_fixture_list' %}" class="btn btn-ios-secondary btn-sm px-3">
+                        Cancel
+                    </a>
+                    <button type="submit" class="btn btn-ios-success btn-sm px-3" onclick="return confirm('Generate fixtures? Existing scheduled fixtures for this tournament will be deleted.')">
+                        <i class="bi bi-magic me-1"></i> Generate Fixtures
+                    </button>
+                </div>
+            </form>
+
+        </div>
+    </div>
+</div>
+
+<!-- Native iOS Aesthetic Form Custom Styles -->
+<style>
+/* Card & Glassmorphism Container */
+.ios-card {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 16px;
+    border: 1px solid rgba(229, 231, 235, 0.8);
+}
+
+.ios-section-card {
+    background: rgba(242, 242, 247, 0.5);
+    border-radius: 12px;
+    border: 1px solid rgba(229, 231, 235, 0.8);
+}
+
+/* Typography & Badges */
+.ios-caption {
+    font-size: 0.75rem;
+    letter-spacing: -0.01em;
+}
+
+.fs-7 {
+    font-size: 0.8125rem;
+}
+
+.ios-form-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #48484a;
+    letter-spacing: -0.01em;
+    margin-bottom: 4px;
+    display: block;
+}
+
+.ios-avatar-badge {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: rgba(52, 199, 89, 0.12);
+    color: #34c759;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+}
+
+/* Callout Alerts */
+.ios-alert-info {
+    background: rgba(0, 122, 255, 0.08);
+    border-radius: 12px;
+    border: 1px solid rgba(0, 122, 255, 0.2);
+    color: #0056b3;
+}
+
+.ios-alert-warning {
+    background: rgba(255, 149, 0, 0.08);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 149, 0, 0.2);
+    color: #995c00;
+}
+
+/* Form Inputs Custom iOS Override */
+.ios-form input[type="text"],
+.ios-form input[type="number"],
+.ios-form input[type="date"],
+.ios-form select {
+    display: block;
+    width: 100%;
+    padding: 7px 12px;
+    font-size: 0.875rem;
+    font-weight: 400;
+    line-height: 1.5;
+    color: #1c1c1e;
+    background-color: rgba(242, 242, 247, 0.7);
+    border: 1px solid rgba(229, 231, 235, 0.8);
+    border-radius: 10px;
+    transition: all 0.15s ease-in-out;
+}
+
+.ios-form input:focus,
+.ios-form select:focus {
+    background-color: #ffffff;
+    border-color: #007aff;
+    outline: 0;
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15);
+}
+
+/* iOS Interactive Buttons */
+.btn-ios-success {
+    background-color: #34c759;
+    color: #ffffff;
+    border-radius: 9px;
+    font-weight: 600;
+    border: none;
+    transition: all 0.15s ease;
+}
+.btn-ios-success:hover {
+    background-color: #2fb350;
+    color: #ffffff;
+    transform: scale(0.98);
+}
+
+.btn-ios-secondary {
+    background-color: rgba(118, 118, 128, 0.12);
+    color: #1c1c1e;
+    border-radius: 9px;
+    font-weight: 500;
+    border: none;
+    transition: all 0.15s ease;
+}
+.btn-ios-secondary:hover {
+    background-color: rgba(118, 118, 128, 0.2);
+    color: #1c1c1e;
+    transform: scale(0.98);
+}
+</style>
+
+<script>
+function updateFormatOptions() {
+    const select = document.getElementById('tournament');
+    const selected = select.options[select.selectedIndex];
+    const format = selected.dataset.format;
+
+    document.getElementById('groupOptions').classList.add('d-none');
+    document.getElementById('swissOptions').classList.add('d-none');
+
+    if (format === 'group_knockout') {
+        document.getElementById('groupOptions').classList.remove('d-none');
+    } else if (format === 'swiss') {
+        document.getElementById('swissOptions').classList.remove('d-none');
+    }
+}
+
+// Auto-populate dates
+document.addEventListener('DOMContentLoaded', function() {
+    const today = new Date();
+    const startDate = document.getElementById('start_date');
+    const endDate = document.getElementById('end_date');
+
+    if (startDate && !startDate.value) {
+        startDate.value = today.toISOString().split('T')[0];
+    }
+
+    if (endDate && !endDate.value) {
+        const nextWeek = new Date(today);
+        nextWeek.setDate(today.getDate() + 7);
+        endDate.value = nextWeek.toISOString().split('T')[0];
+    }
+});
+</script>
+{% endblock %}

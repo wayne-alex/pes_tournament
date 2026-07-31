@@ -1,0 +1,224 @@
+{% extends 'superadmin/base_login.html' %}
+
+{% block title %}Sign In - Tournament Manager{% endblock %}
+
+{% block content %}
+<div class="ios-login-container">
+    <!-- Brand Header with Cool Ball Logo -->
+    <div class="text-center mb-4">
+        <div class="brand-icon-wrapper mb-2">
+            <!-- Cool Ball SVG Logo Mark -->
+            <svg width="38" height="38" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="50" cy="50" r="42" fill="white" fill-opacity="0.2"/>
+                <circle cx="50" cy="50" r="32" fill="white"/>
+                <path d="M 24 39 C 38 34, 62 34, 76 39" stroke="#007AFF" stroke-width="4.5" stroke-linecap="round"/>
+                <path d="M 24 61 C 38 66, 62 66, 76 61" stroke="#007AFF" stroke-width="4.5" stroke-linecap="round"/>
+                <path d="M 50 18 L 50 82" stroke="#007AFF" stroke-width="4.5" stroke-linecap="round"/>
+            </svg>
+        </div>
+        <h3 class="fw-bold tracking-tight mb-1">tourney<span class="text-primary">.</span></h3>
+        <p class="text-secondary small fw-medium">Sign in to Admin Panel</p>
+    </div>
+
+    <form method="post" id="loginForm">
+        {% csrf_token %}
+
+        <!-- Grouped Input Box (iOS Grouped Style) -->
+        <div class="ios-input-group mb-3">
+            <div class="ios-input-wrapper">
+                <i class="bi bi-person text-secondary me-2 fs-5"></i>
+                <input type="text" class="ios-input" id="username" name="username"
+                       placeholder="Username" required autofocus autocomplete="username">
+            </div>
+            <div class="ios-divider"></div>
+            <div class="ios-input-wrapper">
+                <i class="bi bi-lock text-secondary me-2 fs-5"></i>
+                <input type="password" class="ios-input" id="password" name="password"
+                       placeholder="Password" required autocomplete="current-password">
+                <button class="ios-eye-btn ms-2" type="button" id="togglePassword" tabindex="-1" aria-label="Toggle password visibility">
+                    <i class="bi bi-eye text-secondary"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Remember Me Checkbox -->
+        <div class="d-flex justify-content-between align-items-center mb-4 px-1">
+            <label class="ios-checkbox-label" for="remember_me">
+                <input class="ios-checkbox" type="checkbox" name="remember_me" id="remember_me">
+                <span class="ios-checkbox-custom"></span>
+                <span class="small text-secondary fw-medium">Remember me</span>
+            </label>
+        </div>
+
+        <!-- Native iOS Button -->
+        <button type="submit" class="ios-btn-primary" id="loginBtn">
+            <span id="btnText">Sign In</span>
+            <div class="spinner-border spinner-border-sm d-none" id="loginSpinner" role="status"></div>
+        </button>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+/* iOS Native Styling */
+.brand-icon-wrapper {
+    width: 64px;
+    height: 64px;
+    background: linear-gradient(135deg, #007aff 0%, #5856d6 100%);
+    border-radius: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 24px rgba(0, 122, 255, 0.28);
+}
+
+.tracking-tight {
+    letter-spacing: -0.03em;
+    color: #1c1c1e;
+    font-size: 1.6rem;
+}
+
+/* Grouped Form Controls (iOS Settings Style) */
+.ios-input-group {
+    background: rgba(118, 118, 128, 0.08);
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid rgba(60, 60, 67, 0.08);
+}
+
+.ios-input-wrapper {
+    display: flex;
+    align-items: center;
+    padding: 0.85rem 1rem;
+    background: transparent;
+}
+
+.ios-input {
+    border: none;
+    background: transparent;
+    width: 100%;
+    font-size: 0.95rem;
+    color: #1c1c1e;
+    outline: none;
+}
+
+.ios-input::placeholder {
+    color: #8e8e93;
+}
+
+.ios-divider {
+    height: 1px;
+    background-color: rgba(60, 60, 67, 0.12);
+    margin-left: 2.75rem;
+}
+
+.ios-eye-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+/* iOS Primary Button */
+.ios-btn-primary {
+    width: 100%;
+    background: linear-gradient(135deg, #007aff 0%, #5856d6 100%);
+    color: #ffffff;
+    border: none;
+    border-radius: 14px;
+    padding: 0.85rem;
+    font-size: 1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    box-shadow: 0 4px 14px rgba(0, 122, 255, 0.25);
+    transition: all 0.2s ease;
+}
+
+.ios-btn-primary:active {
+    opacity: 0.9;
+    transform: scale(0.98);
+}
+
+.ios-btn-primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Checkbox Styling */
+.ios-checkbox-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    cursor: pointer;
+    user-select: none;
+}
+
+.ios-checkbox {
+    display: none;
+}
+
+.ios-checkbox-custom {
+    width: 20px;
+    height: 20px;
+    border: 1.5px solid #c7c7cc;
+    border-radius: 6px;
+    display: inline-block;
+    position: relative;
+    transition: all 0.2s ease;
+}
+
+.ios-checkbox:checked + .ios-checkbox-custom {
+    background-color: #007aff;
+    border-color: #007aff;
+}
+
+.ios-checkbox:checked + .ios-checkbox-custom::after {
+    content: '';
+    position: absolute;
+    left: 6px;
+    top: 2px;
+    width: 5px;
+    height: 10px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Password visibility toggle
+    const togglePassword = document.getElementById('togglePassword');
+    const password = document.getElementById('password');
+
+    togglePassword.addEventListener('click', function() {
+        const isPassword = password.getAttribute('type') === 'password';
+        password.setAttribute('type', isPassword ? 'text' : 'password');
+
+        const icon = this.querySelector('i');
+        icon.classList.toggle('bi-eye', !isPassword);
+        icon.classList.toggle('bi-eye-slash', isPassword);
+    });
+
+    // Form Submission UI response
+    const loginForm = document.getElementById('loginForm');
+    const loginBtn = document.getElementById('loginBtn');
+    const btnText = document.getElementById('btnText');
+    const loginSpinner = document.getElementById('loginSpinner');
+
+    loginForm.addEventListener('submit', function() {
+        loginBtn.disabled = true;
+        btnText.textContent = 'Signing in...';
+        loginSpinner.classList.remove('d-none');
+    });
+});
+</script>
+{% endblock %}

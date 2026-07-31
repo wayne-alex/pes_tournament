@@ -1,0 +1,47 @@
+<div class="card">
+    <div class="card-header">Fixtures</div>
+    <div id="fixtures-list">
+        {% for f in fixtures %}
+        <div class="fixture-row">
+            <div>
+                <div class="fx-teams">{{ f.home_team.name }} <span class="vs">vs</span> {{ f.away_team.name }}</div>
+                {% if f.match_date %}<div class="fx-date">{{ f.match_date|date:"D, d M · H:i" }}{% if f.group %} · {{ f.group.name }}{% endif %}</div>{% endif %}
+            </div>
+        </div>
+        {% empty %}
+        <div class="empty-note">No fixtures scheduled</div>
+        {% endfor %}
+    </div>
+</div>
+
+{% if rounds %}
+<div class="card">
+    <div class="card-header">Knockout Rounds</div>
+    {% for round_fixtures in rounds %}
+    <div class="round-label">Round {{ forloop.counter }}</div>
+    {% for f in round_fixtures %}
+    <div class="fixture-row">
+        <div class="fx-teams">{{ f.home_team.name }} <span class="vs">vs</span> {{ f.away_team.name }}</div>
+        {% if f.is_played %}<span class="fx-score">{{ f.result.home_score }} – {{ f.result.away_score }}</span>{% endif %}
+    </div>
+    {% endfor %}
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="card">
+    <div class="card-header">Results</div>
+    <div id="results-full-list">
+        {% for r in results %}
+        <div class="result-row">
+            <div>
+                <div class="fx-teams">{{ r.fixture.home_team.name }} <span class="vs">vs</span> {{ r.fixture.away_team.name }}</div>
+                {% if r.fixture.match_date %}<div class="fx-date">{{ r.fixture.match_date|date:"D, d M" }}</div>{% endif %}
+            </div>
+            <span class="fx-score">{{ r.home_score }} – {{ r.away_score }}</span>
+        </div>
+        {% empty %}
+        <div class="empty-note">No matches finished</div>
+        {% endfor %}
+    </div>
+</div>

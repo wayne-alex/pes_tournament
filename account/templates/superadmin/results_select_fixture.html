@@ -1,0 +1,199 @@
+{% extends 'superadmin/base.html' %}
+{% load static %}
+
+{% block title %}Select Fixture - Tournament Manager{% endblock %}
+{% block page_title %}Select Fixture{% endblock %}
+{% block page_subtitle %}Choose an upcoming match to enter score results{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6 col-md-8">
+        <!-- iOS Form Card -->
+        <div class="ios-card border-0 p-4 shadow-sm">
+
+            <!-- Header Block -->
+            <div class="d-flex align-items-center gap-3 mb-4 pb-3 border-bottom border-light">
+                <div class="ios-avatar-badge">
+                    <i class="bi bi-controller"></i>
+                </div>
+                <div>
+                    <h6 class="fw-bold text-dark mb-0 fs-6">Pending Match Selection</h6>
+                    <span class="ios-caption text-muted">Select an unplayed fixture to record its final scores</span>
+                </div>
+            </div>
+
+            {% if fixtures %}
+            <!-- Form -->
+            <form method="post" class="ios-form">
+                {% csrf_token %}
+
+                <div class="mb-4">
+                    <label for="fixture_id" class="ios-form-label">
+                        Target Fixture <span class="text-danger">*</span>
+                    </label>
+                    <select name="fixture_id" id="fixture_id" class="form-select" required>
+                        <option value="">Choose a fixture to record...</option>
+                        {% for fixture in fixtures %}
+                        <option value="{{ fixture.id }}">
+                            {{ fixture.tournament.name }} • R{{ fixture.round }}: {{ fixture.home_team.name }} vs {{ fixture.away_team.name }} {% if fixture.match_date %}({{ fixture.match_date|date:'M d, Y' }}){% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <div class="ios-caption text-muted mt-2">
+                        <i class="bi bi-shield-check me-1"></i>Only scheduled fixtures awaiting score input are listed.
+                    </div>
+                </div>
+
+                <!-- Actions Bar -->
+                <div class="d-flex align-items-center justify-content-end gap-2 pt-2 border-top border-light">
+                    <a href="{% url 'admin_result_list' %}" class="btn btn-ios-secondary btn-sm px-3">
+                        Cancel
+                    </a>
+                    <button type="submit" class="btn btn-ios-success btn-sm px-3">
+                        <i class="bi bi-arrow-right-circle-fill me-1"></i> Proceed to Result Entry
+                    </button>
+                </div>
+            </form>
+            {% else %}
+            <!-- Empty State -->
+            <div class="ios-empty-state text-center py-4">
+                <div class="ios-empty-badge mx-auto mb-3">
+                    <i class="bi bi-check2-all fs-2 text-muted"></i>
+                </div>
+                <h6 class="fw-bold text-dark mb-1">All Caught Up!</h6>
+                <p class="ios-caption text-muted mb-4">There are no pending unplayed fixtures available for result entry at this time.</p>
+
+                <div class="d-flex justify-content-center gap-2">
+                    <a href="{% url 'admin_result_list' %}" class="btn btn-ios-secondary btn-sm px-3">
+                        <i class="bi bi-arrow-left me-1"></i> Back to Results
+                    </a>
+                    <a href="{% url 'admin_fixture_generate' %}" class="btn btn-ios-primary btn-sm px-3">
+                        <i class="bi bi-calendar-plus me-1"></i> Generate Fixtures
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+
+        </div>
+    </div>
+</div>
+
+<!-- Native iOS Aesthetic Custom Styles -->
+<style>
+/* Card & Glassmorphism Container */
+.ios-card {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 16px;
+    border: 1px solid rgba(229, 231, 235, 0.8);
+}
+
+/* Typography & Subtleties */
+.ios-caption {
+    font-size: 0.75rem;
+    letter-spacing: -0.01em;
+}
+
+.fs-7 {
+    font-size: 0.8125rem;
+}
+
+.ios-form-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #48484a;
+    letter-spacing: -0.01em;
+    margin-bottom: 4px;
+    display: block;
+}
+
+/* Badges & Icons */
+.ios-avatar-badge {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: rgba(52, 199, 89, 0.12);
+    color: #34c759;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+}
+
+.ios-empty-badge {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: rgba(118, 118, 128, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Form Inputs Custom iOS Override */
+.ios-form select {
+    display: block;
+    width: 100%;
+    padding: 9px 12px;
+    font-size: 0.85rem;
+    font-weight: 400;
+    line-height: 1.5;
+    color: #1c1c1e;
+    background-color: rgba(242, 242, 247, 0.7);
+    border: 1px solid rgba(229, 231, 235, 0.8);
+    border-radius: 10px;
+    transition: all 0.15s ease-in-out;
+}
+
+.ios-form select:focus {
+    background-color: #ffffff;
+    border-color: #34c759;
+    outline: 0;
+    box-shadow: 0 0 0 3px rgba(52, 199, 89, 0.15);
+}
+
+/* Buttons */
+.btn-ios-success {
+    background-color: #34c759;
+    color: #ffffff;
+    border-radius: 9px;
+    font-weight: 600;
+    border: none;
+    transition: all 0.15s ease;
+}
+.btn-ios-success:hover {
+    background-color: #2fb350;
+    color: #ffffff;
+    transform: scale(0.98);
+}
+
+.btn-ios-primary {
+    background-color: #007aff;
+    color: #ffffff;
+    border-radius: 9px;
+    font-weight: 600;
+    border: none;
+    transition: all 0.15s ease;
+}
+.btn-ios-primary:hover {
+    background-color: #0062cc;
+    color: #ffffff;
+    transform: scale(0.98);
+}
+
+.btn-ios-secondary {
+    background-color: rgba(118, 118, 128, 0.12);
+    color: #1c1c1e;
+    border-radius: 9px;
+    font-weight: 500;
+    border: none;
+    transition: all 0.15s ease;
+}
+.btn-ios-secondary:hover {
+    background-color: rgba(118, 118, 128, 0.2);
+    color: #1c1c1e;
+    transform: scale(0.98);
+}
+</style>
+{% endblock %}

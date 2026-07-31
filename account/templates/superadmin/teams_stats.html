@@ -1,0 +1,47 @@
+{% extends 'superadmin/base.html' %}
+
+{% block title %}Delete Team - Tournament Manager{% endblock %}
+{% block page_title %}Delete Team{% endblock %}
+{% block page_subtitle %}Confirm team deletion{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-xl-6 col-lg-8">
+        <div class="form-container">
+            <div class="text-center mb-4">
+                <i class="bi bi-exclamation-triangle" style="font-size: 4rem; color: #EF4444;"></i>
+                <h5 class="mt-3">Delete Team: <strong>{{ team.name }}</strong></h5>
+                <p class="text-muted">This action cannot be undone.</p>
+            </div>
+            
+            {% if has_fixtures %}
+            <div class="alert alert-warning">
+                <i class="bi bi-exclamation-circle"></i>
+                <strong>Warning:</strong> This team has fixtures associated with it. 
+                Deleting this team will also delete all related fixtures and results.
+            </div>
+            {% endif %}
+            
+            <div class="card bg-light mb-4">
+                <div class="card-body">
+                    <p><strong>Tournament:</strong> {{ team.tournament.name }}</p>
+                    <p><strong>Player Name:</strong> {{ team.player_name|default:'Not set' }}</p>
+                    <p><strong>Stats:</strong> {{ team.played }} played, {{ team.wins }}W {{ team.draws }}D {{ team.losses }}L</p>
+                </div>
+            </div>
+            
+            <form method="post">
+                {% csrf_token %}
+                <div class="d-flex gap-2 justify-content-center">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash"></i> Confirm Delete
+                    </button>
+                    <a href="{% url 'admin_team_list' %}" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

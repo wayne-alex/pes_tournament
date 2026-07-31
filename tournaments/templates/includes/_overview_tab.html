@@ -1,0 +1,67 @@
+<div class="stat-strip">
+    <div class="stat-tile">
+        <div class="num">{{ tournament.played_fixtures_count }}<span style="color:var(--floodlight-dim); font-size:13px;">/{{ tournament.total_fixtures_count }}</span></div>
+        <div class="label">Played</div>
+    </div>
+    <div class="stat-tile">
+        <div class="num">{{ tournament.total_goals }}</div>
+        <div class="label">Goals</div>
+    </div>
+    <div class="stat-tile">
+        <div class="num">{{ top_scorers.count }}</div>
+        <div class="label">Teams</div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">Season Progress <span style="color:var(--floodlight-dim); font-weight:600;">{{ tournament.progress_percent }}%</span></div>
+    <div class="progress-track"><div class="progress-fill" style="width:{{ tournament.progress_percent }}%;"></div></div>
+</div>
+
+<div class="card">
+    <div class="card-header">Upcoming Fixtures</div>
+    {% for f in fixtures|slice:":4" %}
+    <div class="fixture-row">
+        <div>
+            <div class="fx-teams">{{ f.home_team.name }} <span class="vs">vs</span> {{ f.away_team.name }}</div>
+            {% if f.match_date %}<div class="fx-date">{{ f.match_date|date:"D, d M · H:i" }}</div>{% endif %}
+        </div>
+    </div>
+    {% empty %}
+    <div class="empty-note">No upcoming fixtures scheduled</div>
+    {% endfor %}
+</div>
+
+<div class="card">
+    <div class="card-header">Latest Results</div>
+    <div id="results-list">
+        {% for r in results|slice:":5" %}
+        <div class="result-row">
+            <span class="fx-teams">{{ r.fixture.home_team.name }} <span class="vs">vs</span> {{ r.fixture.away_team.name }}</span>
+            <span class="fx-score">{{ r.home_score }} – {{ r.away_score }}</span>
+        </div>
+        {% empty %}
+        <div class="empty-note">No matches finished yet</div>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">Top Scoring Teams</div>
+    <table class="stadium-table">
+        <thead>
+            <tr><th>#</th><th>Team</th><th class="num" style="text-align:right">Goals</th></tr>
+        </thead>
+        <tbody>
+            {% for team in top_scorers %}
+            <tr>
+                <td class="pos-cell">{{ forloop.counter }}</td>
+                <td><strong>{{ team.name }}</strong></td>
+                <td class="num" style="text-align:right; font-weight:700; color:var(--ochre);">{{ team.total_goals|default:0 }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="3" class="empty-note">No goal records available</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
