@@ -5,7 +5,7 @@ from . import views
 
 urlpatterns = [
     path('dashboard/<int:tournament_id>/', views.dashboard, name='dashboard'),
-    path("lobby/", views.lobby, name="dashboard_home"),
+    path("dashboard/", views.lobby, name="dashboard_home"),
     path("tournament-live/<int:tournament_id>/", views.tournament_live_api, name="tournament-live"),
     path('api/poll/<int:fixture_id>/vote/', views.cast_poll_vote, name='cast_poll_vote'),
     path('api/poll/<int:fixture_id>/results/', views.get_poll_results, name='get_poll_results'),
