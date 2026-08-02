@@ -15,6 +15,29 @@ urlpatterns = [
     path('sw.js', views.service_worker, name='service-worker'),
     path('api/save-pending-vote/', views.save_pending_vote, name='save_pending_vote'),
 
+    # Swiss Plus URLs
+    path('tournament/<int:tournament_id>/swiss/', views.swiss_dashboard, name='swiss_dashboard'),
+    path('tournament/<int:tournament_id>/swiss/next-round/', views.generate_next_swiss_round,
+         name='generate_next_swiss_round'),
+    path('tournament/<int:tournament_id>/swiss/complete/', views.complete_swiss_phase, name='complete_swiss_phase'),
+    path('tournament/<int:tournament_id>/swiss/playoff/', views.generate_playoff_rounds,
+         name='generate_playoff_rounds'),
+    path('tournament/<int:tournament_id>/swiss/knockout/', views.generate_knockout_from_swiss,
+         name='generate_knockout_from_swiss'),
+    path('tournament/<int:tournament_id>/swiss/standings/', views.get_swiss_standings_api, name='swiss_standings_api'),
+    path('api/swiss/update-counts/<int:tournament_id>/', views.update_swiss_counts, name='update_swiss_counts'),
+
+    path('tournament/<int:tournament_id>/swiss/knockout/next/',
+         views.generate_next_knockout_round,
+         name='generate_next_knockout_round'),
+
+    path('tournament/<int:tournament_id>/swiss/knockout/status/',
+         views.get_knockout_status,
+         name='get_knockout_status'),
+
+    # Tournament Dashboard (League, Knockout, Group Knockout)
+    path('tournament/<int:tournament_id>/', views.tournament_dashboard, name='tournament_dashboard'),
+
     # Manifest
     path('manifest.json', TemplateView.as_view(
         template_name='manifest.json',

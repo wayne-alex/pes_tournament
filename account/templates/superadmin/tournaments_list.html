@@ -23,6 +23,7 @@
                     <li><a class="dropdown-item" href="?format=knockout">Knockout</a></li>
                     <li><a class="dropdown-item" href="?format=group_knockout">Group + Knockout</a></li>
                     <li><a class="dropdown-item" href="?format=swiss">Swiss</a></li>
+                    <li><a class="dropdown-item" href="?format=swiss_plus">Swiss Pro</a></li>
                     <li><hr class="dropdown-divider"></li>
                     <li><h6 class="dropdown-header">Status</h6></li>
                     <li><a class="dropdown-item" href="?is_open=true">Open</a></li>
@@ -35,7 +36,7 @@
 
         </div>
     </div>
-    
+
     <!-- Search and Quick Filter -->
     <div class="row mb-4">
         <div class="col-md-6">
@@ -60,7 +61,7 @@
             </div>
         </div>
     </div>
-    
+
     <!-- Card View (Grid) -->
     <div id="cardView" class="row g-4 d-none">
         {% for tournament in tournaments %}
@@ -111,7 +112,7 @@
                             </ul>
                         </div>
                     </div>
-                    
+
                     <div class="tournament-stats mb-3">
                         <div class="row text-center g-2">
                             <div class="col-4">
@@ -140,7 +141,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="tournament-meta">
                         <div class="d-flex justify-content-between">
                             <small class="text-muted">
@@ -173,7 +174,7 @@
         </div>
         {% endfor %}
     </div>
-    
+
     <!-- Table View (List) -->
     <div id="tableView" class="table-responsive">
         <table class="table table-hover">
@@ -184,6 +185,7 @@
                     <th>Format</th>
                     <th>Mode</th>
                     <th>Teams</th>
+                    <th>Split Counts</th>
                     <th>Status</th>
                     <th>Created</th>
                     <th>Actions</th>
@@ -209,6 +211,21 @@
                         <span class="badge bg-primary">{{ tournament.teams.count }}</span>
                     </td>
                     <td>
+                        {% if tournament.tournament_format == 'swiss_plus' %}
+                            {% if tournament.swiss_direct_count %}
+                                <div class="d-flex gap-1">
+                                    <span class="badge bg-success">D: {{ tournament.swiss_direct_count }}</span>
+                                    <span class="badge bg-warning">P: {{ tournament.swiss_playoff_count }}</span>
+                                    <span class="badge bg-danger">E: {{ tournament.swiss_eliminated_count }}</span>
+                                </div>
+                            {% else %}
+                                <span class="text-muted">Not set</span>
+                            {% endif %}
+                        {% else %}
+                            <span class="text-muted">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
                         {% if tournament.is_open %}
                         <span class="badge bg-success">Open</span>
                         {% else %}
@@ -227,6 +244,14 @@
                             <a href="{% url 'admin_tournament_delete' tournament.id %}" class="btn btn-outline-danger" title="Delete">
                                 <i class="bi bi-trash"></i>
                             </a>
+                            {% if tournament.tournament_format == 'swiss_plus' %}
+                            <button type="button"
+                                    class="btn btn-outline-success"
+                                    title="Update Split Counts"
+                                    onclick="updateSplitCounts('{{ tournament.id }}')">
+                                <i class="bi bi-arrow-repeat"></i>
+                            </button>
+                            {% endif %}
                             <button type="button" class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
                                 <span class="visually-hidden">Toggle Dropdown</span>
                             </button>
@@ -263,7 +288,7 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="8" class="text-center py-5">
+                    <td colspan="9" class="text-center py-5">
                         <i class="bi bi-trophy" style="font-size: 3rem; color: #d1d5db;"></i>
                         <p class="text-muted mt-2">No tournaments found</p>
                         <a href="{% url 'admin_tournament_create' %}" class="btn btn-primary">
@@ -275,7 +300,7 @@
             </tbody>
         </table>
     </div>
-    
+
     {% if tournaments.has_other_pages %}
     <nav>
         <ul class="pagination justify-content-center">
@@ -303,6 +328,19 @@
         </ul>
     </nav>
     {% endif %}
+</div>
+
+<!-- Toast Container -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1050;">
+    <div id="splitToast" class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body">
+                <i class="bi bi-check-circle-fill me-2"></i>
+                <span id="toastMessage">Split counts updated successfully!</span>
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
 </div>
 
 <style>
@@ -340,11 +378,99 @@
     border-top: 1px solid #e5e7eb;
     padding-top: 0.75rem;
 }
-</style>
-{% endblock %}
 
-{% block extra_js %}
+.btn-outline-success {
+    color: #28a745;
+    border-color: #28a745;
+}
+.btn-outline-success:hover {
+    background-color: #28a745;
+    color: white;
+}
+</style>
+
 <script>
+function updateSplitCounts(tournamentId) {
+    if (!confirm('Update split counts for this tournament?\n\nThis will recalculate the Direct/Playoff/Eliminated counts based on the current number of teams.')) {
+        return;
+    }
+
+    // Show loading on the button
+    const buttons = document.querySelectorAll(`[onclick="updateSplitCounts('${tournamentId}')"]`);
+    buttons.forEach(btn => {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+    });
+
+    // Make AJAX request
+    fetch(`/api/swiss/update-counts/${tournamentId}/`, {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken()
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(err => {
+                throw new Error(err.error || 'Failed to update split counts');
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            showToast('Split counts updated successfully!');
+            // Reload page to show updated counts
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } else {
+            showErrorToast(data.error || 'Failed to update split counts');
+            resetButtons(tournamentId);
+        }
+    })
+    .catch(error => {
+        showErrorToast(error.message || 'An error occurred while updating split counts.');
+        resetButtons(tournamentId);
+    });
+}
+
+function resetButtons(tournamentId) {
+    const buttons = document.querySelectorAll(`[onclick="updateSplitCounts('${tournamentId}')"]`);
+    buttons.forEach(btn => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-arrow-repeat"></i>';
+    });
+}
+
+function showToast(message) {
+    const toastElement = document.getElementById('splitToast');
+    const toastMessage = document.getElementById('toastMessage');
+    toastMessage.textContent = message;
+    toastElement.classList.remove('bg-danger');
+    toastElement.classList.add('bg-success');
+    const toast = new bootstrap.Toast(toastElement);
+    toast.show();
+}
+
+function showErrorToast(message) {
+    const toastElement = document.getElementById('splitToast');
+    const toastMessage = document.getElementById('toastMessage');
+    toastMessage.textContent = message;
+    toastElement.classList.remove('bg-success');
+    toastElement.classList.add('bg-danger');
+    const toast = new bootstrap.Toast(toastElement);
+    toast.show();
+}
+
+function getCsrfToken() {
+    const csrfCookie = document.cookie.split('; ')
+        .find(row => row.startsWith('csrftoken='));
+    return csrfCookie ? csrfCookie.split('=')[1] : '';
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.getElementById('tournamentSearch');
     const tournamentRows = document.querySelectorAll('.tournament-row');

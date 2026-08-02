@@ -1,0 +1,902 @@
+{% extends 'superadmin/base.html' %}
+{% load static %}
+{% load swiss_extras %}
+
+{% block title %}{% if is_swiss_pro %}Swiss Pro{% else %}Swiss{% endif %} - {{ tournament.name }}{% endblock %}
+
+{% block content %}
+<div class="swiss-container">
+
+    <!-- Tournament Header -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+        <div>
+            <h4 class="fw-bold mb-0">{{ tournament.name }}</h4>
+            <div class="d-flex align-items-center gap-2 mt-1">
+                <span class="ios-badge ios-badge-primary">
+                    <i class="bi bi-shuffle me-1"></i>
+                    {% if is_swiss_pro %}Swiss Pro{% else %}Swiss{% endif %}
+                </span>
+                <span class="ios-caption text-muted">{{ standings|length }} teams</span>
+                {% if is_swiss_pro %}
+                    <span class="ios-caption text-muted">•</span>
+                    <span class="ios-badge ios-badge-{{ current_phase|phase_color }}">{{ current_phase|title }}</span>
+                {% endif %}
+            </div>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'admin_fixture_list' %}" class="btn btn-ios-secondary btn-sm">
+                <i class="bi bi-arrow-left me-1"></i> Back
+            </a>
+        </div>
+    </div>
+
+    <!-- Phase Progress Bar -->
+    <div class="ios-card p-2 mb-3 border-0">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <div class="d-flex align-items-center gap-3 flex-wrap">
+                {% if is_swiss_pro %}
+                    <div class="d-flex align-items-center gap-1">
+                        <span class="ios-caption text-muted">Phase:</span>
+                        <div class="d-flex gap-1">
+                            <span class="phase-badge {% if current_phase == 'swiss' %}active{% endif %}">
+                                <i class="bi bi-shuffle me-1"></i> Swiss
+                            </span>
+                            <span class="phase-badge {% if current_phase == 'split' or current_phase == 'playoff' or current_phase == 'knockout' %}active{% endif %}">
+                                <i class="bi bi-diagram-3 me-1"></i> Split
+                            </span>
+                            <span class="phase-badge {% if current_phase == 'playoff' or current_phase == 'knockout' %}active{% endif %}">
+                                <i class="bi bi-play-btn me-1"></i> Playoff
+                            </span>
+                            <span class="phase-badge {% if current_phase == 'knockout' %}active{% endif %}">
+                                <i class="bi bi-trophy me-1"></i> Knockout
+                            </span>
+                        </div>
+                    </div>
+                {% endif %}
+
+                <div class="d-flex align-items-center gap-2">
+                    <span class="ios-caption text-muted">Progress:</span>
+                    <div class="progress ios-progress" style="width: 100px; height: 4px;">
+                        <div class="progress-bar bg-success" role="progressbar"
+                             style="width: {{ tournament.progress_percent }}%;"
+                             aria-valuenow="{{ tournament.progress_percent }}"
+                             aria-valuemin="0" aria-valuemax="100">
+                        </div>
+                    </div>
+                    <span class="ios-caption fw-semibold">{{ tournament.progress_percent }}%</span>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2 flex-wrap">
+                {% if current_phase == 'swiss' %}
+                    {% if swiss_complete and is_swiss_pro %}
+                        <button class="btn btn-ios-success btn-sm" onclick="completeSwissPhase()">
+                            <i class="bi bi-check-circle me-1"></i> Complete Phase
+                        </button>
+                    {% endif %}
+                    <button class="btn btn-ios-primary btn-sm" onclick="generateNextRound()"
+                            {% if pending_fixtures > 0 %}disabled{% endif %}>
+                        <i class="bi bi-arrow-right-circle me-1"></i>
+                        {% if pending_fixtures > 0 %}
+                            ⚠️ {{ pending_fixtures }} pending
+                        {% else %}
+                            ➕ Next Round
+                        {% endif %}
+                    </button>
+                {% elif current_phase == 'split' %}
+                    <button class="btn btn-ios-primary btn-sm" onclick="generatePlayoffs()">
+                        <i class="bi bi-play-btn me-1"></i> Generate Playoffs
+                    </button>
+                {% elif current_phase == 'playoff' %}
+                    <button class="btn btn-ios-primary btn-sm" onclick="generateKnockout()">
+                        <i class="bi bi-trophy me-1"></i> Generate Knockout
+                    </button>
+                {% elif current_phase == 'knockout' %}
+                    <button class="btn btn-ios-primary btn-sm" onclick="generateNextKnockoutRound()">
+                        <i class="bi bi-arrow-right-circle me-1"></i> Next Knockout Round
+                    </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- CHAMPION CARD (shown when tournament is complete) -->
+   <!-- Champion Card -->
+{% if tournament.knockout_phase_complete and champion_name %}
+<div class="champion-card">
+    <div class="champion-icon">🏆</div>
+    <h2 class="champion-title">🏆 Champion!</h2>
+    <p class="champion-name">{{ champion_name }}</p>
+    <p class="champion-subtitle">Congratulations to the winner of {{ tournament.name }}</p>
+    <div class="champion-confetti">🎉🎊🏆🎊🎉</div>
+</div>
+{% elif tournament.knockout_phase_complete %}
+<div class="champion-card">
+    <div class="champion-icon">🏆</div>
+    <h2 class="champion-title">Tournament Complete!</h2>
+    <p class="champion-subtitle">{{ tournament.name }} has been completed</p>
+</div>
+{% endif %}
+
+    <!-- SPLIT GROUPS (Swiss Pro only) -->
+    {% if is_swiss_pro and split_groups|has_split_groups %}
+    <div class="split-groups-container">
+        {% if split_groups|get_item:'Direct Qualifiers' %}
+        <div class="split-group split-group-success">
+            <div class="split-group-header">
+                <span class="split-group-icon">✓</span>
+                <span class="split-group-title">Direct Qualifiers</span>
+                <span class="split-group-count">{{ split_groups|get_item:'Direct Qualifiers'|length }}</span>
+            </div>
+            <div class="split-group-teams">
+                {% for team in split_groups|get_item:'Direct Qualifiers' %}
+                <span class="split-team-tag">{{ team.name }}</span>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if split_groups|get_item:'Playoff' %}
+        <div class="split-group split-group-warning">
+            <div class="split-group-header">
+                <span class="split-group-icon">▶</span>
+                <span class="split-group-title">Playoff</span>
+                <span class="split-group-count">{{ split_groups|get_item:'Playoff'|length }}</span>
+            </div>
+            <div class="split-group-teams">
+                {% for team in split_groups|get_item:'Playoff' %}
+                <span class="split-team-tag">{{ team.name }}</span>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if split_groups|get_item:'Eliminated' %}
+        <div class="split-group split-group-danger">
+            <div class="split-group-header">
+                <span class="split-group-icon">✕</span>
+                <span class="split-group-title">Eliminated</span>
+                <span class="split-group-count">{{ split_groups|get_item:'Eliminated'|length }}</span>
+            </div>
+            <div class="split-group-teams">
+                {% for team in split_groups|get_item:'Eliminated' %}
+                <span class="split-team-tag">{{ team.name }}</span>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- MAIN CONTENT: Standings + Fixtures -->
+    <div class="row g-3">
+        <!-- Standings (Left) -->
+        <div class="col-lg-7">
+            <div class="ios-card p-0 border-0 overflow-hidden">
+                <div class="p-2 border-bottom border-light d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold mb-0 fs-7">
+                        <i class="bi bi-list-ol me-1"></i> Standings
+                        <span class="ios-caption text-muted ms-2">{{ standings|length }} teams</span>
+                    </h6>
+                    {% if swiss_complete and is_swiss_pro %}
+                    <span class="ios-badge ios-badge-success">Phase Complete</span>
+                    {% endif %}
+                </div>
+                <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                    <table class="table ios-table mb-0">
+                        <thead style="position: sticky; top: 0; z-index: 10; background: #fff;">
+                            <tr>
+                                <th style="width: 30px;">#</th>
+                                <th>Team</th>
+                                <th class="text-center" style="width: 28px;">P</th>
+                                <th class="text-center" style="width: 28px;">W</th>
+                                <th class="text-center" style="width: 28px;">D</th>
+                                <th class="text-center" style="width: 28px;">L</th>
+                                <th class="text-center" style="width: 32px;">GD</th>
+                                <th class="text-center" style="width: 32px;">B</th>
+                                <th class="text-center" style="width: 32px;">Pts</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for entry in standings %}
+                            <tr>
+                                <td class="fw-bold fs-7">{{ forloop.counter }}</td>
+                                <td>
+                                    <span class="fw-semibold fs-7">{{ entry.team.name }}</span>
+                                    {% if is_swiss_pro and current_phase != 'swiss' %}
+                                        {% if forloop.counter <= direct_count %}
+                                            <span class="badge-status badge-q">Q</span>
+                                        {% elif forloop.counter <= direct_count|add:playoff_count %}
+                                            <span class="badge-status badge-po">PO</span>
+                                        {% else %}
+                                            <span class="badge-status badge-e">E</span>
+                                        {% endif %}
+                                    {% endif %}
+                                </td>
+                                <td class="text-center fs-7">{{ entry.played }}</td>
+                                <td class="text-center fs-7">{{ entry.wins }}</td>
+                                <td class="text-center fs-7">{{ entry.draws }}</td>
+                                <td class="text-center fs-7">{{ entry.losses }}</td>
+                                <td class="text-center fs-7 {% if entry.goal_diff >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                    {% if entry.goal_diff >= 0 %}+{% endif %}{{ entry.goal_diff }}
+                                </td>
+                                <td class="text-center fs-7 text-muted">{{ entry.buchholz }}</td>
+                                <td class="text-center fw-bold fs-7">{{ entry.points }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Fixtures (Right) -->
+        <div class="col-lg-5">
+            <div class="ios-card p-0 border-0 overflow-hidden">
+                <div class="p-2 border-bottom border-light">
+                    <h6 class="fw-bold mb-0 fs-7">
+                        <i class="bi bi-calendar-event me-1"></i> Fixtures
+                    </h6>
+                </div>
+                <div style="max-height: 400px; overflow-y: auto;">
+                    {% for round_num, round_fixtures in fixtures_by_round.items %}
+                    <div class="p-2 border-bottom border-light">
+                        <div class="d-flex align-items-center justify-content-between mb-1">
+                            <span class="fw-semibold fs-7">
+                                {% if is_swiss_pro and round_num > swiss_total_rounds %}
+                                    {% if round_num <= swiss_total_rounds|add:2 %}
+                                        <span class="phase-label phase-playoff">Playoff</span>
+                                    {% else %}
+                                        <span class="phase-label phase-knockout">Knockout</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="phase-label phase-swiss">Swiss</span>
+                                {% endif %}
+                                Round {{ round_num }}
+                            </span>
+                            <span class="ios-caption text-muted">{{ round_fixtures|length }} match{{ round_fixtures|pluralize }}</span>
+                        </div>
+                        <div class="d-flex flex-column gap-1">
+                            {% for fixture in round_fixtures %}
+                            <div class="fixture-row">
+                                <div class="fixture-teams">
+                                    <span class="fixture-team">{{ fixture.home_team.name }}</span>
+                                    {% if fixture.is_played and fixture.result %}
+                                        <span class="fixture-score {% if fixture.result.home_score > fixture.result.away_score %}score-win{% elif fixture.result.home_score < fixture.result.away_score %}score-loss{% else %}score-draw{% endif %}">
+                                            {{ fixture.result.home_score }}-{{ fixture.result.away_score }}
+                                        </span>
+                                    {% elif fixture.away_team is None %}
+                                        <span class="fixture-bye">BYE</span>
+                                    {% else %}
+                                        <span class="fixture-vs">vs</span>
+                                    {% endif %}
+                                    <span class="fixture-team">{{ fixture.away_team.name|default:"BYE" }}</span>
+                                </div>
+                                <div class="fixture-actions">
+                                    {% if not fixture.is_played and fixture.away_team %}
+                                        <a href="{% url 'admin_result_enter' fixture.id %}"
+                                           class="btn-result" title="Enter Result">
+                                            <i class="bi bi-check-lg"></i>
+                                        </a>
+                                    {% elif fixture.is_played %}
+                                        <span class="fixture-done">✓</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-4">
+                        <span class="ios-caption text-muted">No fixtures yet</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- KNOCKOUT BRACKET (when in knockout phase) -->
+    {% if current_phase == 'knockout' and knockout_bracket %}
+    <div class="ios-card p-3 border-0 mt-3">
+        <h6 class="fw-bold mb-3">
+            <i class="bi bi-diagram-3 me-1"></i> Knockout Bracket
+            <span class="ios-caption text-muted ms-2">{{ knockout_bracket|length }} matches</span>
+        </h6>
+        <div class="knockout-bracket">
+            {% for match in knockout_bracket %}
+            <div class="bracket-match">
+                <div class="bracket-teams">
+                    <span class="bracket-team">{{ match.home_team.name }}</span>
+                    <span class="bracket-vs">vs</span>
+                    <span class="bracket-team">{{ match.away_team.name }}</span>
+                </div>
+                <div class="bracket-status">
+                    {% if match.is_played %}
+                        <span class="bracket-done">✓</span>
+                    {% else %}
+                        <span class="bracket-pending">⏳</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+
+<style>
+/* ============================================================
+   SWISS DASHBOARD STYLES
+   ============================================================ */
+
+.swiss-container {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.ios-card {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(20px);
+    border-radius: 12px;
+    border: 1px solid rgba(229, 231, 235, 0.8);
+}
+
+.ios-badge {
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.65rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+}
+.ios-badge-success {
+    background: rgba(52, 199, 89, 0.12);
+    color: #248a3d;
+}
+.ios-badge-warning {
+    background: rgba(255, 149, 0, 0.12);
+    color: #c67d00;
+}
+.ios-badge-danger {
+    background: rgba(255, 59, 48, 0.12);
+    color: #d70015;
+}
+.ios-badge-secondary {
+    background: rgba(118, 118, 128, 0.12);
+    color: #48484a;
+}
+.ios-badge-primary {
+    background: rgba(0, 122, 255, 0.12);
+    color: #007aff;
+}
+.ios-badge-info {
+    background: rgba(0, 122, 255, 0.12);
+    color: #007aff;
+}
+
+/* Phase Badges */
+.phase-badge {
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.6rem;
+    font-weight: 600;
+    color: #8e8e93;
+    background: rgba(118, 118, 128, 0.08);
+    transition: all 0.3s;
+}
+.phase-badge.active {
+    background: rgba(0, 122, 255, 0.12);
+    color: #007aff;
+}
+
+.phase-label {
+    font-size: 0.55rem;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 3px;
+    margin-right: 4px;
+    text-transform: uppercase;
+}
+.phase-swiss {
+    background: rgba(0, 122, 255, 0.12);
+    color: #007aff;
+}
+.phase-playoff {
+    background: rgba(255, 149, 0, 0.12);
+    color: #c67d00;
+}
+.phase-knockout {
+    background: rgba(52, 199, 89, 0.12);
+    color: #248a3d;
+}
+
+/* Champion Card */
+.champion-card {
+    background: linear-gradient(135deg, #f5f5f5 0%, #fff 100%);
+    border: 2px solid #ffd700;
+    border-radius: 16px;
+    padding: 24px;
+    text-align: center;
+    margin-bottom: 16px;
+    box-shadow: 0 8px 32px rgba(255, 215, 0, 0.2);
+    animation: championPulse 2s ease-in-out infinite;
+}
+@keyframes championPulse {
+    0%, 100% { box-shadow: 0 8px 32px rgba(255, 215, 0, 0.2); }
+    50% { box-shadow: 0 8px 48px rgba(255, 215, 0, 0.4); }
+}
+.champion-icon {
+    font-size: 48px;
+    display: block;
+    margin-bottom: 8px;
+}
+.champion-title {
+    font-size: 14px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #8e8e93;
+    margin: 0;
+    letter-spacing: 2px;
+}
+.champion-name {
+    font-size: 24px;
+    font-weight: 900;
+    color: #1c1c1e;
+    margin: 4px 0;
+}
+.champion-subtitle {
+    font-size: 12px;
+    color: #8e8e93;
+    margin: 0;
+}
+
+/* Split Groups */
+.split-groups-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px;
+    margin-bottom: 16px;
+}
+.split-group {
+    background: rgba(255, 255, 255, 0.85);
+    border-radius: 12px;
+    padding: 12px 14px;
+    border: 1px solid rgba(229, 231, 235, 0.8);
+}
+.split-group-success { border-left: 3px solid #34c759; }
+.split-group-warning { border-left: 3px solid #ff9500; }
+.split-group-danger { border-left: 3px solid #ff3b30; }
+
+.split-group-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 6px;
+}
+.split-group-icon {
+    font-size: 14px;
+    font-weight: 700;
+}
+.split-group-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: #1c1c1e;
+}
+.split-group-count {
+    font-size: 10px;
+    font-weight: 600;
+    color: #8e8e93;
+    margin-left: auto;
+    background: rgba(118, 118, 128, 0.08);
+    padding: 0 8px;
+    border-radius: 10px;
+}
+.split-group-teams {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+.split-team-tag {
+    font-size: 10px;
+    font-weight: 500;
+    color: #1c1c1e;
+    background: rgba(242, 242, 247, 0.5);
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+
+/* Table */
+.ios-table {
+    font-size: 0.75rem;
+}
+.ios-table th {
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+    color: #8e8e93;
+    background: rgba(249, 249, 251, 0.9);
+    padding: 4px 6px;
+    border-bottom: 1px solid rgba(229, 231, 235, 0.6);
+}
+.ios-table td {
+    padding: 4px 6px;
+    border-bottom: 1px solid rgba(242, 242, 247, 0.6);
+}
+
+.badge-status {
+    font-size: 0.5rem;
+    font-weight: 700;
+    padding: 1px 4px;
+    border-radius: 3px;
+    margin-left: 3px;
+}
+.badge-q {
+    background: rgba(52, 199, 89, 0.15);
+    color: #248a3d;
+}
+.badge-po {
+    background: rgba(255, 149, 0, 0.15);
+    color: #c67d00;
+}
+.badge-e {
+    background: rgba(255, 59, 48, 0.15);
+    color: #d70015;
+}
+
+/* Fixture Rows */
+.fixture-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 8px;
+    background: rgba(242, 242, 247, 0.3);
+    border-radius: 6px;
+    transition: background 0.15s;
+}
+.fixture-row:hover {
+    background: rgba(242, 242, 247, 0.6);
+}
+.fixture-teams {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.7rem;
+}
+.fixture-team {
+    font-weight: 600;
+    color: #1c1c1e;
+}
+.fixture-score {
+    font-weight: 700;
+    padding: 0 6px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+}
+.score-win { color: #248a3d; }
+.score-draw { color: #c67d00; }
+.score-loss { color: #d70015; }
+.fixture-vs {
+    font-size: 0.55rem;
+    font-weight: 700;
+    color: #8e8e93;
+}
+.fixture-bye {
+    font-size: 0.55rem;
+    font-weight: 700;
+    color: #8e8e93;
+    background: rgba(118, 118, 128, 0.08);
+    padding: 0 4px;
+    border-radius: 3px;
+}
+.fixture-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.btn-result {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    border: none;
+    background: rgba(52, 199, 89, 0.12);
+    color: #34c759;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.6rem;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.15s;
+}
+.btn-result:hover {
+    background: rgba(52, 199, 89, 0.25);
+}
+.fixture-done {
+    font-size: 0.6rem;
+    color: #34c759;
+}
+
+/* Knockout Bracket */
+.knockout-bracket {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 8px;
+}
+.bracket-match {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 10px;
+    background: rgba(242, 242, 247, 0.3);
+    border-radius: 6px;
+    border-left: 3px solid #007aff;
+}
+.bracket-teams {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.7rem;
+}
+.bracket-team {
+    font-weight: 600;
+}
+.bracket-vs {
+    font-size: 0.55rem;
+    color: #8e8e93;
+}
+.bracket-status {
+    font-size: 0.7rem;
+}
+.bracket-done { color: #34c759; }
+.bracket-pending { color: #ff9500; }
+
+/* Buttons */
+.btn-ios-primary {
+    background-color: #007aff;
+    color: #ffffff;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.75rem;
+    padding: 4px 12px;
+    border: none;
+    transition: all 0.15s ease;
+}
+.btn-ios-primary:hover:not(:disabled) {
+    background-color: #0062cc;
+    color: #ffffff;
+}
+.btn-ios-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+.btn-ios-success {
+    background-color: #34c759;
+    color: #ffffff;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.75rem;
+    padding: 4px 12px;
+    border: none;
+    transition: all 0.15s ease;
+}
+.btn-ios-success:hover {
+    background-color: #2fb350;
+    color: #ffffff;
+}
+.btn-ios-secondary {
+    background-color: rgba(118, 118, 128, 0.12);
+    color: #1c1c1e;
+    border-radius: 8px;
+    font-weight: 500;
+    font-size: 0.75rem;
+    padding: 4px 12px;
+    border: none;
+    transition: all 0.15s ease;
+}
+.btn-ios-secondary:hover {
+    background-color: rgba(118, 118, 128, 0.2);
+}
+
+.ios-progress {
+    background-color: rgba(118, 118, 128, 0.15);
+    border-radius: 3px;
+    overflow: hidden;
+}
+.ios-progress .progress-bar {
+    border-radius: 3px;
+    transition: width 0.6s ease;
+}
+
+/* Scrollbar */
+.table-responsive::-webkit-scrollbar,
+div[style*="max-height"]::-webkit-scrollbar {
+    width: 4px;
+}
+.table-responsive::-webkit-scrollbar-track,
+div[style*="max-height"]::-webkit-scrollbar-track {
+    background: transparent;
+}
+.table-responsive::-webkit-scrollbar-thumb,
+div[style*="max-height"]::-webkit-scrollbar-thumb {
+    background: rgba(118, 118, 128, 0.3);
+    border-radius: 2px;
+}
+</style>
+
+<!-- JavaScript -->
+<script>
+const tournamentId = {{ tournament.id }};
+const isSwissPro = {{ is_swiss_pro|lower }};
+
+function generateNextRound() {
+    if (!confirm('Generate the next Swiss round?')) return;
+
+    const btn = document.querySelector('[onclick="generateNextRound()"]');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Generating...';
+
+    fetch(`/tournament/${tournamentId}/swiss/next-round/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-arrow-right-circle me-1"></i> Next Round';
+        }
+    })
+    .catch(error => {
+        alert('Error: ' + error);
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-arrow-right-circle me-1"></i> Next Round';
+    });
+}
+
+function completeSwissPhase() {
+    if (!isSwissPro) {
+        alert('Split is only available for Swiss Pro format.');
+        return;
+    }
+
+    if (!confirm('Complete the Swiss phase? This will rank all teams and split them.')) return;
+
+    fetch(`/tournament/${tournamentId}/swiss/complete/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => alert('Error: ' + error));
+}
+
+function generatePlayoffs() {
+    if (!isSwissPro) {
+        alert('Playoffs are only available for Swiss Pro format.');
+        return;
+    }
+
+    if (!confirm('Generate playoff fixtures?')) return;
+
+    fetch(`/tournament/${tournamentId}/swiss/playoff/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => alert('Error: ' + error));
+}
+
+function generateKnockout() {
+    if (!isSwissPro) {
+        alert('Knockout is only available for Swiss Pro format.');
+        return;
+    }
+
+    if (!confirm('Generate knockout bracket?')) return;
+
+    fetch(`/tournament/${tournamentId}/swiss/knockout/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => alert('Error: ' + error));
+}
+
+function generateNextKnockoutRound() {
+    if (!isSwissPro) {
+        alert('Knockout is only available for Swiss Pro format.');
+        return;
+    }
+
+    if (!confirm('Generate the next knockout round?')) return;
+
+    const btn = document.querySelector('[onclick="generateNextKnockoutRound()"]');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Generating...';
+
+    fetch(`/tournament/${tournamentId}/swiss/knockout/next/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            alert(data.message);
+            location.reload();
+        } else if (data.status === 'champion') {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-arrow-right-circle me-1"></i> Next Knockout Round';
+        }
+    })
+    .catch(error => {
+        alert('Error: ' + error);
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-arrow-right-circle me-1"></i> Next Knockout Round';
+    });
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %}

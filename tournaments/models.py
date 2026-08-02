@@ -63,6 +63,7 @@ class Tournament(models.Model):
         ("knockout", "Knockout"),
         ("group_knockout", "Group + Knockout"),
         ("swiss", "Swiss"),
+        ("swiss_plus", "Swiss Plus"),
     ]
 
     MODE_CHOICES = [
@@ -85,6 +86,15 @@ class Tournament(models.Model):
     qualify_per_group = models.IntegerField(default=2)
     is_open = models.BooleanField(default=False)
     swiss_total_rounds = models.IntegerField(null=True, blank=True)
+    swiss_phase_complete = models.BooleanField(default=False)
+    split_phase_complete = models.BooleanField(default=False)
+    playoff_phase_complete = models.BooleanField(default=False)
+    knockout_phase_complete = models.BooleanField(default=False)
+
+    # Split counts (stored for reference)
+    swiss_direct_count = models.IntegerField(null=True, blank=True)
+    swiss_playoff_count = models.IntegerField(null=True, blank=True)
+    swiss_eliminated_count = models.IntegerField(null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
 

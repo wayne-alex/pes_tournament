@@ -9,22 +9,33 @@
 <div class="ios-container">
 
     <!-- Header Actions Toolbar -->
-    <div class="ios-card mb-4 p-3 border-0">
+    <div class="ios-card mb-4 p-3 border-0" style="position: relative; z-index: 100;">
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
 
             <!-- Left: Counter & Filters -->
             <div class="d-flex align-items-center gap-3 flex-wrap">
                 <div>
-                    <h5 class="fw-bold text-dark mb-0 fs-5">All Fixtures</h5>
+                    <h5 class="fw-bold text-dark mb-0 fs-5">
+                        {% if selected_tournament %}
+                            {% for t in tournaments %}
+                                {% if t.id|stringformat:'s' == selected_tournament %}
+                                    {{ t.name }}
+                                {% endif %}
+                            {% endfor %}
+                        {% else %}
+                            All Fixtures
+                        {% endif %}
+                    </h5>
                     <span class="ios-caption text-muted">{{ fixture_count }} fixture{{ fixture_count|pluralize }} total</span>
                 </div>
 
-                <!-- Filter Dropdown -->
-                <div class="dropdown ms-md-2">
+                <!-- Filter Dropdown - HIGHEST Z-INDEX -->
+                <div class="dropdown ms-md-2" style="position: relative; z-index: 9999 !important;">
                     <button class="btn btn-ios-secondary dropdown-toggle btn-sm d-flex align-items-center gap-2"
                             type="button"
                             data-bs-toggle="dropdown"
-                            aria-expanded="false">
+                            aria-expanded="false"
+                            style="position: relative; z-index: 9999 !important;">
                         <i class="bi bi-funnel-fill text-primary"></i>
                         <span>
                             {% if selected_tournament %}
@@ -38,7 +49,8 @@
                             {% endif %}
                         </span>
                     </button>
-                    <ul class="dropdown-menu ios-dropdown-menu shadow-lg border-0">
+                    <ul class="dropdown-menu ios-dropdown-menu shadow-lg border-0"
+                        style="position: absolute; z-index: 10000 !important; max-height: 400px; overflow-y: auto; top: 100%; left: 0; min-width: 240px;">
                         <li>
                             <a class="dropdown-item {% if not selected_tournament and not selected_status %}active{% endif %}" href="?">
                                 All Fixtures
@@ -51,6 +63,7 @@
                             <a class="dropdown-item {% if selected_tournament == tournament.id|stringformat:'s' %}active{% endif %}"
                                href="?tournament={{ tournament.id }}">
                                 {{ tournament.name }}
+                                <span class="ios-caption text-muted ms-1">({{ tournament.get_tournament_format_display }})</span>
                             </a>
                         </li>
                         {% endfor %}
@@ -68,10 +81,49 @@
                         </li>
                     </ul>
                 </div>
+
+                <!-- Tournament Format Badge (when selected) -->
+                {% if selected_tournament %}
+                    {% for t in tournaments %}
+                        {% if t.id|stringformat:'s' == selected_tournament %}
+                            <span class="ios-badge ios-badge-primary">
+                                <i class="bi
+                                    {% if t.tournament_format == 'league' %}bi-list-ul
+                                    {% elif t.tournament_format == 'knockout' %}bi-trophy
+                                    {% elif t.tournament_format == 'group_knockout' %}bi-diagram-3
+                                    {% elif t.tournament_format == 'swiss' %}bi-shuffle
+                                    {% elif t.tournament_format == 'swiss_pro' %}bi-shuffle
+                                    {% else %}bi-calendar-event{% endif %}
+                                    me-1"></i>
+                                {{ t.get_tournament_format_display }}
+                            </span>
+                        {% endif %}
+                    {% endfor %}
+                {% endif %}
             </div>
 
             <!-- Right: Action Buttons Group -->
             <div class="d-flex flex-wrap align-items-center gap-2">
+                <!-- Format-Specific Dashboard Button (when tournament selected) -->
+                {% if selected_tournament %}
+                    {% for t in tournaments %}
+                        {% if t.id|stringformat:'s' == selected_tournament %}
+                            <a href="{% if t.tournament_format == 'swiss' or t.tournament_format == 'swiss_plus' %}{% url 'swiss_dashboard' t.id %}{% else %}{% url 'dashboard' t.id %}{% endif %}"
+                               class="btn btn-ios-success btn-sm d-flex align-items-center gap-2">
+                                <i class="bi
+                                    {% if t.tournament_format == 'league' %}bi-list-ul
+                                    {% elif t.tournament_format == 'knockout' %}bi-trophy
+                                    {% elif t.tournament_format == 'group_knockout' %}bi-diagram-3
+                                    {% elif t.tournament_format == 'swiss' %}bi-shuffle
+                                    {% elif t.tournament_format == 'swiss_plus' %}bi-shuffle
+                                    {% else %}bi-calendar-event{% endif %}
+                                    me-1"></i>
+                                View {{ t.get_tournament_format_display }} Dashboard
+                            </a>
+                        {% endif %}
+                    {% endfor %}
+                {% endif %}
+
                 <a href="{% url 'admin_fixture_create' %}" class="btn btn-ios-primary btn-sm">
                     <i class="bi bi-plus-lg me-1"></i> Add Fixture
                 </a>
@@ -83,11 +135,11 @@
                 </a>
 
                 <!-- Danger Dropdown Menu -->
-                <div class="dropdown">
+                <div class="dropdown" style="position: relative; z-index: 100;">
                     <button class="btn btn-ios-secondary btn-sm px-2" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                         <i class="bi bi-trash-fill text-danger"></i>
                     </button>
-                    <ul class="dropdown-menu dropdown-menu-end ios-dropdown-menu shadow-lg border-0">
+                    <ul class="dropdown-menu dropdown-menu-end ios-dropdown-menu shadow-lg border-0" style="z-index: 1000;">
                         <li>
                             <a class="dropdown-item text-danger" href="{% url 'admin_fixture_delete_all' %}">
                                 <i class="bi bi-trash3 me-1"></i> Delete All Fixtures
@@ -103,6 +155,59 @@
             </div>
 
         </div>
+
+        <!-- Tournament Info Bar (when selected) -->
+        {% if selected_tournament %}
+            {% for t in tournaments %}
+                {% if t.id|stringformat:'s' == selected_tournament %}
+                    <div class="mt-3 pt-3 border-top border-light d-flex flex-wrap align-items-center gap-3">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="ios-caption text-muted">Format:</span>
+                            <span class="fw-semibold fs-7">{{ t.get_tournament_format_display }}</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="ios-caption text-muted">Teams:</span>
+                            <span class="fw-semibold fs-7">{{ t.team_set.count }}</span>
+                        </div>
+                        {% if t.tournament_format == 'swiss' or t.tournament_format == 'swiss_pro' %}
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="ios-caption text-muted">Swiss Rounds:</span>
+                                <span class="fw-semibold fs-7">{{ t.swiss_total_rounds|default:'Not set' }}</span>
+                            </div>
+                            {% if t.tournament_format == 'swiss_pro' %}
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="ios-caption text-muted">Phase:</span>
+                                    <span class="fw-semibold fs-7">
+                                        {% if t.knockout_phase_complete %}
+                                            Knockout
+                                        {% elif t.playoff_phase_complete %}
+                                            Playoff
+                                        {% elif t.split_phase_complete %}
+                                            Split
+                                        {% else %}
+                                            Swiss
+                                        {% endif %}
+                                    </span>
+                                </div>
+                            {% endif %}
+                        {% endif %}
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="ios-caption text-muted">Progress:</span>
+                            <div class="progress ios-progress" style="width: 120px; height: 6px;">
+                                <div class="progress-bar bg-success"
+                                     role="progressbar"
+                                     style="width: {{ t.progress_percent }}%;"
+                                     aria-valuenow="{{ t.progress_percent }}"
+                                     aria-valuemin="0"
+                                     aria-valuemax="100">
+                                </div>
+                            </div>
+                            <span class="fw-semibold fs-7">{{ t.progress_percent }}%</span>
+                        </div>
+                    </div>
+                {% endif %}
+            {% endfor %}
+        {% endif %}
     </div>
 
     <!-- Table Container Card -->
@@ -179,9 +284,14 @@
 
                         <!-- Tournament Reference -->
                         <td>
-                            <span class="ios-link-subtle fs-7">
-                                <i class="bi bi-trophy me-1 text-warning"></i>{{ fixture.tournament.name }}
-                            </span>
+                            <div class="d-flex flex-column">
+                                <span class="ios-link-subtle fs-7">
+                                    <i class="bi bi-trophy me-1 text-warning"></i>{{ fixture.tournament.name }}
+                                </span>
+                                <span class="ios-caption text-muted">
+                                    {{ fixture.tournament.get_tournament_format_display }}
+                                </span>
+                            </div>
                         </td>
 
                         <!-- Round & Group -->
@@ -243,7 +353,13 @@
                                     <i class="bi bi-calendar-x"></i>
                                 </div>
                                 <h6 class="fw-bold text-dark mb-1">No Fixtures Found</h6>
-                                <p class="text-muted fs-7 mb-3">There are no fixtures generated under the selected filters.</p>
+                                <p class="text-muted fs-7 mb-3">
+                                    {% if selected_tournament %}
+                                        This tournament has no fixtures yet.
+                                    {% else %}
+                                        There are no fixtures generated under the selected filters.
+                                    {% endif %}
+                                </p>
                                 <div class="d-flex gap-2 justify-content-center">
                                     <a href="{% url 'admin_fixture_create' %}" class="btn btn-ios-primary btn-sm">
                                         <i class="bi bi-plus-lg me-1"></i> Create Manually
@@ -371,6 +487,21 @@
     transform: scale(0.98);
 }
 
+.btn-ios-success {
+    background-color: #34c759;
+    color: #ffffff;
+    border-radius: 10px;
+    font-weight: 600;
+    padding: 6px 14px;
+    border: none;
+    transition: all 0.15s ease;
+}
+.btn-ios-success:hover {
+    background-color: #2fb350;
+    color: #ffffff;
+    transform: scale(0.98);
+}
+
 .btn-ios-icon {
     width: 30px;
     height: 30px;
@@ -423,6 +554,10 @@
     background: rgba(255, 149, 0, 0.12);
     color: #c67d00;
 }
+.ios-badge-primary {
+    background: rgba(0, 122, 255, 0.12);
+    color: #007aff;
+}
 
 .ios-vs-pill {
     padding: 2px 8px;
@@ -443,6 +578,17 @@
 .ios-score-win { background: rgba(52, 199, 89, 0.15); color: #248a3d; }
 .ios-score-draw { background: rgba(255, 149, 0, 0.15); color: #c67d00; }
 .ios-score-loss { background: rgba(255, 59, 48, 0.15); color: #d70015; }
+
+/* Progress Bar */
+.ios-progress {
+    background-color: rgba(118, 118, 128, 0.15);
+    border-radius: 4px;
+    overflow: hidden;
+}
+.ios-progress .progress-bar {
+    border-radius: 4px;
+    transition: width 0.6s ease;
+}
 
 /* Table Styling */
 .ios-table th {
@@ -514,31 +660,100 @@
     font-size: 1.75rem;
     color: #8e8e93;
 }
+
+/* Ensure dropdown is always on top */
+.dropdown-menu {
+    z-index: 10000 !important;
+}
+
+.dropdown-toggle {
+    z-index: 9999 !important;
+}
+
+/* Fix for any sticky headers or overlays */
+.navbar, .header, .sticky-top {
+    z-index: 100 !important;
+}
+
+/* Ensure dropdown appears above everything including modals */
+.dropdown.show .dropdown-menu {
+    display: block;
+    z-index: 10000 !important;
+}
 </style>
 
+<!-- JavaScript -->
 <script>
-document.getElementById('selectAll').addEventListener('change', function() {
-    document.querySelectorAll('.fixture-checkbox').forEach(cb => cb.checked = this.checked);
+// Wait for DOM to be fully loaded
+document.addEventListener('DOMContentLoaded', function() {
+    // Safe selectAll checkbox handler
+    const selectAll = document.getElementById('selectAll');
+    if (selectAll) {
+        selectAll.addEventListener('change', function() {
+            const checkboxes = document.querySelectorAll('.fixture-checkbox');
+            checkboxes.forEach(function(cb) {
+                cb.checked = this.checked;
+            }, this);
+        });
+    }
+
+    // Dropdown z-index management
+    const dropdowns = document.querySelectorAll('.dropdown');
+    dropdowns.forEach(function(dropdown) {
+        dropdown.addEventListener('shown.bs.dropdown', function() {
+            this.style.zIndex = '10000';
+        });
+        dropdown.addEventListener('hidden.bs.dropdown', function() {
+            this.style.zIndex = '9999';
+        });
+    });
+
+    // Initialize Bootstrap tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function(tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
 });
 
+// Global function for deleting selected fixtures
 function confirmDeleteSelected() {
     const selected = document.querySelectorAll('.fixture-checkbox:checked');
     if (selected.length === 0) {
         alert('Please select at least one fixture to delete.');
         return;
     }
-    if (confirm(`Are you sure you want to delete ${selected.length} fixture(s)?`)) {
-        const ids = Array.from(selected).map(cb => cb.value);
+    if (confirm('Are you sure you want to delete ' + selected.length + ' fixture(s)?')) {
+        const ids = Array.from(selected).map(function(cb) { return cb.value; });
         const form = document.createElement('form');
         form.method = 'POST';
         form.action = '{% url "admin_fixture_delete_all" %}';
+
+        // Get CSRF token from cookie
+        const csrfToken = getCookie('csrftoken');
+
         form.innerHTML = `
-            {% csrf_token %}
+            <input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken}">
             <input type="hidden" name="fixture_ids" value="${ids.join(',')}">
         `;
         document.body.appendChild(form);
         form.submit();
     }
+}
+
+// Helper to get CSRF token from cookie
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
 }
 </script>
 {% endblock %}

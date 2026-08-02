@@ -1,5 +1,5 @@
 <script>
-// ============================================================
+ // ============================================================
 // STATE MANAGEMENT
 // ============================================================
 let currentPage = 1;
@@ -55,7 +55,6 @@ function renderFavoritesCarousel() {
     const favTeams = ALL_TEAMS_DATA.filter(t => favs.includes(t.id));
     const today = new Date().toISOString().split('T')[0];
 
-    // Sort: Playing today first, then alphabetically
     favTeams.sort((a, b) => {
         const aPlaying = isTeamPlayingToday(a.id, today);
         const bPlaying = isTeamPlayingToday(b.id, today);
@@ -152,7 +151,7 @@ function closeFavSelector() {
 }
 
 // ============================================================
-// FREE-SCROLLING DATE STRIP (FEATURE 1)
+// FREE-SCROLLING DATE STRIP
 // ============================================================
 
 function buildDateStrip() {
@@ -164,7 +163,6 @@ function buildDateStrip() {
     const today = new Date();
     const todayStr = today.toISOString().split('T')[0];
 
-    // Generate 30 days: 7 days before today, 22 after
     const chips = [];
     for (let i = -7; i < 23; i++) {
         const d = new Date(today);
@@ -175,7 +173,6 @@ function buildDateStrip() {
         const monthName = d.toLocaleDateString('en-US', { month: 'short' });
         const isToday = dateStr === todayStr;
 
-        // Count matches on this date
         const matchCount = ALL_FIXTURES_DATA.filter(f => f.match_date === dateStr).length;
 
         chips.push({
@@ -188,7 +185,6 @@ function buildDateStrip() {
         });
     }
 
-    // Build HTML
     track.innerHTML = chips.map(chip => `
         <div class="date-chip ${chip.isToday ? 'today' : ''} ${selectedDateFilter === chip.dateStr ? 'selected' : ''}"
              data-date="${chip.dateStr}"
@@ -201,18 +197,12 @@ function buildDateStrip() {
         </div>
     `).join('');
 
-    // Add momentum/inertia scrolling
     enableMomentumScroll(viewport);
-
-    // Auto-scroll to today but don't lock it
     setTimeout(() => scrollToToday(false), 200);
-
-    // Select today by default
     selectDate(todayStr, track.querySelector('[data-is-today="true"]'));
 }
 
 function enableMomentumScroll(viewport) {
-    // Add smooth momentum scrolling
     let isDown = false;
     let startX;
     let scrollLeft;
@@ -248,7 +238,6 @@ function enableMomentumScroll(viewport) {
         viewport.scrollLeft = scrollLeft - walk;
     });
 
-    // Touch events for mobile
     viewport.addEventListener('touchstart', (e) => {
         startX = e.touches[0].pageX - viewport.offsetLeft;
         scrollLeft = viewport.scrollLeft;
@@ -269,14 +258,12 @@ function enableMomentumScroll(viewport) {
     function startMomentum() {
         cancelMomentum();
         if (Math.abs(velocity) < 2) return;
-
         momentumID = requestAnimationFrame(animateMomentum);
     }
 
     function animateMomentum() {
-        velocity *= 0.95; // Friction
+        velocity *= 0.95;
         viewport.scrollLeft -= velocity;
-
         if (Math.abs(velocity) > 0.5) {
             momentumID = requestAnimationFrame(animateMomentum);
         }
@@ -299,17 +286,11 @@ function scrollToToday(animate = true) {
     const todayChip = track.querySelector('[data-is-today="true"]');
     if (todayChip) {
         const scrollTo = todayChip.offsetLeft - (viewport.offsetWidth / 2) + (todayChip.offsetWidth / 2);
-
         if (animate) {
-            viewport.scrollTo({
-                left: Math.max(0, scrollTo),
-                behavior: 'smooth'
-            });
+            viewport.scrollTo({ left: Math.max(0, scrollTo), behavior: 'smooth' });
         } else {
             viewport.scrollLeft = Math.max(0, scrollTo);
         }
-
-        // Select today
         selectDate(todayChip.dataset.date, todayChip);
     }
 }
@@ -317,18 +298,13 @@ function scrollToToday(animate = true) {
 function slideDateStrip(direction) {
     const viewport = document.getElementById('dateStripViewport');
     if (!viewport) return;
-
-    const scrollAmount = 180; // Scroll by ~3 chips
-    viewport.scrollBy({
-        left: direction * scrollAmount,
-        behavior: 'smooth'
-    });
+    const scrollAmount = 180;
+    viewport.scrollBy({ left: direction * scrollAmount, behavior: 'smooth' });
 }
 
 function selectDate(dateStr, element) {
     selectedDateFilter = dateStr;
 
-    // Update chip states
     document.querySelectorAll('.date-chip').forEach(chip => {
         chip.classList.remove('selected');
         if (chip.dataset.date === dateStr) {
@@ -336,7 +312,6 @@ function selectDate(dateStr, element) {
         }
     });
 
-    // Update display text
     const display = document.getElementById('selectedDateDisplay');
     if (display) {
         const d = new Date(dateStr + 'T00:00:00');
@@ -359,11 +334,9 @@ function selectDate(dateStr, element) {
         display.querySelector('.match-count-badge').textContent = `${matches.length} matches`;
     }
 
-    // Filter fixtures list
     filterFixturesBySelectedDate(dateStr);
 }
 
-// Also update centerOnToday to use the new scrollToToday function
 function centerOnToday() {
     scrollToToday(true);
 }
@@ -371,18 +344,13 @@ function centerOnToday() {
 function filterFixturesBySelectedDate(dateStr) {
     const rows = document.querySelectorAll('.fixture-card-row');
     let visibleCount = 0;
-
-    // Sort: favorites first
     const favs = getFavorites();
-    const container = document.getElementById('fixturesContainer');
 
     rows.forEach(row => {
         const rowDate = row.getAttribute('data-date');
         if (rowDate === dateStr) {
             row.style.display = 'flex';
             visibleCount++;
-
-            // Highlight favorite team matches
             const homeId = parseInt(row.getAttribute('data-home-id'));
             const awayId = parseInt(row.getAttribute('data-away-id'));
             if (favs.includes(homeId) || favs.includes(awayId)) {
@@ -413,13 +381,10 @@ function initializePoll() {
     if (pollWidget) {
         currentFixtureId = pollWidget.getAttribute('data-fixture-id');
         fetchPollResults();
-
-        // Poll every 10 seconds for real-time updates
         if (pollUpdateInterval) clearInterval(pollUpdateInterval);
         pollUpdateInterval = setInterval(fetchPollResults, 10000);
     }
 
-    // Check if user already voted
     const voted = localStorage.getItem(`poll_voted_${currentFixtureId}`);
     if (voted) {
         highlightVotedOption(voted);
@@ -428,33 +393,40 @@ function initializePoll() {
 
 async function fetchPollResults() {
     if (!currentFixtureId) return;
-
     try {
         const response = await fetch(`/api/poll/${currentFixtureId}/results/`);
         const data = await response.json();
         renderPollFromData(data);
     } catch (e) {
-        // Fallback to local data if API fails
         console.log('Using local poll data');
     }
 }
 
 function renderPollFromData(data) {
+    if (!document.getElementById('matchPollWidget')) return;
     const total = data.total || 1;
 
     const hPct = data.home_pct || 0;
     const dPct = data.draw_pct || 0;
     const aPct = data.away_pct || 0;
 
-    document.getElementById('pollVoteCount').innerText = `${data.total || 0} votes`;
-    document.getElementById('barHome').style.width = `${hPct}%`;
-    document.getElementById('pctHome').innerText = `${hPct}%`;
-    document.getElementById('barDraw').style.width = `${dPct}%`;
-    document.getElementById('pctDraw').innerText = `${dPct}%`;
-    document.getElementById('barAway').style.width = `${aPct}%`;
-    document.getElementById('pctAway').innerText = `${aPct}%`;
+    const voteCountEl = document.getElementById('pollVoteCount');
+    if (voteCountEl) voteCountEl.innerText = `${data.total || 0} votes`;
 
-    // Highlight winner
+    const barHome = document.getElementById('barHome');
+    const pctHome = document.getElementById('pctHome');
+    const barDraw = document.getElementById('barDraw');
+    const pctDraw = document.getElementById('pctDraw');
+    const barAway = document.getElementById('barAway');
+    const pctAway = document.getElementById('pctAway');
+
+    if (barHome) barHome.style.width = `${hPct}%`;
+    if (pctHome) pctHome.innerText = `${hPct}%`;
+    if (barDraw) barDraw.style.width = `${dPct}%`;
+    if (pctDraw) pctDraw.innerText = `${dPct}%`;
+    if (barAway) barAway.style.width = `${aPct}%`;
+    if (pctAway) pctAway.innerText = `${aPct}%`;
+
     const maxPct = Math.max(hPct, dPct, aPct);
     ['barHome', 'barDraw', 'barAway'].forEach(id => {
         const bar = document.getElementById(id);
@@ -496,7 +468,6 @@ async function castPollVote(choice) {
             highlightVotedOption(choice);
             showPollMessage('Vote recorded! \u2705');
         } else if (response.status === 409) {
-            // Already voted
             localStorage.setItem(`poll_voted_${currentFixtureId}`, choice);
             renderPollFromData(data.current);
             highlightVotedOption(choice);
@@ -561,6 +532,25 @@ function switchLeaderboard(lbName, element) {
     const lb = document.getElementById(`lb-${lbName}`);
     if (lb) lb.classList.add('active');
     element.classList.add('active');
+}
+
+// ============================================================
+// STANDINGS PHASE SWITCHING - FIXED
+// ============================================================
+
+function switchStandingsPhase(phase, element) {
+    // Update button states
+    document.querySelectorAll('.phase-nav-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    if (element) element.classList.add('active');
+
+    // Update content
+    document.querySelectorAll('.standings-phase-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    const target = document.getElementById(`standings-phase-${phase}`);
+    if (target) target.classList.add('active');
 }
 
 // ============================================================
@@ -714,7 +704,6 @@ function switchTeamModalTab(tabName, element) {
     if (tab) tab.classList.add('active');
     element.classList.add('active');
 
-    // scroll the drawer body back to the top when switching tabs
     const drawer = document.getElementById('teamDrawerModal');
     if (drawer) drawer.scrollTop = 0;
 }
@@ -854,6 +843,7 @@ document.addEventListener('DOMContentLoaded', () => {
     buildDateStrip();
     initializePoll();
     syncAllFavoritesUI();
+    startLiveUpdates();
 
     const voted = localStorage.getItem(`poll_voted_${currentFixtureId}`);
     if (voted) {
@@ -861,17 +851,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// Cleanup on page unload
 window.addEventListener('beforeunload', () => {
     if (pollUpdateInterval) clearInterval(pollUpdateInterval);
 });
 
 // ============================================================
 // THE "CAVE" ENGINE
-// Turns the flat date strip into a 3D coverflow tunnel: chips
-// shrink, tilt away and dim the further they sit from dead-centre.
-// Runs purely off scroll position, so it works for drag, momentum
-// flicks, the nav arrows and the programmatic "Today" jump alike.
 // ============================================================
 
 function setupCylinderPadding() {
@@ -902,15 +887,14 @@ function applyCylinderEffect() {
         const rect = chip.getBoundingClientRect();
         const chipCenter = rect.left + rect.width / 2;
 
-        // normalized distance from the centre of the tunnel mouth
         const raw = (chipCenter - centerX) / (viewportRect.width / 2 || 1);
         const clamped = Math.max(-1.7, Math.min(1.7, raw));
         const absD = Math.abs(clamped);
 
         const scale = Math.max(0.6, 1 - absD * 0.32);
-        const rotateY = clamped * -30; // curvature of the tunnel wall
-        const translateZ = -absD * 90; // recede into the cave
-        const translateY = absD * 6;   // slight sink, like a curved floor
+        const rotateY = clamped * -30;
+        const translateZ = -absD * 90;
+        const translateY = absD * 6;
         const opacity = Math.max(0.32, 1 - absD * 0.58);
         const blur = absD > 0.85 ? Math.min(2.2, (absD - 0.85) * 6) : 0;
 
@@ -932,13 +916,697 @@ function applyCylinderEffect() {
     }
 }
 
+// ============================================================
+// LIVE TOURNAMENT UPDATES
+// ============================================================
+
+let liveUpdateInterval = null;
+
+function renderFixturesList() {
+    const container = document.getElementById('fixturesContainer');
+    if (!container) return;
+
+    if (ALL_FIXTURES_DATA.length === 0) {
+        container.innerHTML = '<p class="empty-state">No upcoming fixtures</p>';
+        return;
+    }
+
+    container.innerHTML = ALL_FIXTURES_DATA.map(f => {
+        const dateLabel = f.match_date ? formatMatchDate(f.match_date) : 'TBD';
+        const timeLabel = (f.match_time && f.match_time !== 'TBD') ? f.match_time : '';
+        const homeId = f.home_team_id;
+        const awayId = f.away_team_id;
+        return `
+            <div class="fixture-item fixture-card-row"
+                 data-date="${f.match_date || ''}"
+                 data-home-id="${homeId ?? ''}"
+                 data-away-id="${awayId ?? ''}"
+                 data-home-name="${f.home_team_name}"
+                 data-away-name="${f.away_team_name}">
+                <div class="f-info">
+                    <div class="f-teams">
+                        <div class="team-side" onclick="openTeamModal(${homeId})">
+                            <span class="team-mini-crest">${f.home_team_name.charAt(0)}</span>
+                            <span class="team-label">${f.home_team_name}</span>
+                        </div>
+                        <span class="vs-text">vs</span>
+                        <div class="team-side" onclick="openTeamModal(${awayId})">
+                            <span class="team-label">${f.away_team_name}</span>
+                            <span class="team-mini-crest">${f.away_team_name.charAt(0)}</span>
+                        </div>
+                    </div>
+                    ${f.group ? `<span class="group-badge">${f.group}</span>` : ''}
+                    ${f.stage ? `<span class="phase-badge-mini phase-${f.stage_css}">${f.stage.toUpperCase()}</span>` : ''}
+                </div>
+                <div class="f-meta">
+                    <div class="f-date-badge">${dateLabel}${timeLabel ? ' \u00b7 ' + timeLabel : ''}${f.is_live ? ' \ud83d\udd34' : ''}</div>
+                    <button class="fav-toggle-btn" onclick="toggleFavorite(${homeId}); toggleFavorite(${awayId}); event.stopPropagation();">
+                        \u2b50
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function renderResultsList() {
+    const container = document.getElementById('resultsContainer');
+    if (!container) return;
+
+    if (ALL_RESULTS_DATA.length === 0) {
+        container.innerHTML = '<p class="empty-state">No results recorded yet</p>';
+        return;
+    }
+
+    container.innerHTML = ALL_RESULTS_DATA.map(r => {
+        const homeId = findTeamIdByName(r.home_team);
+        const awayId = findTeamIdByName(r.away_team);
+        const isFresh = freshResultKeys.has(resultKey(r));
+        return `
+            <div class="result-item ${isFresh ? 'just-in' : ''}">
+                <div class="r-info">
+                    <span class="r-date">
+                        ${isFresh ? '<span class="result-just-in-badge">NEW</span>' : ''}${r.match_date ? formatMatchDate(r.match_date) : ''}
+                    </span>
+                    <span class="r-teams">
+                        <span class="clickable" onclick="openTeamModal(${homeId})"><strong>${r.home_team}</strong></span>
+                        vs
+                        <span class="clickable" onclick="openTeamModal(${awayId})"><strong>${r.away_team}</strong></span>
+                    </span>
+                </div>
+                <div class="r-score-pill">${r.home_score} - ${r.away_score}</div>
+            </div>
+        `;
+    }).join('');
+}
+
+function renderStandingsTable() {
+    const tbody = document.getElementById('leagueTableBody');
+    if (!tbody) return;
+
+    const sorted = [...ALL_TEAMS_DATA].sort((a, b) => {
+        if (b.points !== a.points) return b.points - a.points;
+        return (b.goals_for - b.goals_against) - (a.goals_for - a.goals_against);
+    });
+
+    tbody.innerHTML = sorted.map((team, idx) => `
+        <tr class="clickable ${idx < 4 ? 'qualified-row' : ''}" onclick="openTeamModal(${team.id})">
+            <td class="pos-col">${idx + 1}</td>
+            <td><strong>${team.name}</strong></td>
+            <td>${team.played}</td>
+            <td>${team.wins}-${team.draws}-${team.losses}</td>
+            <td>${team.goals_for - team.goals_against}</td>
+            <td class="text-right pts-cell">${team.points}</td>
+        </tr>
+    `).join('');
+}
+
+function updateKpiCounts(data) {
+    const teamsEl = document.getElementById('kpiTeamsValue');
+    const playedEl = document.getElementById('kpiPlayedValue');
+    const fixturesEl = document.getElementById('kpiFixturesValue');
+    if (teamsEl) teamsEl.textContent = (data.standings || []).length;
+    if (playedEl) playedEl.textContent = data.played_count ?? ALL_RESULTS_DATA.length;
+    if (fixturesEl) fixturesEl.textContent = data.total_count ?? ALL_FIXTURES_DATA.length;
+}
+
+let previousLiveScore = null;
+let knownResultKeys = null;
+let freshResultKeys = new Set();
+let syncFailureCount = 0;
+
+function resultKey(r) {
+    return `${r.home_team}|${r.away_team}|${r.home_score}|${r.away_score}|${r.match_date || ''}`;
+}
+
+function showLiveToast(message, type) {
+    const container = document.getElementById('liveToastContainer');
+    if (!container) return;
+    const toast = document.createElement('div');
+    toast.className = 'live-toast live-toast-' + (type || 'info');
+    toast.textContent = message;
+    container.appendChild(toast);
+    requestAnimationFrame(() => toast.classList.add('show'));
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+    }, 4200);
+}
+
+function updateSyncBadge(ok) {
+    const badge = document.getElementById('liveSyncBadge');
+    if (!badge) return;
+    const label = badge.querySelector('.sync-label');
+    if (ok) {
+        badge.classList.remove('offline');
+        if (label) label.textContent = 'LIVE HUB';
+    } else {
+        badge.classList.add('offline');
+        if (label) label.textContent = 'SYNC LOST';
+    }
+}
+
+function renderLatestResult() {
+    const container = document.getElementById('latestResultContent');
+    if (!container) return;
+    if (ALL_RESULTS_DATA.length === 0) {
+        container.innerHTML = '<p class="empty-state">No matches concluded yet</p>';
+        return;
+    }
+    const last = ALL_RESULTS_DATA[0];
+    const homeId = findTeamIdByName(last.home_team);
+    const awayId = findTeamIdByName(last.away_team);
+    container.innerHTML = `
+        <div class="match-row-compact clickable" onclick="openTeamModal(${homeId})">
+            <span class="t-name">${last.home_team}</span>
+            <span class="score-pill">${last.home_score} - ${last.away_score}</span>
+            <span class="t-name text-right">${last.away_team}</span>
+        </div>
+    `;
+}
+
+function renderLeaderboards() {
+    const scorersBody = document.getElementById('topScorersBody');
+    const winsBody = document.getElementById('mostWinsBody');
+    const defenseBody = document.getElementById('bestDefenseBody');
+
+    const row = (t, i, value) => `
+        <tr class="clickable" onclick="openTeamModal(${t.id})">
+            <td class="pos-col">${i + 1}</td>
+            <td><strong>${t.name}</strong></td>
+            <td class="text-right pts-cell">${value}</td>
+        </tr>
+    `;
+
+    if (scorersBody) {
+        scorersBody.innerHTML = [...ALL_TEAMS_DATA]
+            .sort((a, b) => b.goals_for - a.goals_for)
+            .map((t, i) => row(t, i, t.goals_for)).join('');
+    }
+    if (winsBody) {
+        winsBody.innerHTML = [...ALL_TEAMS_DATA]
+            .sort((a, b) => b.wins - a.wins)
+            .map((t, i) => row(t, i, t.wins)).join('');
+    }
+    if (defenseBody) {
+        defenseBody.innerHTML = [...ALL_TEAMS_DATA]
+            .sort((a, b) => a.goals_against - b.goals_against)
+            .map((t, i) => row(t, i, t.goals_against)).join('');
+    }
+}
+
+function buildPollWidgetHtml(fixtureId, homeName, awayName) {
+    return `
+        <div class="hero-poll-box" id="matchPollWidget" data-fixture-id="${fixtureId}">
+            <div class="poll-header">
+                <span>\ud83d\uddf3\ufe0f FAN MATCH POLL</span>
+                <span id="pollVoteCount" class="poll-total">0 votes</span>
+            </div>
+            <div id="pollOptions" class="poll-options-grid">
+                <button class="poll-btn" onclick="castPollVote('home')">
+                    <span class="poll-team-label">${homeName}</span>
+                    <span class="poll-bar" id="barHome" style="width: 0%;"></span>
+                    <span class="poll-percent" id="pctHome">--</span>
+                </button>
+                <button class="poll-btn" onclick="castPollVote('draw')">
+                    <span class="poll-team-label">DRAW</span>
+                    <span class="poll-bar" id="barDraw" style="width: 0%;"></span>
+                    <span class="poll-percent" id="pctDraw">--</span>
+                </button>
+                <button class="poll-btn" onclick="castPollVote('away')">
+                    <span class="poll-team-label">${awayName}</span>
+                    <span class="poll-bar" id="barAway" style="width: 0%;"></span>
+                    <span class="poll-percent" id="pctAway">--</span>
+                </button>
+            </div>
+            <div id="pollVoterMessage" class="poll-voter-msg"></div>
+        </div>
+    `;
+}
+
+function renderHeroCard(data, nameToId) {
+    const heroSection = document.getElementById('heroSection');
+    if (!heroSection) return;
+
+    if (data.live) {
+        if (pollUpdateInterval) { clearInterval(pollUpdateInterval); pollUpdateInterval = null; }
+        currentFixtureId = null;
+
+        const homeId = nameToId[data.live.home_team] ?? null;
+        const awayId = nameToId[data.live.away_team] ?? null;
+
+        const goalScored = previousLiveScore &&
+            previousLiveScore.home_team === data.live.home_team &&
+            previousLiveScore.away_team === data.live.away_team &&
+            (previousLiveScore.home_score !== data.live.home_score ||
+             previousLiveScore.away_score !== data.live.away_score);
+
+        const total = data.live.home_score + data.live.away_score;
+        const homePct = total > 0 ? Math.round((data.live.home_score / total) * 100) : 50;
+        const pulseClass = goalScored ? 'pulse-goal' : '';
+        const stageSuffix = data.live.stage ? ` &middot; ${data.live.stage.toUpperCase()}` : '';
+
+        heroSection.innerHTML = `
+            <div class="hero-match-card live-mode headline-hero" id="heroMatchCard">
+                <div class="card-status-pill pill-live" id="heroStatusPill">
+                    <span class="pulse-dot"></span> LIVE${stageSuffix}
+                </div>
+                <div class="match-board">
+                    <div class="team-col clickable" onclick="openTeamModal(${homeId})">
+                        <div class="team-crest hero-crest">${data.live.home_team.charAt(0)}</div>
+                        <span class="team-name">${data.live.home_team}</span>
+                    </div>
+                    <div class="score-display live-score-pulse">
+                        <span class="score-num ${pulseClass}" id="heroHomeScore">${data.live.home_score}</span>
+                        <span class="divider">:</span>
+                        <span class="score-num ${pulseClass}" id="heroAwayScore">${data.live.away_score}</span>
+                    </div>
+                    <div class="team-col clickable" onclick="openTeamModal(${awayId})">
+                        <div class="team-crest hero-crest">${data.live.away_team.charAt(0)}</div>
+                        <span class="team-name">${data.live.away_team}</span>
+                    </div>
+                </div>
+                <div class="momentum-bar-wrap">
+                    <div class="momentum-title">Match Momentum</div>
+                    <div class="momentum-track">
+                        <div class="momentum-fill home-fill" style="width: ${homePct}%;"></div>
+                        <div class="momentum-fill away-fill" style="width: ${100 - homePct}%;"></div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        if (goalScored) {
+            const scorer =
+                data.live.home_score > previousLiveScore.home_score ? data.live.home_team :
+                data.live.away_score > previousLiveScore.away_score ? data.live.away_team : null;
+            if (scorer) {
+                showLiveToast(`\u26bd GOAL! ${scorer} \u2014 ${data.live.home_score} - ${data.live.away_score}`, 'goal');
+            }
+        }
+        previousLiveScore = Object.assign({}, data.live);
+
+    } else {
+        previousLiveScore = null;
+
+        const upcoming = [...ALL_FIXTURES_DATA]
+            .filter(f => !f.is_played)
+            .sort((a, b) => (a.match_date || '9999-99-99').localeCompare(b.match_date || '9999-99-99'))[0];
+
+        if (!upcoming) {
+            heroSection.innerHTML = `
+                <div class="ios-card" style="text-align:center;">
+                    <p class="empty-state">No upcoming fixtures scheduled</p>
+                </div>
+            `;
+            if (pollUpdateInterval) { clearInterval(pollUpdateInterval); pollUpdateInterval = null; }
+            currentFixtureId = null;
+            return;
+        }
+
+        const dateLabel = upcoming.match_date
+            ? new Date(upcoming.match_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short' })
+            : 'Time TBD';
+        const timeLabel = (upcoming.match_time && upcoming.match_time !== 'TBD') ? (' \u2022 ' + upcoming.match_time) : '';
+        const stageBadge = upcoming.stage
+            ? `<span class="phase-badge-hero phase-${upcoming.stage_css}">${upcoming.stage.toUpperCase()}</span> `
+            : '';
+
+        heroSection.innerHTML = `
+            <div class="hero-match-card headline-hero" id="heroMatchCard">
+                <div class="card-status-pill" id="heroStatusPill">${stageBadge}UPCOMING HEADLINE FIXTURE</div>
+                <div class="match-board">
+                    <div class="team-col clickable" onclick="openTeamModal(${upcoming.home_team_id})">
+                        <div class="team-crest hero-crest">${upcoming.home_team_name.charAt(0)}</div>
+                        <span class="team-name">${upcoming.home_team_name}</span>
+                    </div>
+                    <div class="vs-circle-hero">VS</div>
+                    <div class="team-col clickable" onclick="openTeamModal(${upcoming.away_team_id})">
+                        <div class="team-crest hero-crest">${upcoming.away_team_name.charAt(0)}</div>
+                        <span class="team-name">${upcoming.away_team_name}</span>
+                    </div>
+                </div>
+                <div class="match-time-tag">\ud83d\udd50 ${dateLabel}${timeLabel}</div>
+                ${buildPollWidgetHtml(upcoming.id, upcoming.home_team_name, upcoming.away_team_name)}
+            </div>
+        `;
+
+        initializePoll();
+    }
+}
+
+function refreshDateChipCounts() {
+    document.querySelectorAll('.date-chip').forEach(chip => {
+        const dateStr = chip.dataset.date;
+        const count = ALL_FIXTURES_DATA.filter(f => f.match_date === dateStr).length;
+        let countEl = chip.querySelector('.date-chip-count');
+        if (count > 0) {
+            if (!countEl) {
+                countEl = document.createElement('span');
+                countEl.className = 'date-chip-count';
+                chip.appendChild(countEl);
+            }
+            countEl.textContent = count;
+        } else if (countEl) {
+            countEl.remove();
+        }
+    });
+
+    if (selectedDateFilter) {
+        filterFixturesBySelectedDate(selectedDateFilter);
+    }
+}
+
+// ============================================================
+// LIVE STANDINGS TABLE UPDATES
+// ============================================================
+
+
+
+function renderSwissStandingsBody(standings, directCount, playoffCount, isSwissPro) {
+    const tbody = document.getElementById('swissStandingsBody');
+    if (!tbody) return;
+    if (!standings || standings.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center">No Swiss standings available</td></tr>';
+        return;
+    }
+
+    function statusFor(rank) {
+        if (!isSwissPro) return null;
+        if (rank <= directCount) return 'direct';
+        if (rank <= directCount + playoffCount) return 'playoff';
+        return 'eliminated';
+    }
+
+    tbody.innerHTML = standings.map((team, i) => {
+        const rank = i + 1;
+        const status = statusFor(rank);
+        const rowClass = status ? `row-${status}` : '';
+        const dot = status ? `<span class="row-status-dot dot-${status}"></span>` : '';
+        return `
+            <tr class="clickable standings-row ${rowClass}" onclick="openTeamModal(${team.id})">
+                <td class="pos-col">${rank}</td>
+                <td>${dot}<span class="team-name-cell">${team.name}</span></td>
+                <td class="text-center">${team.played}</td>
+                <td class="text-center">${team.wins}</td>
+                <td class="text-center">${team.draws}</td>
+                <td class="text-center">${team.losses}</td>
+                <td class="text-center ${team.goal_diff >= 0 ? 'text-success' : 'text-danger'}">${team.goal_diff >= 0 ? '+' : ''}${team.goal_diff}</td>
+                <td class="text-center pts-cell">${team.points}</td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function renderPhaseStandingsBody(phase, standings) {
+    const tbody = document.getElementById(`${phase}StandingsBody`);
+    if (!tbody) return;
+    if (!standings || standings.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center">No ${phase} teams yet</td></tr>`;
+        return;
+    }
+    tbody.innerHTML = standings.map((team, i) => `
+        <tr class="clickable" onclick="openTeamModal(${team.id})">
+            <td class="pos-col">${i + 1}</td>
+            <td><strong>${team.name}</strong></td>
+            <td>${team.played}</td>
+            <td>${team.wins}-${team.draws}-${team.losses}</td>
+            <td>${team.goal_diff >= 0 ? '+' : ''}${team.goal_diff}</td>
+            <td class="text-right pts-cell">${team.points}</td>
+        </tr>
+    `).join('');
+}
+
+function syncStandingsPhaseVisibility(data) {
+    const playoffBtn = document.querySelector('.phase-nav-btn[data-phase="playoff"]');
+    const knockoutBtn = document.querySelector('.phase-nav-btn[data-phase="knockout"]');
+
+    if (playoffBtn) {
+        playoffBtn.style.display = data.has_playoff_phase ? '' : 'none';
+        const count = playoffBtn.querySelector('.phase-nav-count');
+        if (count) count.textContent = (data.playoff_standings || []).length;
+    }
+    if (knockoutBtn) {
+        knockoutBtn.style.display = data.has_knockout_phase ? '' : 'none';
+        const count = knockoutBtn.querySelector('.phase-nav-count');
+        if (count) count.textContent = (data.knockout_standings || []).length;
+    }
+    const swissCount = document.querySelector('.phase-nav-btn[data-phase="swiss"] .phase-nav-count');
+    if (swissCount) swissCount.textContent = (data.swiss_standings || []).length;
+}
+
+// ============================================================
+// CHAMPION CARD
+// ============================================================
+
+function revealChampionCardIfNeeded(data) {
+    if (!data.champion_name || document.getElementById('championCard')) return;
+
+    const overview = document.getElementById('tab-overview');
+    if (!overview) return;
+
+    const totalGoals = (data.results || []).reduce((sum, r) => sum + r.home_score + r.away_score, 0);
+
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = `
+        <div class="champion-card" id="championCard">
+            <canvas id="confettiCanvas" class="confetti-canvas"></canvas>
+            <div class="champion-content">
+                <div class="champion-trophy-wrap"><div class="champion-icon">\ud83c\udfc6</div></div>
+                <h2 class="champion-title">Champions</h2>
+                <p class="champion-name">${data.champion_name}</p>
+                ${data.runner_up_name ? `<p class="champion-runnerup">\ud83e\udd48 Runner-up &middot; ${data.runner_up_name}</p>` : ''}
+                <p class="champion-subtitle">${(document.querySelector('.ios-title')?.textContent) || ''}</p>
+                <div class="champion-stats-row">
+                    <div class="champion-stat"><span class="champion-stat-value">${(data.standings || []).length}</span><span class="champion-stat-label">Teams</span></div>
+                    <div class="champion-stat"><span class="champion-stat-value">${data.played_count ?? ''}</span><span class="champion-stat-label">Matches</span></div>
+                    <div class="champion-stat"><span class="champion-stat-value">${totalGoals}</span><span class="champion-stat-label">Goals</span></div>
+                </div>
+                <button class="champion-share-btn" onclick="shareChampionResult()">\ud83d\udce3 Share the result</button>
+            </div>
+        </div>
+    `;
+    overview.insertBefore(wrapper.firstElementChild, overview.firstChild);
+
+    initChampionConfetti();
+    showLiveToast(`\ud83c\udfc6 ${data.champion_name} are CHAMPIONS!`, 'final');
+}
+
+function launchConfettiOnCanvas(canvas, durationMs) {
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const parent = canvas.parentElement;
+
+    function resize() {
+        canvas.width = parent.offsetWidth;
+        canvas.height = parent.offsetHeight;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    const colors = ['#FFD700', '#FF9500', '#34C759', '#007AFF', '#FF3B30', '#FFFFFF'];
+    const pieces = Array.from({ length: 90 }, () => ({
+        x: Math.random() * canvas.width,
+        y: -20 - Math.random() * canvas.height * 0.5,
+        r: 4 + Math.random() * 5,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        speedY: 1.5 + Math.random() * 2.5,
+        speedX: (Math.random() - 0.5) * 2,
+        rotation: Math.random() * 360,
+        rotSpeed: (Math.random() - 0.5) * 10,
+        shape: Math.random() > 0.5 ? 'rect' : 'circle'
+    }));
+
+    const start = performance.now();
+
+    function frame(now) {
+        const elapsed = now - start;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        pieces.forEach(p => {
+            p.y += p.speedY;
+            p.x += p.speedX;
+            p.rotation += p.rotSpeed;
+            if (p.y > canvas.height + 20) {
+                p.y = -20;
+                p.x = Math.random() * canvas.width;
+            }
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate((p.rotation * Math.PI) / 180);
+            ctx.fillStyle = p.color;
+            if (p.shape === 'rect') {
+                ctx.fillRect(-p.r / 2, -p.r / 2, p.r, p.r * 0.6);
+            } else {
+                ctx.beginPath();
+                ctx.arc(0, 0, p.r / 2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+        });
+
+        if (elapsed < durationMs) {
+            requestAnimationFrame(frame);
+        } else {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+    }
+
+    requestAnimationFrame(frame);
+}
+
+function initChampionConfetti() {
+    const canvas = document.getElementById('confettiCanvas');
+    if (canvas) launchConfettiOnCanvas(canvas, 2600);
+}
+
+function shareChampionResult() {
+    const nameEl = document.querySelector('.champion-name');
+    const subEl = document.querySelector('.champion-subtitle');
+    const text = nameEl && subEl
+        ? `\ud83c\udfc6 ${nameEl.textContent} are champions of ${subEl.textContent}!`
+        : '\ud83c\udfc6 We have a champion!';
+
+    if (navigator.share) {
+        navigator.share({ text }).catch(() => {});
+    } else if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(() => {
+            showLiveToast('Result copied to clipboard \ud83d\udccb', 'final');
+        });
+    } else {
+        showLiveToast(text, 'final');
+    }
+}
+
+// ============================================================
+// APPLY LIVE UPDATE
+// ============================================================
+
+function applyLiveUpdate(data) {
+    const nameToId = {};
+    (data.standings || []).forEach(t => { nameToId[t.name] = t.id; });
+
+    ALL_TEAMS_DATA.length = 0;
+    (data.standings || []).forEach(t => ALL_TEAMS_DATA.push(t));
+
+    ALL_FIXTURES_DATA.length = 0;
+    (data.fixtures || []).forEach(f => {
+        const [datePart, timePart] = (f.match_date || '').split('T');
+        ALL_FIXTURES_DATA.push({
+            id: f.id,
+            home_team_id: nameToId[f.home_team__name] ?? null,
+            away_team_id: nameToId[f.away_team__name] ?? null,
+            home_team_name: f.home_team__name,
+            away_team_name: f.away_team__name,
+            match_date: datePart || '',
+            match_time: timePart ? timePart.slice(0, 5) : 'TBD',
+            group: '',
+            is_played: f.is_played,
+            is_live: f.is_live,
+            stage: f.stage || '',
+            stage_css: f.stage_css || ''
+        });
+    });
+
+    ALL_RESULTS_DATA.length = 0;
+    (data.results || []).forEach(r => {
+        ALL_RESULTS_DATA.push({
+            home_team: r.home_team,
+            away_team: r.away_team,
+            home_score: r.home_score,
+            away_score: r.away_score,
+            match_date: r.match_date ? r.match_date.split('T')[0] : null
+        });
+    });
+
+    const currentKeys = new Set(ALL_RESULTS_DATA.map(resultKey));
+    if (knownResultKeys === null) {
+        freshResultKeys = new Set();
+    } else {
+        const newlyLanded = ALL_RESULTS_DATA.filter(r => !knownResultKeys.has(resultKey(r)));
+        freshResultKeys = new Set(newlyLanded.map(resultKey));
+        newlyLanded.forEach(r => {
+            showLiveToast(`\ud83c\udfc1 Full time: ${r.home_team} ${r.home_score} - ${r.away_score} ${r.away_team}`, 'final');
+        });
+        if (newlyLanded.length > 0) {
+            setTimeout(() => { freshResultKeys = new Set(); renderResultsList(); }, 20000);
+        }
+    }
+    knownResultKeys = currentKeys;
+
+    const activeQuery = (document.getElementById('teamSearchInput')?.value || '').toLowerCase();
+    filteredTeams = activeQuery
+        ? ALL_TEAMS_DATA.filter(t => t.name.toLowerCase().includes(activeQuery))
+        : [...ALL_TEAMS_DATA];
+    const maxPage = Math.max(1, Math.ceil(filteredTeams.length / itemsPerPage));
+    currentPage = Math.min(currentPage, maxPage);
+
+    renderHeroCard(data, nameToId);
+    renderFixturesList();
+    renderResultsList();
+    renderStandingsTable();
+    renderLeaderboards();
+    renderLatestResult();
+    updateKpiCounts(data);
+    renderTeamDirectory();
+    renderFavoritesCarousel();
+    syncAllFavoritesUI();
+    refreshDateChipCounts();
+
+    renderSwissStandingsBody(
+            data.swiss_standings,
+            data.swiss_direct_count,
+            data.swiss_playoff_count,
+            data.is_swiss_pro
+        );
+    renderPhaseStandingsBody('playoff', data.playoff_standings);
+    renderPhaseStandingsBody('knockout', data.knockout_standings);
+    syncStandingsPhaseVisibility(data);
+
+    revealChampionCardIfNeeded(data);
+
+    const drawerOpen = document.getElementById('teamDrawerModal')?.classList.contains('active');
+    if (drawerOpen && activeModalTeamId !== null) {
+        openTeamModal(activeModalTeamId);
+    }
+}
+
+// ============================================================
+// FETCH LIVE UPDATES
+// ============================================================
+
+async function fetchTournamentLiveUpdate() {
+    if (typeof TOURNAMENT_ID === 'undefined' || !TOURNAMENT_ID) {
+        console.warn('TOURNAMENT_ID is missing - live updates are disabled.');
+        return;
+    }
+    try {
+        const response = await fetch(`/tournament-live/${TOURNAMENT_ID}/`);
+        if (!response.ok) throw new Error(`tournament-live returned ${response.status}`);
+        const data = await response.json();
+        applyLiveUpdate(data);
+        syncFailureCount = 0;
+        updateSyncBadge(true);
+    } catch (e) {
+        console.warn('Live update fetch failed:', e);
+        syncFailureCount += 1;
+        if (syncFailureCount >= 2) updateSyncBadge(false);
+    }
+}
+
+function startLiveUpdates(intervalMs = 15000) {
+    fetchTournamentLiveUpdate();
+    if (liveUpdateInterval) clearInterval(liveUpdateInterval);
+    liveUpdateInterval = setInterval(fetchTournamentLiveUpdate, intervalMs);
+}
+
+// ============================================================
+// CAVE EFFECT INIT
+// ============================================================
+
 (function initCaveEffect() {
     document.addEventListener('DOMContentLoaded', () => {
         setupCylinderPadding();
 
-        // Re-centre and apply the effect once the initial smooth
-        // scroll-to-today (scheduled inside buildDateStrip) has room
-        // to work with the new tunnel padding.
         setTimeout(() => {
             scrollToToday(false);
             applyCylinderEffect();
@@ -964,4 +1632,5 @@ function applyCylinderEffect() {
         });
     });
 })();
+
 </script>
