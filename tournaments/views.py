@@ -48,7 +48,68 @@ def _stage_css_class(stage_name):
         return 'final'
     return 'knockout'
 
+    def _compute_team_extra_stats(teams):
+        """
+        Attaches avg_goals, win_rate, clean_sheets, form, trend to each
+        Team instance in the list. Not persisted to DB - display only.
+        `teams` must be a materialized list (not a lazy queryset), since
+        we're bolting attributes onto the actual Python objects.
+        """
+        for t in teams:
+            t.avg_goals = round(t.goals_for / t.played, 1) if t.played else 0.0
+            t.win_rate = round((t.wins / t.played) * 100) if t.played else 0
 
+            clean = 0
+            team_fixtures = Fixture.objects.filter(
+                Q(home_team=t) | Q(away_team=t), is_played=True
+            ).select_related('result')
+            for f in team_fixtures:
+                if not hasattr(f, 'result'):
+                    continue
+                conceded = f.result.away_score if f.home_team_id == t.id else f.result.home_score
+                if conceded == 0:
+                    clean += 1
+            t.clean_sheets = clean
+
+            t.form = t.recent_results  # already exists on the model, W/D/L list
+            if t.form:
+                last = t.form[-1]
+                t.trend = 'up' if last == 'W' else ('down' if last == 'L' else 'stable')
+            else:
+                t.trend = 'stable'
+        return teams
+
+def _compute_team_extra_stats(teams):
+    """
+    Attaches avg_goals, win_rate, clean_sheets, form, trend to each
+    Team instance in the list. Not persisted to DB - display only.
+    `teams` must be a materialized list (not a lazy queryset), since
+    we're bolting attributes onto the actual Python objects.
+    """
+    for t in teams:
+        t.avg_goals = round(t.goals_for / t.played, 1) if t.played else 0.0
+        # Use a different attribute name, e.g., t.win_rate_display or t.win_rate_calc
+        t.win_rate_calc = round((t.wins / t.played) * 100) if t.played else 0
+
+        clean = 0
+        team_fixtures = Fixture.objects.filter(
+            Q(home_team=t) | Q(away_team=t), is_played=True
+        ).select_related('result')
+        for f in team_fixtures:
+            if not hasattr(f, 'result'):
+                continue
+            conceded = f.result.away_score if f.home_team_id == t.id else f.result.home_score
+            if conceded == 0:
+                clean += 1
+        t.clean_sheets = clean
+
+        t.form = t.recent_results  # already exists on the model, W/D/L list
+        if t.form:
+            last = t.form[-1]
+            t.trend = 'up' if last == 'W' else ('down' if last == 'L' else 'stable')
+        else:
+            t.trend = 'stable'
+    return teams
 def _get_phase_standings(team_ids, round_min, round_max):
     """
     Standings built ONLY from fixtures played inside [round_min, round_max].
@@ -311,20 +372,14 @@ def dashboard(request, tournament_id):
         grouped.setdefault(f.round, []).append(f)
     rounds = [grouped[r] for r in sorted(grouped)]
 
-    top_scorers = (
-        Team.objects.filter(tournament=tournament)
-        .annotate(total_goals=Sum("goals_for"))
-        .order_by("-total_goals")[:10]
-    )
-    most_wins = Team.objects.filter(tournament=tournament).order_by("-wins", "-points")[:10]
-    best_defense = (
-        Team.objects.filter(tournament=tournament)
-        .filter(played__gt=0)
-        .order_by("goals_against")[:10]
-    )
-    all_teams = Team.objects.filter(tournament=tournament).annotate(
+    all_teams = list(Team.objects.filter(tournament=tournament).annotate(
         goal_difference=F('goals_for') - F('goals_against')
-    ).order_by('-points', '-goal_difference')
+    ).order_by('-points', '-goal_difference'))
+    _compute_team_extra_stats(all_teams)
+
+    top_scorers = sorted(all_teams, key=lambda t: -t.goals_for)[:10]
+    most_wins = sorted(all_teams, key=lambda t: (-t.wins, -t.points))[:10]
+    best_defense = sorted([t for t in all_teams if t.played > 0], key=lambda t: t.goals_against)[:10]
 
     champion_name, runner_up_name = None, None
     if tournament.knockout_phase_complete:
@@ -609,6 +664,7 @@ def tournament_live_api(request, tournament_id):
     standings_data = [
         {
             "id": t.id, "name": t.name, "initials": t.initials,
+            "player_name": t.player_name,
             "played": t.played, "wins": t.wins, "draws": t.draws, "losses": t.losses,
             "goals_for": t.goals_for, "goals_against": t.goals_against, "points": t.points,
         }
@@ -676,6 +732,8 @@ def tournament_live_api(request, tournament_id):
         "total_count": tournament.total_fixtures_count,
         "champion_name": champion_name,
         "runner_up_name": runner_up_name,
+        "swiss_rounds": swiss_rounds,
+        "total_swiss_rounds": tournament.swiss_total_rounds or swiss_rounds,
     })
 
 
@@ -926,7 +984,7 @@ def swiss_dashboard(request, tournament_id):
     # If no total rounds set, calculate it
     if total_swiss_rounds == 0:
         team_count = Team.objects.filter(tournament=tournament).count()
-        total_swiss_rounds = max(3, math.ceil(math.log2(team_count)) + (1 if team_count <= 8 else 0))
+        total_swiss_rounds = max(2, min(team_count - 1, math.ceil(math.log2(team_count)) + (team_count // 4)))
         tournament.swiss_total_rounds = total_swiss_rounds
         tournament.save(update_fields=['swiss_total_rounds'])
 

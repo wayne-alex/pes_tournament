@@ -9,6 +9,106 @@ let activeModalTeamId = null;
 let selectedDateFilter = null;
 let currentDateStripOffset = 0;
 let pollUpdateInterval = null;
+let activeFixtureId = null;
+
+let modalState = {
+    isOpen: false,
+    teamId: null,
+    activeTab: 'overview'
+};
+
+function openFixtureModal(fixtureId) {
+    activeFixtureId = fixtureId;
+    const fixture = ALL_FIXTURES_DATA.find(f => f.id == fixtureId);
+    if (!fixture) return;
+
+    // Update modal title
+    document.getElementById('modalFixtureTitle').innerText = `${fixture.home_team_name} vs ${fixture.away_team_name}`;
+
+    // Build fixture detail content
+    const content = document.getElementById('modalFixtureContent');
+    const dateLabel = fixture.match_date ? formatMatchDate(fixture.match_date) : 'TBD';
+    const timeLabel = (fixture.match_time && fixture.match_time !== 'TBD') ? fixture.match_time : '';
+
+    // Find result if available
+    const result = ALL_RESULTS_DATA.find(r =>
+        r.home_team === fixture.home_team_name &&
+        r.away_team === fixture.away_team_name
+    );
+
+    content.innerHTML = `
+        <div class="fixture-detail-card">
+            <div class="fixture-detail-teams">
+                <div class="fixture-detail-team" onclick="openTeamModal(${fixture.home_team_id})">
+                    <div class="fixture-detail-crest">${fixture.home_team_name.charAt(0)}</div>
+                    <span class="fixture-detail-name">${fixture.home_team_name}</span>
+                    ${result ? `<span class="fixture-detail-score">${result.home_score}</span>` : ''}
+                </div>
+                <div class="fixture-detail-vs">VS</div>
+                <div class="fixture-detail-team" onclick="openTeamModal(${fixture.away_team_id})">
+                    <div class="fixture-detail-crest">${fixture.away_team_name.charAt(0)}</div>
+                    <span class="fixture-detail-name">${fixture.away_team_name}</span>
+                    ${result ? `<span class="fixture-detail-score">${result.away_score}</span>` : ''}
+                </div>
+            </div>
+
+            <div class="fixture-detail-info">
+                <div class="fixture-detail-row">
+                    <span class="fixture-detail-label">Date</span>
+                    <span class="fixture-detail-value">${dateLabel}</span>
+                </div>
+                ${timeLabel ? `
+                <div class="fixture-detail-row">
+                    <span class="fixture-detail-label">Time</span>
+                    <span class="fixture-detail-value">${timeLabel}</span>
+                </div>` : ''}
+                ${fixture.stage ? `
+                <div class="fixture-detail-row">
+                    <span class="fixture-detail-label">Stage</span>
+                    <span class="fixture-detail-value phase-badge-mini phase-${fixture.stage_css}">${fixture.stage}</span>
+                </div>` : ''}
+                ${fixture.group ? `
+                <div class="fixture-detail-row">
+                    <span class="fixture-detail-label">Group</span>
+                    <span class="fixture-detail-value">${fixture.group}</span>
+                </div>` : ''}
+                <div class="fixture-detail-row">
+                    <span class="fixture-detail-label">Status</span>
+                    <span class="fixture-detail-value">
+                        ${result ? '<span class="ios-badge ios-badge-success">Played</span>' :
+                          fixture.is_live ? '<span class="ios-badge ios-badge-warning">Live</span>' :
+                          '<span class="ios-badge ios-badge-secondary">Upcoming</span>'}
+                    </span>
+                </div>
+            </div>
+
+            ${result ? `
+            <div class="fixture-detail-result">
+                <div class="fixture-detail-result-title">Match Result</div>
+                <div class="fixture-detail-result-score">
+                    <span class="fixture-detail-result-home">${result.home_team} ${result.home_score}</span>
+                    <span class="fixture-detail-result-vs">-</span>
+                    <span class="fixture-detail-result-away">${result.away_score} ${result.away_team}</span>
+                </div>
+            </div>` : ''}
+
+            <div class="fixture-detail-actions">
+                <button class="btn btn-ios-secondary btn-sm" onclick="closeFixtureModal()">Close</button>
+                <button class="btn btn-ios-primary btn-sm" onclick="openTeamModal(${fixture.home_team_id})">View Home Team</button>
+                <button class="btn btn-ios-primary btn-sm" onclick="openTeamModal(${fixture.away_team_id})">View Away Team</button>
+            </div>
+        </div>
+    `;
+
+    document.getElementById('fixtureDrawerBackdrop').classList.add('active');
+    document.getElementById('fixtureDrawerModal').classList.add('active');
+}
+
+function closeFixtureModal() {
+    activeFixtureId = null;
+    document.getElementById('fixtureDrawerBackdrop').classList.remove('active');
+    document.getElementById('fixtureDrawerModal').classList.remove('active');
+}
 
 // ============================================================
 // FAVORITES ENGINE
@@ -79,7 +179,7 @@ function renderFavoritesCarousel() {
                 <div class="fav-crest">${team.name.charAt(0)}</div>
                 <div class="fav-team-name">${team.name}</div>
                 <div class="fav-form-guide">${formHtml || '<span style="font-size:8px;color:var(--ios-subtext)">-</span>'}</div>
-                ${nextMatch ? `<div class="fav-next-match">${isPlayingToday ? '\ud83d\udd34 Today' : formatMatchDate(nextMatch.match_date)}</div>` : ''}
+                ${nextMatch ? `<div class="fav-next-match">${isPlayingToday ? 'Today' : formatMatchDate(nextMatch.match_date)}</div>` : ''}
             </div>
         `;
     }).join('');
@@ -441,7 +541,7 @@ function renderPollFromData(data) {
 async function castPollVote(choice) {
     const hasVoted = localStorage.getItem(`poll_voted_${currentFixtureId}`);
     if (hasVoted) {
-        showPollMessage('You have already voted! \ud83d\uddf3\ufe0f');
+        showPollMessage('You have already voted!');
         return;
     }
 
@@ -466,12 +566,12 @@ async function castPollVote(choice) {
             localStorage.setItem(`poll_voted_${currentFixtureId}`, choice);
             renderPollFromData(data.current);
             highlightVotedOption(choice);
-            showPollMessage('Vote recorded! \u2705');
+            showPollMessage('Vote recorded!');
         } else if (response.status === 409) {
             localStorage.setItem(`poll_voted_${currentFixtureId}`, choice);
             renderPollFromData(data.current);
             highlightVotedOption(choice);
-            showPollMessage('Already voted! Showing results \ud83d\udcca');
+            showPollMessage('Already voted! Showing results');
         } else {
             showPollMessage('Error recording vote. Try again.');
         }
@@ -535,17 +635,15 @@ function switchLeaderboard(lbName, element) {
 }
 
 // ============================================================
-// STANDINGS PHASE SWITCHING - FIXED
+// STANDINGS PHASE SWITCHING
 // ============================================================
 
 function switchStandingsPhase(phase, element) {
-    // Update button states
     document.querySelectorAll('.phase-nav-btn').forEach(btn => {
         btn.classList.remove('active');
     });
     if (element) element.classList.add('active');
 
-    // Update content
     document.querySelectorAll('.standings-phase-content').forEach(content => {
         content.classList.remove('active');
     });
@@ -618,14 +716,109 @@ function buildTeamResultsHtml(team) {
     }).join('');
 }
 
-function openTeamModal(teamId) {
+// ---- NEW: team-detail helpers (badges / biggest results / sparkline) ----
+
+function computeTeamBadges(team) {
+    const badges = [];
+    if (!window.ALL_TEAMS_DATA || team.played === 0) return badges;
+
+    const byPoints = [...ALL_TEAMS_DATA].sort((a, b) => b.points - a.points);
+    if (byPoints[0] && byPoints[0].id === team.id) {
+        badges.push({ label: 'League Leader', cls: 'badge-gold' });
+    }
+    const byGoals = [...ALL_TEAMS_DATA].sort((a, b) => b.goals_for - a.goals_for);
+    if (byGoals[0] && byGoals[0].id === team.id && team.goals_for > 0) {
+        badges.push({ label: 'Top Scorer', cls: 'badge-blue' });
+    }
+    const byDefense = [...ALL_TEAMS_DATA].filter(t => t.played > 0).sort((a, b) => a.goals_against - b.goals_against);
+    if (byDefense[0] && byDefense[0].id === team.id) {
+        badges.push({ label: 'Best Defense', cls: 'badge-green' });
+    }
+
+    const last5 = getTeamFormGuide(team.name).slice(-5);
+    const wins = last5.filter(r => r === 'W').length;
+    const losses = last5.filter(r => r === 'L').length;
+    if (wins >= 3) badges.push({ label: 'In Form', cls: 'badge-fire' });
+    if (losses >= 3) badges.push({ label: 'Cold Streak', cls: 'badge-cold' });
+
+    return badges;
+}
+
+function computeBiggestResults(team) {
+    if (!window.ALL_RESULTS_DATA) return { win: null, loss: null };
+    let biggestWin = null, biggestLoss = null;
+
+    ALL_RESULTS_DATA.forEach(r => {
+        const isHome = r.home_team === team.name;
+        const isAway = r.away_team === team.name;
+        if (!isHome && !isAway) return;
+
+        const my = isHome ? r.home_score : r.away_score;
+        const opp = isHome ? r.away_score : r.home_score;
+        const oppName = isHome ? r.away_team : r.home_team;
+        const margin = my - opp;
+
+        if (margin > 0 && (!biggestWin || margin > biggestWin.margin)) {
+            biggestWin = { margin, text: `${my}-${opp} vs ${oppName}` };
+        }
+        if (margin < 0 && (!biggestLoss || margin < biggestLoss.margin)) {
+            biggestLoss = { margin, text: `${my}-${opp} vs ${oppName}` };
+        }
+    });
+
+    return { win: biggestWin, loss: biggestLoss };
+}
+
+function buildGoalsSparkline(team) {
+    if (!window.ALL_RESULTS_DATA) return '';
+    const matches = ALL_RESULTS_DATA
+        .filter(r => r.home_team === team.name || r.away_team === team.name)
+        .slice()
+        .reverse(); // ALL_RESULTS_DATA is newest-first; sparkline reads left-to-right chronologically
+
+    if (matches.length < 2) return '';
+
+    const goals = matches.map(r => r.home_team === team.name ? r.home_score : r.away_score);
+    const maxGoal = Math.max(...goals, 1);
+    const w = 300, h = 40, pad = 4;
+    const step = (w - pad * 2) / (goals.length - 1);
+
+    const points = goals.map((g, i) => {
+        const x = pad + i * step;
+        const y = h - pad - (g / maxGoal) * (h - pad * 2);
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+    }).join(' ');
+
+    return `<svg viewBox="0 0 ${w} ${h}" class="sparkline" preserveAspectRatio="none">
+        <polyline points="${points}" fill="none" stroke="var(--ios-blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`;
+}
+
+function openTeamModal(teamId, opts = {}) {
+    const isRefreshOfSameTeam = opts.preserveTab && modalState.isOpen && modalState.teamId === teamId;
+
     activeModalTeamId = teamId;
+    modalState.isOpen = true;
+    modalState.teamId = teamId;
+    if (!isRefreshOfSameTeam) {
+        modalState.activeTab = 'overview';
+    }
+    const activeTab = modalState.activeTab;
+
     const team = ALL_TEAMS_DATA.find(t => t.id == teamId);
     if (!team) return;
 
     document.getElementById('modalTeamTitle').innerText = team.name;
     document.getElementById('modalTeamBadge').innerText = `${team.points} PTS`;
+    const playerEl = document.getElementById('modalTeamPlayer');
+    if (playerEl) playerEl.innerText = team.player_name ? `Player: ${team.player_name}` : '';
     updateModalFavButtonState();
+
+    const badges = computeTeamBadges(team);
+    const badgesEl = document.getElementById('modalTeamBadges');
+    if (badgesEl) {
+        badgesEl.innerHTML = badges.map(b => `<span class="team-badge-pill ${b.cls}">${b.label}</span>`).join('');
+    }
 
     const winRate = team.played > 0 ? Math.round((team.wins / team.played) * 100) : 0;
     const gd = team.goals_for - team.goals_against;
@@ -634,6 +827,9 @@ function openTeamModal(teamId) {
     const formBadges = form.map(r =>
         `<span class="form-indicator form-${r}">${r}</span>`
     ).join('') || '<span style="font-size:11px;color:var(--ios-subtext)">No form history</span>';
+
+    const { win: biggestWin, loss: biggestLoss } = computeBiggestResults(team);
+    const sparkline = buildGoalsSparkline(team);
 
     const fixturesHtml = buildTeamFixturesHtml(team);
     const resultsHtml = buildTeamResultsHtml(team);
@@ -644,12 +840,12 @@ function openTeamModal(teamId) {
 
     document.getElementById('modalTeamContent').innerHTML = `
         <div class="ios-segmented-control mini-seg team-modal-tabs">
-            <button class="seg-btn active" onclick="switchTeamModalTab('overview', this)">Overview</button>
-            <button class="seg-btn" onclick="switchTeamModalTab('fixtures', this)">Fixtures${fixtureCount ? ` (${fixtureCount})` : ''}</button>
-            <button class="seg-btn" onclick="switchTeamModalTab('results', this)">Results${resultCount ? ` (${resultCount})` : ''}</button>
+            <button class="seg-btn ${activeTab === 'overview' ? 'active' : ''}" onclick="switchTeamModalTab('overview', this)">Overview</button>
+            <button class="seg-btn ${activeTab === 'fixtures' ? 'active' : ''}" onclick="switchTeamModalTab('fixtures', this)">Fixtures${fixtureCount ? ` (${fixtureCount})` : ''}</button>
+            <button class="seg-btn ${activeTab === 'results' ? 'active' : ''}" onclick="switchTeamModalTab('results', this)">Results${resultCount ? ` (${resultCount})` : ''}</button>
         </div>
 
-        <div id="teamModalOverview" class="team-modal-tab active">
+        <div id="teamModalOverview" class="team-modal-tab ${activeTab === 'overview' ? 'active' : ''}">
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:14px;">
                 <div class="kpi-card">
                     <span class="kpi-value" style="color:var(--ios-blue);">${winRate}%</span>
@@ -658,6 +854,23 @@ function openTeamModal(teamId) {
                 <div class="kpi-card">
                     <span class="kpi-value">${gd >= 0 ? '+' : ''}${gd}</span>
                     <span class="kpi-label">Goal Difference</span>
+                </div>
+            </div>
+
+            ${sparkline ? `
+            <div class="sparkline-wrap">
+                <div class="ios-card-header">Goals Per Match</div>
+                ${sparkline}
+            </div>` : ''}
+
+            <div class="stat-cards-row">
+                <div class="result-stat-card">
+                    <div class="result-stat-label">Biggest Win</div>
+                    ${biggestWin ? `<div class="result-stat-value win">${biggestWin.text}</div>` : '<div class="result-stat-empty">None yet</div>'}
+                </div>
+                <div class="result-stat-card">
+                    <div class="result-stat-label">Biggest Loss</div>
+                    ${biggestLoss ? `<div class="result-stat-value loss">${biggestLoss.text}</div>` : '<div class="result-stat-empty">None yet</div>'}
                 </div>
             </div>
 
@@ -680,12 +893,12 @@ function openTeamModal(teamId) {
             </div>
         </div>
 
-        <div id="teamModalFixtures" class="team-modal-tab">
+        <div id="teamModalFixtures" class="team-modal-tab ${activeTab === 'fixtures' ? 'active' : ''}">
             <div class="ios-card-header" style="margin-bottom:6px;">Upcoming Fixtures</div>
             <div class="ios-card" style="padding:4px 10px; margin-bottom:0;">${fixturesHtml}</div>
         </div>
 
-        <div id="teamModalResults" class="team-modal-tab">
+        <div id="teamModalResults" class="team-modal-tab ${activeTab === 'results' ? 'active' : ''}">
             <div class="ios-card-header" style="margin-bottom:6px;">Match History</div>
             <div class="ios-card" style="padding:4px 10px; margin-bottom:0;">${resultsHtml}</div>
         </div>
@@ -696,6 +909,7 @@ function openTeamModal(teamId) {
 }
 
 function switchTeamModalTab(tabName, element) {
+    modalState.activeTab = tabName;
     const targetId = 'teamModal' + tabName.charAt(0).toUpperCase() + tabName.slice(1);
     document.querySelectorAll('.team-modal-tab').forEach(el => el.classList.remove('active'));
     element.parentElement.querySelectorAll('.seg-btn').forEach(btn => btn.classList.remove('active'));
@@ -710,10 +924,19 @@ function switchTeamModalTab(tabName, element) {
 
 function closeTeamModal() {
     activeModalTeamId = null;
+    modalState.isOpen = false;
+    modalState.teamId = null;
+    modalState.activeTab = 'overview';
     document.getElementById('teamDrawerBackdrop').classList.remove('active');
     document.getElementById('teamDrawerModal').classList.remove('active');
 }
 
+function updateSwissRoundsDisplay(data) {
+    const progressElement = document.querySelector('.swiss-rounds-progress');
+    if (progressElement && data.swiss_rounds !== undefined && data.total_swiss_rounds !== undefined) {
+        progressElement.textContent = `${data.swiss_rounds}/${data.total_swiss_rounds} rounds`;
+    }
+}
 function toggleFavoriteCurrentModal() {
     if (activeModalTeamId) {
         toggleFavorite(activeModalTeamId);
@@ -726,7 +949,9 @@ function updateModalFavButtonState() {
     if (!btn || !activeModalTeamId) return;
     const isFav = getFavorites().includes(activeModalTeamId);
     btn.classList.toggle('active', isFav);
-    btn.innerText = isFav ? '\u2b50 FAVORITED' : '\u2b50 FAVORITE';
+    btn.innerHTML = isFav
+        ? '<svg viewBox="0 0 24 24" fill="currentColor" width="10" height="10" style="vertical-align:-1px;"><polygon points="12 2 15 9 22 9 16.5 13.5 18.5 21 12 16.5 5.5 21 7.5 13.5 2 9 9 9 12 2"/></svg> FAVORITED'
+        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="10" height="10" style="vertical-align:-1px;"><polygon points="12 2 15 9 22 9 16.5 13.5 18.5 21 12 16.5 5.5 21 7.5 13.5 2 9 9 9 12 2"/></svg> FAVORITE';
 }
 
 // ============================================================
@@ -749,7 +974,7 @@ function renderTeamDirectory() {
 
     if (paginated.length === 0) {
         container.innerHTML = `<p class="empty-state">No matching teams found</p>`;
-        pagBar.innerHTML = '';
+        if (pagBar) pagBar.innerHTML = '';
         return;
     }
 
@@ -769,14 +994,16 @@ function renderTeamDirectory() {
         </div>
     `).join('');
 
-    const totalPages = Math.ceil(filteredTeams.length / itemsPerPage);
-    pagBar.innerHTML = `
-        <button class="pg-btn" ${currentPage === 1 ? 'disabled style="opacity:0.4"' : ''}
-                onclick="changePage(-1)">\u2039</button>
-        <span style="font-size:10px; color:var(--ios-subtext);">${currentPage}/${totalPages || 1}</span>
-        <button class="pg-btn" ${currentPage >= totalPages ? 'disabled style="opacity:0.4"' : ''}
-                onclick="changePage(1)">\u203a</button>
-    `;
+    if (pagBar) {
+        const totalPages = Math.ceil(filteredTeams.length / itemsPerPage);
+        pagBar.innerHTML = `
+            <button class="pg-btn" ${currentPage === 1 ? 'disabled style="opacity:0.4"' : ''}
+                    onclick="changePage(-1)">\u2039</button>
+            <span style="font-size:10px; color:var(--ios-subtext);">${currentPage}/${totalPages || 1}</span>
+            <button class="pg-btn" ${currentPage >= totalPages ? 'disabled style="opacity:0.4"' : ''}
+                    onclick="changePage(1)">\u203a</button>
+        `;
+    }
 }
 
 function changePage(direction) {
@@ -936,32 +1163,38 @@ function renderFixturesList() {
         const timeLabel = (f.match_time && f.match_time !== 'TBD') ? f.match_time : '';
         const homeId = f.home_team_id;
         const awayId = f.away_team_id;
+        // Get team initials for crests
+        const homeInitial = f.home_team_name ? f.home_team_name.charAt(0) : '?';
+        const awayInitial = f.away_team_name ? f.away_team_name.charAt(0) : '?';
         return `
-            <div class="fixture-item fixture-card-row"
+            <div class="fixture-item fixture-card-row clickable"
+                 onclick="openFixtureModal(${f.id})"
                  data-date="${f.match_date || ''}"
                  data-home-id="${homeId ?? ''}"
                  data-away-id="${awayId ?? ''}"
-                 data-home-name="${f.home_team_name}"
-                 data-away-name="${f.away_team_name}">
+                 data-home-name="${f.home_team_name || ''}"
+                 data-away-name="${f.away_team_name || ''}">
                 <div class="f-info">
                     <div class="f-teams">
-                        <div class="team-side" onclick="openTeamModal(${homeId})">
-                            <span class="team-mini-crest">${f.home_team_name.charAt(0)}</span>
-                            <span class="team-label">${f.home_team_name}</span>
-                        </div>
+                        <span class="team-side">
+                            <span class="team-mini-crest" style="background: var(--ios-blue);">${homeInitial}</span>
+                            <span class="team-label">${f.home_team_name || 'TBD'}</span>
+                        </span>
                         <span class="vs-text">vs</span>
-                        <div class="team-side" onclick="openTeamModal(${awayId})">
-                            <span class="team-label">${f.away_team_name}</span>
-                            <span class="team-mini-crest">${f.away_team_name.charAt(0)}</span>
-                        </div>
+                        <span class="team-side">
+                            <span class="team-mini-crest" style="background: #5856D6;">${awayInitial}</span>
+                            <span class="team-label">${f.away_team_name || 'TBD'}</span>
+                        </span>
                     </div>
-                    ${f.group ? `<span class="group-badge">${f.group}</span>` : ''}
-                    ${f.stage ? `<span class="phase-badge-mini phase-${f.stage_css}">${f.stage.toUpperCase()}</span>` : ''}
+                    <div style="display:flex; gap:4px; flex-wrap:wrap;">
+                        ${f.group ? `<span class="group-badge">${f.group}</span>` : ''}
+                        ${f.stage ? `<span class="phase-badge-mini phase-${f.stage_css}">${f.stage.toUpperCase()}</span>` : ''}
+                    </div>
                 </div>
                 <div class="f-meta">
                     <div class="f-date-badge">${dateLabel}${timeLabel ? ' \u00b7 ' + timeLabel : ''}${f.is_live ? ' \ud83d\udd34' : ''}</div>
                     <button class="fav-toggle-btn" onclick="toggleFavorite(${homeId}); toggleFavorite(${awayId}); event.stopPropagation();">
-                        \u2b50
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polygon points="12 2 15 9 22 9 16.5 13.5 18.5 21 12 16.5 5.5 21 7.5 13.5 2 9 9 9 12 2"/></svg>
                     </button>
                 </div>
             </div>
@@ -1119,7 +1352,7 @@ function buildPollWidgetHtml(fixtureId, homeName, awayName) {
     return `
         <div class="hero-poll-box" id="matchPollWidget" data-fixture-id="${fixtureId}">
             <div class="poll-header">
-                <span>\ud83d\uddf3\ufe0f FAN MATCH POLL</span>
+                <span>FAN MATCH POLL</span>
                 <span id="pollVoteCount" class="poll-total">0 votes</span>
             </div>
             <div id="pollOptions" class="poll-options-grid">
@@ -1201,7 +1434,7 @@ function renderHeroCard(data, nameToId) {
                 data.live.home_score > previousLiveScore.home_score ? data.live.home_team :
                 data.live.away_score > previousLiveScore.away_score ? data.live.away_team : null;
             if (scorer) {
-                showLiveToast(`\u26bd GOAL! ${scorer} \u2014 ${data.live.home_score} - ${data.live.away_score}`, 'goal');
+                showLiveToast(`GOAL! ${scorer} \u2014 ${data.live.home_score} - ${data.live.away_score}`, 'goal');
             }
         }
         previousLiveScore = Object.assign({}, data.live);
@@ -1246,7 +1479,7 @@ function renderHeroCard(data, nameToId) {
                         <span class="team-name">${upcoming.away_team_name}</span>
                     </div>
                 </div>
-                <div class="match-time-tag">\ud83d\udd50 ${dateLabel}${timeLabel}</div>
+                <div class="match-time-tag">${dateLabel}${timeLabel}</div>
                 ${buildPollWidgetHtml(upcoming.id, upcoming.home_team_name, upcoming.away_team_name)}
             </div>
         `;
@@ -1280,8 +1513,6 @@ function refreshDateChipCounts() {
 // ============================================================
 // LIVE STANDINGS TABLE UPDATES
 // ============================================================
-
-
 
 function renderSwissStandingsBody(standings, directCount, playoffCount, isSwissPro) {
     const tbody = document.getElementById('swissStandingsBody');
@@ -1367,29 +1598,34 @@ function revealChampionCardIfNeeded(data) {
 
     const totalGoals = (data.results || []).reduce((sum, r) => sum + r.home_score + r.away_score, 0);
 
-    const wrapper = document.createElement('div');
-    wrapper.innerHTML = `
+    const championHtml = `
         <div class="champion-card" id="championCard">
             <canvas id="confettiCanvas" class="confetti-canvas"></canvas>
             <div class="champion-content">
-                <div class="champion-trophy-wrap"><div class="champion-icon">\ud83c\udfc6</div></div>
+                <div class="champion-trophy-wrap"><div class="champion-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#c67d00" stroke-width="1.5" width="40" height="40"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M7 5H4v2a3 3 0 0 0 3 3"/><path d="M17 5h3v2a3 3 0 0 1-3 3"/></svg>
+                </div></div>
                 <h2 class="champion-title">Champions</h2>
                 <p class="champion-name">${data.champion_name}</p>
-                ${data.runner_up_name ? `<p class="champion-runnerup">\ud83e\udd48 Runner-up &middot; ${data.runner_up_name}</p>` : ''}
+                ${data.runner_up_name ? `<p class="champion-runnerup">Runner-up &middot; ${data.runner_up_name}</p>` : ''}
                 <p class="champion-subtitle">${(document.querySelector('.ios-title')?.textContent) || ''}</p>
                 <div class="champion-stats-row">
                     <div class="champion-stat"><span class="champion-stat-value">${(data.standings || []).length}</span><span class="champion-stat-label">Teams</span></div>
                     <div class="champion-stat"><span class="champion-stat-value">${data.played_count ?? ''}</span><span class="champion-stat-label">Matches</span></div>
                     <div class="champion-stat"><span class="champion-stat-value">${totalGoals}</span><span class="champion-stat-label">Goals</span></div>
                 </div>
-                <button class="champion-share-btn" onclick="shareChampionResult()">\ud83d\udce3 Share the result</button>
+                <button class="champion-share-btn" onclick="shareChampionResult()">Share the result</button>
             </div>
         </div>
     `;
-    overview.insertBefore(wrapper.firstElementChild, overview.firstChild);
 
-    initChampionConfetti();
-    showLiveToast(`\ud83c\udfc6 ${data.champion_name} are CHAMPIONS!`, 'final');
+    overview.insertAdjacentHTML('afterbegin', championHtml);
+
+    setTimeout(() => {
+        initChampionConfetti();
+    }, 100);
+
+    showLiveToast(`${data.champion_name} are CHAMPIONS!`, 'final');
 }
 
 function launchConfettiOnCanvas(canvas, durationMs) {
@@ -1463,14 +1699,14 @@ function shareChampionResult() {
     const nameEl = document.querySelector('.champion-name');
     const subEl = document.querySelector('.champion-subtitle');
     const text = nameEl && subEl
-        ? `\ud83c\udfc6 ${nameEl.textContent} are champions of ${subEl.textContent}!`
-        : '\ud83c\udfc6 We have a champion!';
+        ? `${nameEl.textContent} are champions of ${subEl.textContent}!`
+        : 'We have a champion!';
 
     if (navigator.share) {
         navigator.share({ text }).catch(() => {});
     } else if (navigator.clipboard) {
         navigator.clipboard.writeText(text).then(() => {
-            showLiveToast('Result copied to clipboard \ud83d\udccb', 'final');
+            showLiveToast('Result copied to clipboard', 'final');
         });
     } else {
         showLiveToast(text, 'final');
@@ -1525,7 +1761,7 @@ function applyLiveUpdate(data) {
         const newlyLanded = ALL_RESULTS_DATA.filter(r => !knownResultKeys.has(resultKey(r)));
         freshResultKeys = new Set(newlyLanded.map(resultKey));
         newlyLanded.forEach(r => {
-            showLiveToast(`\ud83c\udfc1 Full time: ${r.home_team} ${r.home_score} - ${r.away_score} ${r.away_team}`, 'final');
+            showLiveToast(`Full time: ${r.home_team} ${r.home_score} - ${r.away_score} ${r.away_team}`, 'final');
         });
         if (newlyLanded.length > 0) {
             setTimeout(() => { freshResultKeys = new Set(); renderResultsList(); }, 20000);
@@ -1553,20 +1789,27 @@ function applyLiveUpdate(data) {
     refreshDateChipCounts();
 
     renderSwissStandingsBody(
-            data.swiss_standings,
-            data.swiss_direct_count,
-            data.swiss_playoff_count,
-            data.is_swiss_pro
-        );
+        data.swiss_standings,
+        data.swiss_direct_count,
+        data.swiss_playoff_count,
+        data.is_swiss_pro
+    );
     renderPhaseStandingsBody('playoff', data.playoff_standings);
     renderPhaseStandingsBody('knockout', data.knockout_standings);
     syncStandingsPhaseVisibility(data);
 
     revealChampionCardIfNeeded(data);
 
+    // Refresh the team modal in place (same tab) instead of resetting it -
+    // this was previously snapping users on Fixtures/Results back to Overview
+    // every 15s because openTeamModal() always rebuilt with Overview active.
     const drawerOpen = document.getElementById('teamDrawerModal')?.classList.contains('active');
     if (drawerOpen && activeModalTeamId !== null) {
-        openTeamModal(activeModalTeamId);
+        openTeamModal(activeModalTeamId, { preserveTab: true });
+    }
+
+    if (data.swiss_rounds !== undefined && data.total_swiss_rounds !== undefined) {
+        updateSwissRoundsDisplay(data);
     }
 }
 
