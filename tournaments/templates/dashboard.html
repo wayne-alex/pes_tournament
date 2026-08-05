@@ -207,87 +207,59 @@
             </section>
 
             <!-- MATCHES TAB -->
-            <section id="tab-matches" class="tab-content">
-                <div class="ios-segmented-control">
-                    <button class="seg-btn active" onclick="switchMatchSubTab('fixtures', this)">Fixtures</button>
-                    <button class="seg-btn" onclick="switchMatchSubTab('results', this)">Results</button>
-                </div>
+<section id="tab-matches" class="tab-content">
+    <div class="match-date-display" id="selectedDateDisplay">
+        <span class="selected-date-text">All Matches</span>
+        <div style="display:flex; align-items:center; gap:6px;">
+            <button class="today-quick-btn" onclick="centerOnToday()">Today</button>
+            <span class="match-count-badge" id="matchCountBadge">{{ fixtures|length }} matches</span>
+        </div>
+    </div>
 
-                <div id="subtab-fixtures" class="subtab-content active">
-                    <div class="match-date-display" id="selectedDateDisplay">
-                        <span class="selected-date-text">All Upcoming Fixtures</span>
-                        <div style="display:flex; align-items:center; gap:6px;">
-                            <button class="today-quick-btn" onclick="centerOnToday()">Today</button>
-                            <span class="match-count-badge" id="matchCountBadge">{{ fixtures|length }} matches</span>
-                        </div>
+    <div class="ios-card" id="fixturesContainer">
+        {% for f in fixtures %}
+        <div class="fixture-item fixture-card-row clickable"
+             onclick="openFixtureModal({{ f.id }})"
+             data-date="{{ f.match_date|date:'Y-m-d'|default:'' }}"
+             data-home-id="{{ f.home_team.id }}"
+             data-away-id="{{ f.away_team.id }}"
+             data-home-name="{{ f.home_team.name }}"
+             data-away-name="{{ f.away_team.name }}"
+             data-round="{{ f.round }}"
+             data-played="{{ f.is_played|yesno:'1,0' }}">
+            <div class="f-info">
+                <div class="f-teams">
+                    <div class="team-side">
+                        <span class="team-mini-crest">{{ f.home_team.name|slice:":1" }}</span>
+                        <span class="team-label">{{ f.home_team.name }}</span>
                     </div>
-
-                    <div class="ios-card" id="fixturesContainer">
-                        {% for f in fixtures %}
-                        <div class="fixture-item fixture-card-row clickable"
-     onclick="openFixtureModal({{ f.id }})"
-     data-date="{{ f.match_date|date:'Y-m-d'|default:'' }}"
-     data-home-id="{{ f.home_team.id }}"
-     data-away-id="{{ f.away_team.id }}"
-     data-home-name="{{ f.home_team.name }}"
-     data-away-name="{{ f.away_team.name }}"
-     data-round="{{ f.round }}">
-                            <div class="f-info">
-                                <div class="f-teams">
-                                    <div class="team-side">
-                                        <span class="team-mini-crest">{{ f.home_team.name|slice:":1" }}</span>
-                                        <span class="team-label">{{ f.home_team.name }}</span>
-                                    </div>
-                                    <span class="vs-text">vs</span>
-                                    <div class="team-side">
-                                        <span class="team-label">{{ f.away_team.name }}</span>
-                                        <span class="team-mini-crest">{{ f.away_team.name|slice:":1" }}</span>
-                                    </div>
-                                </div>
-                                {% if f.group %}
-                                <span class="group-badge">{{ f.group.name }}</span>
-                                {% endif %}
-                                {% if f.stage_name %}
-                                    <span class="phase-badge-mini phase-{{ f.stage_css }}">{{ f.stage_name|upper }}</span>
-                                {% endif %}
-                            </div>
-                            <div class="f-meta">
-                                <div class="f-date-badge">{{ f.match_date|date:"d M Y H:i"|default:"TBD" }}</div>
-                                <button class="fav-toggle-btn" onclick="toggleFavorite({{ f.home_team.id }}); toggleFavorite({{ f.away_team.id }}); event.stopPropagation();">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polygon points="12 2 15 9 22 9 16.5 13.5 18.5 21 12 16.5 5.5 21 7.5 13.5 2 9 9 9 12 2"/></svg>
-                                </button>
-                            </div>
-                        </div>
-                        {% empty %}
-                        <p class="empty-state">No upcoming fixtures</p>
-                        {% endfor %}
+                    <span class="vs-text">vs</span>
+                    <div class="team-side">
+                        <span class="team-label">{{ f.away_team.name }}</span>
+                        <span class="team-mini-crest">{{ f.away_team.name|slice:":1" }}</span>
                     </div>
                 </div>
-
-                <div id="subtab-results" class="subtab-content">
-                    <div class="ios-card" id="resultsContainer">
-                        {% for r in results %}
-                        <div class="result-item">
-                            <div class="r-info">
-                                <span class="r-date">{{ r.fixture.match_date|date:"d M"|default:"" }}</span>
-                                <span class="r-teams">
-                                    <span class="clickable" onclick="openTeamModal({{ r.fixture.home_team.id }})">
-                                        <strong>{{ r.fixture.home_team.name }}</strong>
-                                    </span>
-                                    vs
-                                    <span class="clickable" onclick="openTeamModal({{ r.fixture.away_team.id }})">
-                                        <strong>{{ r.fixture.away_team.name }}</strong>
-                                    </span>
-                                </span>
-                            </div>
-                            <div class="r-score-pill">{{ r.home_score }} - {{ r.away_score }}</div>
-                        </div>
-                        {% empty %}
-                        <p class="empty-state">No results recorded yet</p>
-                        {% endfor %}
-                    </div>
+                <div style="display:flex; gap:4px; flex-wrap:wrap;">
+                    {% if f.group %}<span class="group-badge">{{ f.group.name }}</span>{% endif %}
+                    {% if f.stage_name %}<span class="phase-badge-mini phase-{{ f.stage_css }}">{{ f.stage_name|upper }}</span>{% endif %}
                 </div>
-            </section>
+            </div>
+            <div class="f-meta">
+                {% if f.is_played %}
+                    <div class="f-score-badge">{{ f.home_score }} - {{ f.away_score }}</div>
+                {% else %}
+                    <div class="f-date-badge">{{ f.match_date|date:"d M Y H:i"|default:"TBD" }}</div>
+                {% endif %}
+                <button class="fav-toggle-btn" onclick="toggleFavorite({{ f.home_team.id }}); toggleFavorite({{ f.away_team.id }}); event.stopPropagation();">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polygon points="12 2 15 9 22 9 16.5 13.5 18.5 21 12 16.5 5.5 21 7.5 13.5 2 9 9 9 12 2"/></svg>
+                </button>
+            </div>
+        </div>
+        {% empty %}
+        <p class="empty-state">No matches scheduled</p>
+        {% endfor %}
+    </div>
+</section>
 
             <!-- STANDINGS TAB -->
             <section id="tab-standings" class="tab-content">
@@ -325,7 +297,7 @@
                             Swiss Standings
                             {% if is_swiss_pro %}
                                 <span class="swiss-rounds-progress" id="swissRoundsProgress">
-                                    {{ swiss_rounds }}/{{ tournament.swiss_total_rounds|default:swiss_rounds }} rounds
+                                    {{ tournament.swiss_rounds_complete }}/{{ tournament.swiss_total_rounds|default:swiss_rounds }} rounds
                                 </span>
                                 {% if split_complete %}
                                 <span class="phase-complete-badge">
@@ -752,6 +724,17 @@
 
     <!-- Scripts -->
     <script>
+        const ALL_RESULTS_DATA = [
+    {% for r in results %}
+    {
+        home_team: "{{ r.fixture.home_team.name|escapejs }}",
+        away_team: "{{ r.fixture.away_team.name|escapejs }}",
+        home_score: {{ r.home_score }},
+        away_score: {{ r.away_score }},
+        match_date: "{{ r.fixture.match_date|date:'Y-m-d'|default:'' }}"
+    },
+    {% endfor %}
+];
         // Pass Django variables to JavaScript
         const ALL_TEAMS_DATA = [
             {% for team in all_teams %}
@@ -771,33 +754,25 @@
         ];
 
         const ALL_FIXTURES_DATA = [
-            {% for f in fixtures %}
-            {
-                id: {{ f.id }},
-                home_team_id: {{ f.home_team.id }},
-                away_team_id: {{ f.away_team.id }},
-                home_team_name: "{{ f.home_team.name|escapejs }}",
-                away_team_name: "{{ f.away_team.name|escapejs }}",
-                match_date: "{{ f.match_date|date:'Y-m-d'|default:'' }}",
-                match_time: "{{ f.match_date|date:'H:i'|default:'TBD' }}",
-                group: "{{ f.group.name|default:'' }}",
-                stage: "{{ f.stage_name|default:'' }}",
-                stage_css: "{{ f.stage_css|default:'' }}"
-            },
-            {% endfor %}
-        ];
+    {% for f in fixtures %}
+    {
+        id: {{ f.id }},
+        home_team_id: {{ f.home_team.id }},
+        away_team_id: {{ f.away_team.id }},
+        home_team_name: "{{ f.home_team.name|escapejs }}",
+        away_team_name: "{{ f.away_team.name|escapejs }}",
+        match_date: "{{ f.match_date|date:'Y-m-d'|default:'' }}",
+        match_time: "{{ f.match_date|date:'H:i'|default:'TBD' }}",
+        group: "{{ f.group.name|default:'' }}",
+        stage: "{{ f.stage_name|default:'' }}",
+        stage_css: "{{ f.stage_css|default:'' }}",
+        is_played: {{ f.is_played|yesno:'true,false' }},
+        home_score: {% if f.home_score is not None %}{{ f.home_score }}{% else %}null{% endif %},
+        away_score: {% if f.away_score is not None %}{{ f.away_score }}{% else %}null{% endif %}
+    },
+    {% endfor %}
+];
 
-        const ALL_RESULTS_DATA = [
-            {% for r in results %}
-            {
-                home_team: "{{ r.fixture.home_team.name|escapejs }}",
-                away_team: "{{ r.fixture.away_team.name|escapejs }}",
-                home_score: {{ r.home_score }},
-                away_score: {{ r.away_score }},
-                match_date: "{{ r.fixture.match_date|date:'Y-m-d'|default:'' }}"
-            },
-            {% endfor %}
-        ];
 
         const TODAY_STR = "{{ today_str }}";
         const TOURNAMENT_ID = {{ tournament.id }};
@@ -806,6 +781,16 @@
         const MAX_ROUND = {{ max_round }};
         const IS_SWISS_PRO = {{ is_swiss_pro|lower }};
         const DEFAULT_PHASE = "{{ default_phase|default:'swiss' }}";
+        function updateStickyStandingsOffsets() {
+    const nav = document.querySelector('.standings-phase-nav');
+    const header = document.querySelector('#standings-phase-swiss .ios-card-header');
+    const legend = document.querySelector('#standings-phase-swiss .standings-legend');
+    const root = document.documentElement.style;
+
+    if (nav) root.setProperty('--sticky-nav-h', nav.offsetHeight + 'px');
+    if (header) root.setProperty('--sticky-header-h', header.offsetHeight + 'px');
+    if (legend) root.setProperty('--sticky-legend-h', legend.offsetHeight + 'px');
+}
     </script>
 
     {% include 'includes/_redesign_scripts.html' %}

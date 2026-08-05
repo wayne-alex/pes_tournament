@@ -350,13 +350,19 @@ def dashboard(request, tournament_id):
     )['m'] or swiss_rounds
 
     fixtures = list(
-        Fixture.objects.filter(tournament=tournament, is_played=False)
-        .select_related("home_team", "away_team", "group")
+        Fixture.objects.filter(tournament=tournament)
+        .select_related("home_team", "away_team", "group", "result")
         .order_by("match_date")
     )
     for f in fixtures:
         f.stage_name = _annotate_fixture_stage(f.round, swiss_rounds, max_round)
         f.stage_css = _stage_css_class(f.stage_name)
+        if f.is_played and hasattr(f, "result"):
+            f.home_score = f.result.home_score
+            f.away_score = f.result.away_score
+        else:
+            f.home_score = None
+            f.away_score = None
 
     results = Result.objects.filter(
         fixture__tournament=tournament
@@ -647,12 +653,14 @@ def tournament_live_api(request, tournament_id):
     """JSON endpoint for live dynamic updating."""
     tournament = get_object_or_404(Tournament, id=tournament_id)
     teams = Team.objects.filter(tournament=tournament)
-    fixtures = Fixture.objects.filter(tournament=tournament, is_played=False)
+    fixtures = Fixture.objects.filter(tournament=tournament).select_related(
+        "home_team", "away_team", "result"
+    )
     results = Result.objects.filter(fixture__tournament=tournament).select_related(
         "fixture", "fixture__home_team", "fixture__away_team"
     ).order_by("-fixture__match_date")
 
-    swiss_rounds = tournament.swiss_total_rounds or 0
+    swiss_rounds = tournament.swiss_rounds_complete or 0
     max_round = Fixture.objects.filter(tournament=tournament).aggregate(
         m=Max('round')
     )['m'] or swiss_rounds
@@ -674,6 +682,10 @@ def tournament_live_api(request, tournament_id):
     fixtures_data = []
     for f in fixtures:
         stage = _annotate_fixture_stage(f.round, swiss_rounds, max_round)
+        home_score = away_score = None
+        if f.is_played and hasattr(f, "result"):
+            home_score = f.result.home_score
+            away_score = f.result.away_score
         fixtures_data.append({
             "id": f.id,
             "home_team__name": f.home_team.name,
@@ -681,6 +693,8 @@ def tournament_live_api(request, tournament_id):
             "match_date": f.match_date.isoformat() if f.match_date else None,
             "is_played": f.is_played,
             "is_live": f.is_live,
+            "home_score": home_score,
+            "away_score": away_score,
             "stage": stage,
             "stage_css": _stage_css_class(stage),
         })
@@ -984,8 +998,8 @@ def swiss_dashboard(request, tournament_id):
     # If no total rounds set, calculate it
     if total_swiss_rounds == 0:
         team_count = Team.objects.filter(tournament=tournament).count()
-        total_swiss_rounds = max(2, min(team_count - 1, math.ceil(math.log2(team_count)) + (team_count // 4)))
-        tournament.swiss_total_rounds = total_swiss_rounds
+        total_rounds = max(4, math.ceil(math.log2(team_count)) + 2)
+        tournament.swiss_total_rounds = total_rounds
         tournament.save(update_fields=['swiss_total_rounds'])
 
     # Get the max generated round
@@ -1181,6 +1195,8 @@ def generate_next_swiss_round(request, tournament_id):
     )['round__max'] or 0
 
     next_round = max_round + 1
+    tournament.swiss_rounds_complete=next_round
+    tournament.save()
 
     # Check if we've reached the total rounds
     total_rounds = tournament.swiss_total_rounds or 0

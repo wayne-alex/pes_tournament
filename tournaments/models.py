@@ -86,6 +86,7 @@ class Tournament(models.Model):
     qualify_per_group = models.IntegerField(default=2)
     is_open = models.BooleanField(default=False)
     swiss_total_rounds = models.IntegerField(null=True, blank=True)
+    swiss_rounds_complete = models.IntegerField(null=True, blank=True,default=0)
     swiss_phase_complete = models.BooleanField(default=False)
     split_phase_complete = models.BooleanField(default=False)
     playoff_phase_complete = models.BooleanField(default=False)

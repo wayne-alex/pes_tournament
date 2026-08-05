@@ -22,19 +22,12 @@ function openFixtureModal(fixtureId) {
     const fixture = ALL_FIXTURES_DATA.find(f => f.id == fixtureId);
     if (!fixture) return;
 
-    // Update modal title
     document.getElementById('modalFixtureTitle').innerText = `${fixture.home_team_name} vs ${fixture.away_team_name}`;
 
-    // Build fixture detail content
     const content = document.getElementById('modalFixtureContent');
     const dateLabel = fixture.match_date ? formatMatchDate(fixture.match_date) : 'TBD';
     const timeLabel = (fixture.match_time && fixture.match_time !== 'TBD') ? fixture.match_time : '';
-
-    // Find result if available
-    const result = ALL_RESULTS_DATA.find(r =>
-        r.home_team === fixture.home_team_name &&
-        r.away_team === fixture.away_team_name
-    );
+    const played = fixture.is_played;
 
     content.innerHTML = `
         <div class="fixture-detail-card">
@@ -42,13 +35,13 @@ function openFixtureModal(fixtureId) {
                 <div class="fixture-detail-team" onclick="openTeamModal(${fixture.home_team_id})">
                     <div class="fixture-detail-crest">${fixture.home_team_name.charAt(0)}</div>
                     <span class="fixture-detail-name">${fixture.home_team_name}</span>
-                    ${result ? `<span class="fixture-detail-score">${result.home_score}</span>` : ''}
+                    ${played ? `<span class="fixture-detail-score">${fixture.home_score}</span>` : ''}
                 </div>
                 <div class="fixture-detail-vs">VS</div>
                 <div class="fixture-detail-team" onclick="openTeamModal(${fixture.away_team_id})">
                     <div class="fixture-detail-crest">${fixture.away_team_name.charAt(0)}</div>
                     <span class="fixture-detail-name">${fixture.away_team_name}</span>
-                    ${result ? `<span class="fixture-detail-score">${result.away_score}</span>` : ''}
+                    ${played ? `<span class="fixture-detail-score">${fixture.away_score}</span>` : ''}
                 </div>
             </div>
 
@@ -57,38 +50,26 @@ function openFixtureModal(fixtureId) {
                     <span class="fixture-detail-label">Date</span>
                     <span class="fixture-detail-value">${dateLabel}</span>
                 </div>
-                ${timeLabel ? `
-                <div class="fixture-detail-row">
-                    <span class="fixture-detail-label">Time</span>
-                    <span class="fixture-detail-value">${timeLabel}</span>
-                </div>` : ''}
-                ${fixture.stage ? `
-                <div class="fixture-detail-row">
-                    <span class="fixture-detail-label">Stage</span>
-                    <span class="fixture-detail-value phase-badge-mini phase-${fixture.stage_css}">${fixture.stage}</span>
-                </div>` : ''}
-                ${fixture.group ? `
-                <div class="fixture-detail-row">
-                    <span class="fixture-detail-label">Group</span>
-                    <span class="fixture-detail-value">${fixture.group}</span>
-                </div>` : ''}
+                ${timeLabel ? `<div class="fixture-detail-row"><span class="fixture-detail-label">Time</span><span class="fixture-detail-value">${timeLabel}</span></div>` : ''}
+                ${fixture.stage ? `<div class="fixture-detail-row"><span class="fixture-detail-label">Stage</span><span class="fixture-detail-value phase-badge-mini phase-${fixture.stage_css}">${fixture.stage}</span></div>` : ''}
+                ${fixture.group ? `<div class="fixture-detail-row"><span class="fixture-detail-label">Group</span><span class="fixture-detail-value">${fixture.group}</span></div>` : ''}
                 <div class="fixture-detail-row">
                     <span class="fixture-detail-label">Status</span>
                     <span class="fixture-detail-value">
-                        ${result ? '<span class="ios-badge ios-badge-success">Played</span>' :
+                        ${played ? '<span class="ios-badge ios-badge-success">Played</span>' :
                           fixture.is_live ? '<span class="ios-badge ios-badge-warning">Live</span>' :
                           '<span class="ios-badge ios-badge-secondary">Upcoming</span>'}
                     </span>
                 </div>
             </div>
 
-            ${result ? `
+            ${played ? `
             <div class="fixture-detail-result">
                 <div class="fixture-detail-result-title">Match Result</div>
                 <div class="fixture-detail-result-score">
-                    <span class="fixture-detail-result-home">${result.home_team} ${result.home_score}</span>
+                    <span class="fixture-detail-result-home">${fixture.home_team_name} ${fixture.home_score}</span>
                     <span class="fixture-detail-result-vs">-</span>
-                    <span class="fixture-detail-result-away">${result.away_score} ${result.away_team}</span>
+                    <span class="fixture-detail-result-away">${fixture.away_score} ${fixture.away_team_name}</span>
                 </div>
             </div>` : ''}
 
@@ -614,16 +595,12 @@ function switchMainTab(tabName, element) {
     const tab = document.getElementById(`tab-${tabName}`);
     if (tab) tab.classList.add('active');
     if (element) element.classList.add('active');
+
+    if (tabName === 'standings') {
+        requestAnimationFrame(updateStickyStandingsOffsets);
+    }
 }
 
-function switchMatchSubTab(subTabName, element) {
-    document.querySelectorAll('.subtab-content').forEach(el => el.classList.remove('active'));
-    element.parentElement.querySelectorAll('.seg-btn').forEach(btn => btn.classList.remove('active'));
-
-    const subTab = document.getElementById(`subtab-${subTabName}`);
-    if (subTab) subTab.classList.add('active');
-    element.classList.add('active');
-}
 
 function switchLeaderboard(lbName, element) {
     document.querySelectorAll('.lb-view').forEach(el => el.classList.remove('active'));
@@ -649,6 +626,8 @@ function switchStandingsPhase(phase, element) {
     });
     const target = document.getElementById(`standings-phase-${phase}`);
     if (target) target.classList.add('active');
+
+    requestAnimationFrame(updateStickyStandingsOffsets);
 }
 
 // ============================================================
@@ -1062,7 +1041,6 @@ function scrollToTodayFixtures() {
 // INITIALIZATION
 // ============================================================
 document.addEventListener('DOMContentLoaded', () => {
-    window.ALL_RESULTS_DATA = ALL_RESULTS_DATA;
     window.ALL_FIXTURES_DATA = ALL_FIXTURES_DATA;
 
     renderTeamDirectory();
@@ -1154,7 +1132,7 @@ function renderFixturesList() {
     if (!container) return;
 
     if (ALL_FIXTURES_DATA.length === 0) {
-        container.innerHTML = '<p class="empty-state">No upcoming fixtures</p>';
+        container.innerHTML = '<p class="empty-state">No matches scheduled</p>';
         return;
     }
 
@@ -1163,9 +1141,13 @@ function renderFixturesList() {
         const timeLabel = (f.match_time && f.match_time !== 'TBD') ? f.match_time : '';
         const homeId = f.home_team_id;
         const awayId = f.away_team_id;
-        // Get team initials for crests
         const homeInitial = f.home_team_name ? f.home_team_name.charAt(0) : '?';
         const awayInitial = f.away_team_name ? f.away_team_name.charAt(0) : '?';
+
+        const metaHtml = f.is_played
+            ? `<div class="f-score-badge">${f.home_score} - ${f.away_score}</div>`
+            : `<div class="f-date-badge">${dateLabel}${timeLabel ? ' \u00b7 ' + timeLabel : ''}${f.is_live ? ' \ud83d\udd34' : ''}</div>`;
+
         return `
             <div class="fixture-item fixture-card-row clickable"
                  onclick="openFixtureModal(${f.id})"
@@ -1173,7 +1155,8 @@ function renderFixturesList() {
                  data-home-id="${homeId ?? ''}"
                  data-away-id="${awayId ?? ''}"
                  data-home-name="${f.home_team_name || ''}"
-                 data-away-name="${f.away_team_name || ''}">
+                 data-away-name="${f.away_team_name || ''}"
+                 data-played="${f.is_played ? '1' : '0'}">
                 <div class="f-info">
                     <div class="f-teams">
                         <span class="team-side">
@@ -1192,7 +1175,7 @@ function renderFixturesList() {
                     </div>
                 </div>
                 <div class="f-meta">
-                    <div class="f-date-badge">${dateLabel}${timeLabel ? ' \u00b7 ' + timeLabel : ''}${f.is_live ? ' \ud83d\udd34' : ''}</div>
+                    ${metaHtml}
                     <button class="fav-toggle-btn" onclick="toggleFavorite(${homeId}); toggleFavorite(${awayId}); event.stopPropagation();">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polygon points="12 2 15 9 22 9 16.5 13.5 18.5 21 12 16.5 5.5 21 7.5 13.5 2 9 9 9 12 2"/></svg>
                     </button>
@@ -1202,36 +1185,6 @@ function renderFixturesList() {
     }).join('');
 }
 
-function renderResultsList() {
-    const container = document.getElementById('resultsContainer');
-    if (!container) return;
-
-    if (ALL_RESULTS_DATA.length === 0) {
-        container.innerHTML = '<p class="empty-state">No results recorded yet</p>';
-        return;
-    }
-
-    container.innerHTML = ALL_RESULTS_DATA.map(r => {
-        const homeId = findTeamIdByName(r.home_team);
-        const awayId = findTeamIdByName(r.away_team);
-        const isFresh = freshResultKeys.has(resultKey(r));
-        return `
-            <div class="result-item ${isFresh ? 'just-in' : ''}">
-                <div class="r-info">
-                    <span class="r-date">
-                        ${isFresh ? '<span class="result-just-in-badge">NEW</span>' : ''}${r.match_date ? formatMatchDate(r.match_date) : ''}
-                    </span>
-                    <span class="r-teams">
-                        <span class="clickable" onclick="openTeamModal(${homeId})"><strong>${r.home_team}</strong></span>
-                        vs
-                        <span class="clickable" onclick="openTeamModal(${awayId})"><strong>${r.away_team}</strong></span>
-                    </span>
-                </div>
-                <div class="r-score-pill">${r.home_score} - ${r.away_score}</div>
-            </div>
-        `;
-    }).join('');
-}
 
 function renderStandingsTable() {
     const tbody = document.getElementById('leagueTableBody');
@@ -1738,6 +1691,8 @@ function applyLiveUpdate(data) {
             group: '',
             is_played: f.is_played,
             is_live: f.is_live,
+            home_score: f.home_score,
+            away_score: f.away_score,
             stage: f.stage || '',
             stage_css: f.stage_css || ''
         });
@@ -1778,7 +1733,6 @@ function applyLiveUpdate(data) {
 
     renderHeroCard(data, nameToId);
     renderFixturesList();
-    renderResultsList();
     renderStandingsTable();
     renderLeaderboards();
     renderLatestResult();
@@ -1811,6 +1765,7 @@ function applyLiveUpdate(data) {
     if (data.swiss_rounds !== undefined && data.total_swiss_rounds !== undefined) {
         updateSwissRoundsDisplay(data);
     }
+    requestAnimationFrame(updateStickyStandingsOffsets);
 }
 
 // ============================================================
@@ -1873,6 +1828,7 @@ function startLiveUpdates(intervalMs = 15000) {
             setupCylinderPadding();
             applyCylinderEffect();
         });
+        window.addEventListener('resize', updateStickyStandingsOffsets);
     });
 })();
 
