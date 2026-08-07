@@ -17,6 +17,38 @@ let modalState = {
     activeTab: 'overview'
 };
 
+let countdownInterval = null;
+
+function startTeamCountdown(dateStr, timeStr) {
+    if (countdownInterval) clearInterval(countdownInterval);
+    if (!dateStr) return;
+
+    const target = new Date(`${dateStr}T${(timeStr && timeStr !== 'TBD') ? timeStr : '00:00'}:00`);
+    const el = document.getElementById('teamCountdownTimer');
+    if (!el || isNaN(target.getTime())) return;
+
+    function tick() {
+        const diff = target - new Date();
+        if (diff <= 0) {
+            el.innerHTML = `<span class="countdown-live">Kickoff!</span>`;
+            clearInterval(countdownInterval);
+            return;
+        }
+        const d = Math.floor(diff / 86400000);
+        const h = Math.floor((diff % 86400000) / 3600000);
+        const m = Math.floor((diff % 3600000) / 60000);
+        const s = Math.floor((diff % 60000) / 1000);
+        el.innerHTML = `
+            <span class="cd-unit"><strong>${d}</strong>d</span>
+            <span class="cd-unit"><strong>${h}</strong>h</span>
+            <span class="cd-unit"><strong>${m}</strong>m</span>
+            <span class="cd-unit"><strong>${s}</strong>s</span>
+        `;
+    }
+    tick();
+    countdownInterval = setInterval(tick, 1000);
+}
+
 function openFixtureModal(fixtureId) {
     activeFixtureId = fixtureId;
     const fixture = ALL_FIXTURES_DATA.find(f => f.id == fixtureId);
@@ -633,14 +665,13 @@ function switchStandingsPhase(phase, element) {
 // ============================================================
 // TEAM MODAL
 // ============================================================
-function getTeamFixtures(teamId) {
+function getTeamPlayedMatches(teamId) {
     if (!window.ALL_FIXTURES_DATA) return [];
     return ALL_FIXTURES_DATA
-        .filter(f => f.home_team_id === teamId || f.away_team_id === teamId)
+        .filter(f => (f.home_team_id === teamId || f.away_team_id === teamId) && f.is_played)
         .slice()
-        .sort((a, b) => (a.match_date || '9999-99-99').localeCompare(b.match_date || '9999-99-99'));
+        .sort((a, b) => (b.match_date || '').localeCompare(a.match_date || ''));
 }
-
 function findTeamIdByName(name) {
     const t = ALL_TEAMS_DATA.find(t => t.name === name);
     return t ? t.id : null;
@@ -671,32 +702,55 @@ function buildTeamFixturesHtml(team) {
 }
 
 function buildTeamResultsHtml(team) {
-    if (!window.ALL_RESULTS_DATA) return '<p class="empty-state">No results recorded yet</p>';
-    const rows = ALL_RESULTS_DATA.filter(r => r.home_team === team.name || r.away_team === team.name);
+    const rows = getTeamPlayedMatches(team.id);
     if (rows.length === 0) {
         return '<p class="empty-state">No results recorded yet</p>';
     }
-    return rows.map(r => {
-        const isHome = r.home_team === team.name;
-        const oppName = isHome ? r.away_team : r.home_team;
-        const myScore = isHome ? r.home_score : r.away_score;
-        const oppScore = isHome ? r.away_score : r.home_score;
+    return rows.map(f => {
+        const isHome = f.home_team_id === team.id;
+        const oppName = isHome ? f.away_team_name : f.home_team_name;
+        const oppId = isHome ? f.away_team_id : f.home_team_id;
+        const myScore = isHome ? f.home_score : f.away_score;
+        const oppScore = isHome ? f.away_score : f.home_score;
         const outcome = myScore > oppScore ? 'W' : (myScore === oppScore ? 'D' : 'L');
-        const oppId = findTeamIdByName(oppName);
         return `
-            <div class="modal-list-row ${oppId ? 'clickable' : ''}" ${oppId ? `onclick="openTeamModal(${oppId})"` : ''}>
+            <div class="modal-list-row clickable" onclick="openTeamModal(${oppId})">
                 <div class="modal-list-main">
                     <span class="form-indicator form-${outcome}">${outcome}</span>
                     <span class="modal-list-opponent">${isHome ? 'vs' : '@'} ${oppName}</span>
                 </div>
-                <div class="modal-list-meta"><strong>${r.home_score} - ${r.away_score}</strong></div>
+                <div class="modal-list-meta"><strong>${f.home_score} - ${f.away_score}</strong></div>
             </div>
         `;
     }).join('');
 }
 
-// ---- NEW: team-detail helpers (badges / biggest results / sparkline) ----
+function computeTeamRank(team) {
+    const sorted = [...ALL_TEAMS_DATA].sort((a, b) => {
+        if (b.points !== a.points) return b.points - a.points;
+        return (b.goals_for - b.goals_against) - (a.goals_for - a.goals_against);
+    });
+    return sorted.findIndex(t => t.id === team.id) + 1;
+}
 
+function computeTeamStreak(team) {
+    if (!window.ALL_RESULTS_DATA) return null;
+    const rows = ALL_RESULTS_DATA.filter(r => r.home_team === team.name || r.away_team === team.name);
+    if (rows.length === 0) return null;
+
+    const outcomes = rows.map(r => {
+        const isHome = r.home_team === team.name;
+        const my = isHome ? r.home_score : r.away_score;
+        const opp = isHome ? r.away_score : r.home_score;
+        return my > opp ? 'W' : (my === opp ? 'D' : 'L');
+    });
+
+    const first = outcomes[0];
+    if (first === 'D') return null;
+    let count = 0;
+    for (const o of outcomes) { if (o === first) count++; else break; }
+    return count >= 2 ? { type: first, count } : null;
+}
 function computeTeamBadges(team) {
     const badges = [];
     if (!window.ALL_TEAMS_DATA || team.played === 0) return badges;
@@ -714,11 +768,16 @@ function computeTeamBadges(team) {
         badges.push({ label: 'Best Defense', cls: 'badge-green' });
     }
 
-    const last5 = getTeamFormGuide(team.name).slice(-5);
-    const wins = last5.filter(r => r === 'W').length;
-    const losses = last5.filter(r => r === 'L').length;
-    if (wins >= 3) badges.push({ label: 'In Form', cls: 'badge-fire' });
-    if (losses >= 3) badges.push({ label: 'Cold Streak', cls: 'badge-cold' });
+   if (team.played > 0) {
+        badges.unshift({ label: `#${computeTeamRank(team)} League`, cls: 'badge-rank' });
+    }
+    const streak = computeTeamStreak(team);
+    if (streak) {
+        badges.push({
+            label: streak.type === 'W' ? `${streak.count}-Match Win Streak` : `${streak.count}-Match Skid`,
+            cls: streak.type === 'W' ? 'badge-fire' : 'badge-cold'
+        });
+    }
 
     return badges;
 }
@@ -808,14 +867,16 @@ function openTeamModal(teamId, opts = {}) {
     ).join('') || '<span style="font-size:11px;color:var(--ios-subtext)">No form history</span>';
 
     const { win: biggestWin, loss: biggestLoss } = computeBiggestResults(team);
+    const nextMatch = getTeamFixtures(team.id)[0] || null;
+    const nextOppName = nextMatch
+        ? (nextMatch.home_team_id === team.id ? nextMatch.away_team_name : nextMatch.home_team_name)
+        : null;
     const sparkline = buildGoalsSparkline(team);
 
     const fixturesHtml = buildTeamFixturesHtml(team);
     const resultsHtml = buildTeamResultsHtml(team);
     const fixtureCount = getTeamFixtures(team.id).length;
-    const resultCount = window.ALL_RESULTS_DATA
-        ? ALL_RESULTS_DATA.filter(r => r.home_team === team.name || r.away_team === team.name).length
-        : 0;
+    const resultCount = getTeamPlayedMatches(team.id).length;
 
     document.getElementById('modalTeamContent').innerHTML = `
         <div class="ios-segmented-control mini-seg team-modal-tabs">
@@ -840,6 +901,12 @@ function openTeamModal(teamId, opts = {}) {
             <div class="sparkline-wrap">
                 <div class="ios-card-header">Goals Per Match</div>
                 ${sparkline}
+            </div>` : ''}
+            ${nextMatch ? `
+            <div class="next-match-countdown">
+                <div class="ios-card-header" style="margin-bottom:6px;">Next Match</div>
+                <div class="countdown-opponent">vs ${nextOppName}</div>
+                <div class="countdown-timer" id="teamCountdownTimer"></div>
             </div>` : ''}
 
             <div class="stat-cards-row">
@@ -882,6 +949,11 @@ function openTeamModal(teamId, opts = {}) {
             <div class="ios-card" style="padding:4px 10px; margin-bottom:0;">${resultsHtml}</div>
         </div>
     `;
+    if (nextMatch) {
+        startTeamCountdown(nextMatch.match_date, nextMatch.match_time);
+    } else if (countdownInterval) {
+        clearInterval(countdownInterval);
+    }
 
     document.getElementById('teamDrawerBackdrop').classList.add('active');
     document.getElementById('teamDrawerModal').classList.add('active');
@@ -905,6 +977,8 @@ function closeTeamModal() {
     activeModalTeamId = null;
     modalState.isOpen = false;
     modalState.teamId = null;
+    if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
+    activeModalTeamId = null;
     modalState.activeTab = 'overview';
     document.getElementById('teamDrawerBackdrop').classList.remove('active');
     document.getElementById('teamDrawerModal').classList.remove('active');
@@ -993,6 +1067,14 @@ function changePage(direction) {
 // ============================================================
 // UTILITY
 // ============================================================
+
+function getTeamFixtures(teamId) {
+    if (!window.ALL_FIXTURES_DATA) return [];
+    return ALL_FIXTURES_DATA
+        .filter(f => (f.home_team_id === teamId || f.away_team_id === teamId) && !f.is_played)
+        .slice()
+        .sort((a, b) => (a.match_date || '').localeCompare(b.match_date || ''));
+}
 function formatMatchDate(dateStr) {
     if (!dateStr) return 'TBD';
     const d = new Date(dateStr + 'T00:00:00');

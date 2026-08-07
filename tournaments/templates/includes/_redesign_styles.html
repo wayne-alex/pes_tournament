@@ -2600,5 +2600,45 @@
 .fixture-card-row[data-played="1"] {
     background: rgba(52, 199, 89, 0.03);
 }
+.badge-rank { background: rgba(0,122,255,0.14); color: #0056cc; }
 
+.next-match-countdown {
+    background: linear-gradient(135deg, rgba(0,64,221,0.06), rgba(0,122,255,0.03));
+    border: 1px solid rgba(0,122,255,0.15);
+    border-radius: 14px;
+    padding: 12px 14px;
+    margin-bottom: 14px;
+    text-align: center;
+}
+.countdown-opponent {
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--ios-text);
+    margin-bottom: 8px;
+}
+.countdown-timer {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+.cd-unit {
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: center;
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--ios-subtext);
+    min-width: 30px;
+}
+.cd-unit strong {
+    font-size: 18px;
+    font-weight: 900;
+    color: var(--ios-blue);
+}
+.countdown-live {
+    font-size: 14px;
+    font-weight: 900;
+    color: #ff3b30;
+    animation: pulse 1s infinite;
+}
 </style>
