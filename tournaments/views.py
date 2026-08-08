@@ -377,10 +377,10 @@ def dashboard(request, tournament_id):
     for f in knockout_fixtures:
         grouped.setdefault(f.round, []).append(f)
     rounds = [grouped[r] for r in sorted(grouped)]
-
     all_teams = list(Team.objects.filter(tournament=tournament).annotate(
         goal_difference=F('goals_for') - F('goals_against')
-    ).order_by('-points', '-goal_difference'))
+    ).order_by('-points', '-goal_difference', '-goals_for'))
+
     _compute_team_extra_stats(all_teams)
 
     top_scorers = sorted(all_teams, key=lambda t: -t.goals_for)[:10]
@@ -560,7 +560,7 @@ def _get_swiss_standings_with_stats(tournament, swiss_rounds):
             'buchholz': buchholz.get(team.id, 0),
         })
 
-    standings.sort(key=lambda x: (-x['points'], -x['buchholz'], -x['goal_diff']))
+    standings.sort(key=lambda x: (-x['points'], -x['goal_diff'], -x['goals_for']))
     return standings
 
 
