@@ -645,7 +645,7 @@ def _get_swiss_standings_with_buchholz(tournament):
             'buchholz': buchholz.get(team.id, 0),
         })
 
-    standings.sort(key=lambda x: (-x['points'], -x['buchholz'], -x['goal_diff']))
+    standings.sort(key=lambda x: (-x['points'], -x['goal_diff'], -x['goals_for']))
     return standings
 
 
@@ -1169,8 +1169,8 @@ def _calculate_swiss_standings(tournament):
             'buchholz': buchholz.get(team_id, 0),
         })
 
-    # Sort: Points desc → Buchholz desc → Goal Diff desc
-    standings.sort(key=lambda x: (-x['points'], -x['buchholz'], -x['goal_diff']))
+    # Sort: Points desc → Goal Diff desc → Goals For desc
+    standings.sort(key=lambda x: (-x['points'], -x['goal_diff'], -x['goals_for']))
     return standings
 
 
