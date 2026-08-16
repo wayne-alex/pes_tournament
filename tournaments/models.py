@@ -200,7 +200,7 @@ class Team(models.Model):
         return form
 
     def __str__(self):
-        return f"{self.tournament.name} - {self.name}"
+        return f"{self.name} - {self.tournament.name}"
 
 
 class Group(models.Model):
